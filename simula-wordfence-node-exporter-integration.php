@@ -34,6 +34,7 @@ final class Simula_Wordfence_Node_Exporter_Config {
     public static function defaults() {
         return [
             'enabled'         => 1,
+            'cron_interval'   => 'wfne_five_minutes',
             'prom_file'       => '/var/lib/node_exporter/textfile_collector/wordfence.prom',
             'metric_prefix'   => 'wordpress_wordfence',
             'site_label'      => (string) parse_url(home_url('/'), PHP_URL_HOST),
@@ -162,6 +163,7 @@ final class Simula_Wordfence_Node_Exporter_Settings {
         $output   = [];
 
         $output['enabled']         = empty($input['enabled']) ? 0 : 1;
+        $output['cron_interval']   = self::sanitize_cron_interval($input['cron_interval'] ?? $defaults['cron_interval']);
         $output['prom_file']       = self::sanitize_prom_file($input['prom_file'] ?? $defaults['prom_file']);
         $output['metric_prefix']   = self::sanitize_metric_prefix($input['metric_prefix'] ?? $defaults['metric_prefix']);
         $output['site_label']      = sanitize_text_field(wp_unslash((string) ($input['site_label'] ?? $defaults['site_label'])));
@@ -190,10 +192,18 @@ final class Simula_Wordfence_Node_Exporter_Settings {
     /** Ensures the cron event is scheduled only while exporting is enabled. */
     public static function sync_schedule($options) {
         $scheduled = wp_next_scheduled(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
+        $interval  = self::sanitize_cron_interval($options['cron_interval'] ?? Simula_Wordfence_Node_Exporter_Config::defaults()['cron_interval']);
 
         if (!empty($options['enabled'])) {
+            $event = function_exists('wp_get_scheduled_event') ? wp_get_scheduled_event(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK) : false;
+
+            if ($event && $event->schedule !== $interval) {
+                wp_clear_scheduled_hook(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
+                $scheduled = false;
+            }
+
             if (!$scheduled) {
-                wp_schedule_event(time() + 60, 'wfne_five_minutes', Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
+                wp_schedule_event(time() + 60, $interval, Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
             }
 
             return;
@@ -259,6 +269,14 @@ final class Simula_Wordfence_Node_Exporter_Settings {
         }
 
         return $value;
+    }
+
+    /** Validates the configured WP-Cron interval. */
+    private static function sanitize_cron_interval($value) {
+        $value     = sanitize_key(wp_unslash((string) $value));
+        $intervals = Simula_Wordfence_Node_Exporter_Metrics::cron_interval_labels();
+
+        return isset($intervals[$value]) ? $value : Simula_Wordfence_Node_Exporter_Config::defaults()['cron_interval'];
     }
 
     /** Checks whether a filesystem path is absolute on Unix or Windows. */
@@ -1518,8 +1536,23 @@ final class Simula_Wordfence_Node_Exporter_Admin {
                         <td>
                             <label>
                                 <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[enabled]" value="1" <?php checked($options['enabled'], 1); ?> />
-                                <?php echo esc_html__('Run the exporter every 5 minutes through WP-Cron.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?>
+                                <?php echo esc_html__('Run the exporter on a recurring WP-Cron schedule.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?>
                             </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></label>
+                        </th>
+                        <td>
+                            <select id="wfne-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[cron_interval]">
+                                <?php foreach (Simula_Wordfence_Node_Exporter_Metrics::cron_interval_labels() as $interval_key => $interval_label) : ?>
+                                    <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['cron_interval'], $interval_key); ?>>
+                                        <?php echo esc_html($interval_label); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description"><?php echo esc_html__('Controls how often scheduled exports run when enabled.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -1626,11 +1659,29 @@ final class Simula_Wordfence_Node_Exporter_Metrics {
         load_plugin_textdomain(Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
 
-    /** Registers the custom five-minute cron schedule used by the exporter. */
+    /** Returns the selectable schedule labels for cron interval settings. */
+    public static function cron_interval_labels() {
+        return [
+            'wfne_five_minutes'    => __('Every five minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            'wfne_fifteen_minutes' => __('Every fifteen minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            'wfne_thirty_minutes'  => __('Every thirty minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            'hourly'               => __('Hourly', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+        ];
+    }
+
+    /** Registers the custom cron schedules used by the exporter. */
     public static function cron_schedules($schedules) {
         $schedules['wfne_five_minutes'] = [
             'interval' => 300,
             'display'  => __('Every five minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+        ];
+        $schedules['wfne_fifteen_minutes'] = [
+            'interval' => 900,
+            'display'  => __('Every fifteen minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+        ];
+        $schedules['wfne_thirty_minutes'] = [
+            'interval' => 1800,
+            'display'  => __('Every thirty minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
         ];
 
         return $schedules;
