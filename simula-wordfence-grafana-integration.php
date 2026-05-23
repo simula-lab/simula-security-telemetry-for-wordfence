@@ -44,6 +44,12 @@ final class Simula_Wordfence_Grafana_Config {
             'incident_log_file'    => '/var/log/wordpress-wordfence-incidents.log',
             'incident_log_format'  => 'text',
             'incident_max_rows'    => 1000,
+            'privacy_ip_mode'      => 'full',
+            'privacy_drop_url_query' => 0,
+            'privacy_drop_referer' => 0,
+            'privacy_drop_user_agent' => 0,
+            'privacy_exclude_private_ips' => 0,
+            'privacy_retention_note' => '',
             'enabled_metrics'      => self::default_enabled_metrics(),
         ];
     }
@@ -365,6 +371,12 @@ final class Simula_Wordfence_Grafana_Settings {
         $output['incident_log_file']    = self::sanitize_incident_log_file($input['incident_log_file'] ?? $defaults['incident_log_file']);
         $output['incident_log_format']  = self::sanitize_incident_log_format($input['incident_log_format'] ?? $defaults['incident_log_format']);
         $output['incident_max_rows']    = self::sanitize_incident_max_rows($input['incident_max_rows'] ?? $defaults['incident_max_rows']);
+        $output['privacy_ip_mode']      = self::sanitize_privacy_ip_mode($input['privacy_ip_mode'] ?? $defaults['privacy_ip_mode']);
+        $output['privacy_drop_url_query'] = empty($input['privacy_drop_url_query']) ? 0 : 1;
+        $output['privacy_drop_referer'] = empty($input['privacy_drop_referer']) ? 0 : 1;
+        $output['privacy_drop_user_agent'] = empty($input['privacy_drop_user_agent']) ? 0 : 1;
+        $output['privacy_exclude_private_ips'] = empty($input['privacy_exclude_private_ips']) ? 0 : 1;
+        $output['privacy_retention_note'] = self::sanitize_retention_note($input['privacy_retention_note'] ?? $defaults['privacy_retention_note']);
         $output['enabled_metrics']      = self::sanitize_enabled_metrics($input['enabled_metrics'] ?? []);
 
         if ($output['site_label'] === '') {
@@ -501,6 +513,13 @@ final class Simula_Wordfence_Grafana_Settings {
         return in_array($value, ['text', 'jsonl'], true) ? $value : Simula_Wordfence_Grafana_Config::defaults()['incident_log_format'];
     }
 
+    /** Validates the configured IP privacy mode for incident logs. */
+    private static function sanitize_privacy_ip_mode($value) {
+        $value = sanitize_key(wp_unslash((string) $value));
+
+        return in_array($value, ['full', 'truncate', 'hash', 'drop'], true) ? $value : Simula_Wordfence_Grafana_Config::defaults()['privacy_ip_mode'];
+    }
+
     /** Validates the maximum number of incident rows exported per run. */
     private static function sanitize_incident_max_rows($value) {
         $value = absint($value);
@@ -510,6 +529,19 @@ final class Simula_Wordfence_Grafana_Settings {
         }
 
         return min($value, 10000);
+    }
+
+    /** Sanitizes the operator-facing incident retention note. */
+    private static function sanitize_retention_note($value) {
+        $value = wp_strip_all_tags(wp_unslash((string) $value));
+        $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+/u', ' ', $value);
+        $value = trim(is_string($value) ? $value : '');
+
+        if (strlen($value) > 200) {
+            $value = substr($value, 0, 200);
+        }
+
+        return $value;
     }
 
     /** Normalizes stored metric settings to include every known metric family. */
@@ -1991,6 +2023,10 @@ final class Simula_Wordfence_Grafana_Incidents {
             }
 
             $line = self::row_to_log_line($row, $table, $options, $schema);
+            if ($line === null) {
+                continue;
+            }
+
             if (!is_string($line) || $line === '') {
                 return self::update_failure_state(
                     $state,
@@ -2003,14 +2039,32 @@ final class Simula_Wordfence_Grafana_Incidents {
             $lines[] = $line . "\n";
         }
 
+        if (empty($lines)) {
+            $state['last_incident_id']            = $max_seen_id;
+            $state['last_incident_export']        = time();
+            $state['last_incident_exported_rows'] = 0;
+            $state['last_incident_log_file']      = $options['incident_log_file'];
+            $state['last_incident_error']         = '';
+            if ($persist_state) {
+                update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+            }
+
+            return [
+                'ok'      => true,
+                'message' => __('No Wordfence incidents were appended after privacy filters.', 'simula-wordfence-grafana-integration'),
+                'state'   => $state,
+            ];
+        }
+
         $write = self::append_log($options['incident_log_file'], implode('', $lines));
         if (!$write['ok']) {
             return self::update_failure_state($state, $options, $write['message'], $persist_state);
         }
 
+        $exported_count = count($lines);
         $state['last_incident_id']            = $max_seen_id;
         $state['last_incident_export']        = time();
-        $state['last_incident_exported_rows'] = count($rows);
+        $state['last_incident_exported_rows'] = $exported_count;
         $state['last_incident_log_file']      = $options['incident_log_file'];
         $state['last_incident_error']         = '';
         if ($persist_state) {
@@ -2022,7 +2076,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             'message' => sprintf(
                 /* translators: 1: Number of incident rows appended, 2: Incident log file path. */
                 __('Appended %1$d Wordfence incidents to %2$s.', 'simula-wordfence-grafana-integration'),
-                count($rows),
+                $exported_count,
                 $options['incident_log_file']
             ),
             'state'   => $state,
@@ -2045,11 +2099,18 @@ final class Simula_Wordfence_Grafana_Incidents {
             'reason'      => 'SQL injection attempt',
             'method'      => 'POST',
             'url'         => '/wp-admin/admin-ajax.php',
-            'referer'     => 'https://example.com/',
-            'user_agent'  => 'curl/8.0',
+            'referer'     => empty($options['privacy_drop_referer']) ? 'https://example.com/' : null,
+            'user_agent'  => empty($options['privacy_drop_user_agent']) ? 'curl/8.0' : null,
             'country'     => 'NO',
             'wf_table'    => 'wp_wfHits',
         ];
+        $context['ip'] = self::apply_ip_privacy($context['ip'], $options);
+        $context['url'] = self::apply_url_privacy($context['url'], $options);
+        $context['referer'] = self::apply_url_privacy($context['referer'], $options);
+        $retention_note = self::privacy_retention_note($options);
+        if ($retention_note !== null) {
+            $context['retention_note'] = $retention_note;
+        }
 
         return self::incident_format($options) === 'jsonl'
             ? self::format_json_line($event_ts, $context)
@@ -2081,23 +2142,36 @@ final class Simula_Wordfence_Grafana_Incidents {
         $event_time = self::column_value($row, $schema['time']);
         $event_ts   = is_numeric($event_time) && (int) $event_time > 0 ? (int) $event_time : time();
         $status     = self::column_value($row, $schema['status']);
-        $ip         = self::normalize_ip(self::column_value($row, $schema['ip']));
+        $raw_ip     = self::normalize_ip(self::column_value($row, $schema['ip']));
+
+        if (!empty($options['privacy_exclude_private_ips']) && self::is_private_or_reserved_ip($raw_ip)) {
+            return null;
+        }
+
+        $url            = self::apply_url_privacy(self::clean_string(self::column_value($row, $schema['url'])), $options);
+        $referer        = empty($options['privacy_drop_referer']) ? self::apply_url_privacy(self::clean_string(self::column_value($row, $schema['referer'])), $options) : null;
+        $user_agent     = empty($options['privacy_drop_user_agent']) ? self::clean_string(self::column_value($row, $schema['user_agent'])) : null;
+        $retention_note = self::privacy_retention_note($options);
         $context    = [
             'site'       => (string) ($options['site_label'] ?? wp_parse_url(home_url('/'), PHP_URL_HOST)),
             'hostname'   => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
             'blog_id'    => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
             'hit_id'     => isset($schema['id'], $row[$schema['id']]) ? (int) $row[$schema['id']] : null,
-            'ip'         => $ip,
+            'ip'         => self::apply_ip_privacy($raw_ip, $options),
             'status'     => is_numeric($status) ? (int) $status : self::clean_string($status),
             'action'     => self::clean_string(self::column_value($row, $schema['action'])),
             'reason'     => self::clean_string(self::column_value($row, $schema['reason'])),
             'method'     => self::clean_string(self::column_value($row, $schema['method'])),
-            'url'        => self::clean_string(self::column_value($row, $schema['url'])),
-            'referer'    => self::clean_string(self::column_value($row, $schema['referer'])),
-            'user_agent' => self::clean_string(self::column_value($row, $schema['user_agent'])),
+            'url'        => $url,
+            'referer'    => $referer,
+            'user_agent' => $user_agent,
             'country'    => self::clean_string(self::column_value($row, $schema['country'])),
             'wf_table'   => self::clean_string($table),
         ];
+
+        if ($retention_note !== null) {
+            $context['retention_note'] = $retention_note;
+        }
 
         return self::incident_format($options) === 'jsonl'
             ? self::format_json_line($event_ts, $context)
@@ -2247,6 +2321,93 @@ final class Simula_Wordfence_Grafana_Incidents {
             'message' => (string) $message,
             'state'   => $state,
         ];
+    }
+
+    /** Applies the configured IP privacy mode to an incident IP field. */
+    private static function apply_ip_privacy($ip, $options) {
+        $ip = self::clean_string($ip);
+        if ($ip === null) {
+            return null;
+        }
+
+        $mode = isset($options['privacy_ip_mode']) ? (string) $options['privacy_ip_mode'] : 'full';
+
+        if ($mode === 'drop') {
+            return null;
+        }
+
+        if ($mode === 'hash') {
+            $salt = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_SALT') ? AUTH_SALT : __FILE__);
+
+            return 'sha256:' . hash_hmac('sha256', $ip, $salt);
+        }
+
+        if ($mode === 'truncate') {
+            return self::truncate_ip($ip);
+        }
+
+        return $ip;
+    }
+
+    /** Removes query strings from incident URLs when configured. */
+    private static function apply_url_privacy($url, $options) {
+        $url = self::clean_string($url);
+        if ($url === null || empty($options['privacy_drop_url_query'])) {
+            return $url;
+        }
+
+        $query_pos = strpos($url, '?');
+        if ($query_pos === false) {
+            return $url;
+        }
+
+        $url = substr($url, 0, $query_pos);
+
+        return $url === '' ? null : $url;
+    }
+
+    /** Returns the configured retention note when present. */
+    private static function privacy_retention_note($options) {
+        $note = self::clean_string($options['privacy_retention_note'] ?? '');
+
+        return $note === '' ? null : $note;
+    }
+
+    /** Checks whether an IP is private, loopback, link-local, or otherwise reserved. */
+    private static function is_private_or_reserved_ip($ip) {
+        $ip = self::clean_string($ip);
+        if ($ip === null || !filter_var($ip, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+
+        return !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+    }
+
+    /** Truncates IPv4 to /24 and IPv6 to /64 for privacy-preserving incident logs. */
+    private static function truncate_ip($ip) {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ip);
+            if (count($parts) === 4) {
+                return implode('.', array_slice($parts, 0, 3)) . '.0/24';
+            }
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $packed = @inet_pton($ip);
+            if ($packed !== false && strlen($packed) === 16) {
+                $hex = bin2hex(substr($packed, 0, 8));
+
+                return sprintf(
+                    '%s:%s:%s:%s::/64',
+                    substr($hex, 0, 4),
+                    substr($hex, 4, 4),
+                    substr($hex, 8, 4),
+                    substr($hex, 12, 4)
+                );
+            }
+        }
+
+        return $ip;
     }
 
     /** Normalizes a scalar value into a safe plain-text log field. */
@@ -3464,6 +3625,50 @@ final class Simula_Wordfence_Grafana_Admin {
                     <p class="description"><?php echo esc_html__('Caps each export pass so large retained Wordfence hit tables do not create long-running admin or cron requests.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-privacy-ip-mode"><?php echo esc_html__('Incident IP privacy', 'simula-wordfence-grafana-integration'); ?></label>
+                </th>
+                <td>
+                    <select id="wfne-privacy-ip-mode" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_ip_mode]">
+                        <option value="full" <?php selected($options['privacy_ip_mode'], 'full'); ?>><?php echo esc_html__('Log full IP address', 'simula-wordfence-grafana-integration'); ?></option>
+                        <option value="truncate" <?php selected($options['privacy_ip_mode'], 'truncate'); ?>><?php echo esc_html__('Truncate to IPv4 /24 or IPv6 /64', 'simula-wordfence-grafana-integration'); ?></option>
+                        <option value="hash" <?php selected($options['privacy_ip_mode'], 'hash'); ?>><?php echo esc_html__('Hash with site salt', 'simula-wordfence-grafana-integration'); ?></option>
+                        <option value="drop" <?php selected($options['privacy_ip_mode'], 'drop'); ?>><?php echo esc_html__('Drop IP field', 'simula-wordfence-grafana-integration'); ?></option>
+                    </select>
+                    <p class="description"><?php echo esc_html__('Controls how IP addresses are written to text and JSON Lines incident logs. Prometheus top-source metrics already use normalized IP ranges.', 'simula-wordfence-grafana-integration'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php echo esc_html__('Incident privacy filters', 'simula-wordfence-grafana-integration'); ?></th>
+                <td>
+                    <label style="display:block; margin-bottom:8px;">
+                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_drop_url_query]" value="1" <?php checked($options['privacy_drop_url_query'], 1); ?> />
+                        <?php echo esc_html__('Drop query strings from logged URLs', 'simula-wordfence-grafana-integration'); ?>
+                    </label>
+                    <label style="display:block; margin-bottom:8px;">
+                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_drop_referer]" value="1" <?php checked($options['privacy_drop_referer'], 1); ?> />
+                        <?php echo esc_html__('Drop referer fields from incident logs', 'simula-wordfence-grafana-integration'); ?>
+                    </label>
+                    <label style="display:block; margin-bottom:8px;">
+                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_drop_user_agent]" value="1" <?php checked($options['privacy_drop_user_agent'], 1); ?> />
+                        <?php echo esc_html__('Drop user-agent fields from incident logs', 'simula-wordfence-grafana-integration'); ?>
+                    </label>
+                    <label style="display:block;">
+                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_exclude_private_ips]" value="1" <?php checked($options['privacy_exclude_private_ips'], 1); ?> />
+                        <?php echo esc_html__('Do not append incidents from private, loopback, link-local, or reserved IP ranges', 'simula-wordfence-grafana-integration'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-privacy-retention-note"><?php echo esc_html__('Retention note', 'simula-wordfence-grafana-integration'); ?></label>
+                </th>
+                <td>
+                    <textarea id="wfne-privacy-retention-note" class="large-text" rows="2" maxlength="200" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_retention_note]"><?php echo esc_textarea($options['privacy_retention_note']); ?></textarea>
+                    <p class="description"><?php echo esc_html__('Optional note appended to each incident event so downstream log users can see the local retention expectation. Keep operational retention enforcement in your log pipeline.', 'simula-wordfence-grafana-integration'); ?></p>
+                </td>
+            </tr>
         </table>
         <?php
     }
@@ -3559,6 +3764,11 @@ final class Simula_Wordfence_Grafana_CLI {
             ['field' => 'prom_file', 'value' => (string) ($options['prom_file'] ?? '')],
             ['field' => 'incident_log_file', 'value' => (string) ($options['incident_log_file'] ?? '')],
             ['field' => 'incident_log_format', 'value' => (string) ($options['incident_log_format'] ?? 'text')],
+            ['field' => 'privacy_ip_mode', 'value' => (string) ($options['privacy_ip_mode'] ?? 'full')],
+            ['field' => 'privacy_drop_url_query', 'value' => empty($options['privacy_drop_url_query']) ? 'no' : 'yes'],
+            ['field' => 'privacy_drop_referer', 'value' => empty($options['privacy_drop_referer']) ? 'no' : 'yes'],
+            ['field' => 'privacy_drop_user_agent', 'value' => empty($options['privacy_drop_user_agent']) ? 'no' : 'yes'],
+            ['field' => 'privacy_exclude_private_ips', 'value' => empty($options['privacy_exclude_private_ips']) ? 'no' : 'yes'],
             ['field' => 'last_export', 'value' => Simula_Wordfence_Grafana_Settings::format_state_time($state['last_export'] ?? null)],
             ['field' => 'last_result_ok', 'value' => empty($state['last_result_ok']) ? 'no' : 'yes'],
             ['field' => 'last_result', 'value' => (string) ($state['last_result'] ?? '')],
@@ -3595,7 +3805,7 @@ final class Simula_Wordfence_Grafana_Metrics {
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), ['Simula_Wordfence_Grafana_Admin', 'plugin_action_links']);
 
         if (defined('WP_CLI') && WP_CLI) {
-            WP_CLI::add_command('wordfence-metrics', 'Simula_Wordfence_Grafana_CLI');
+            WP_CLI::add_command('simula-wordfence-metrics', 'Simula_Wordfence_Grafana_CLI');
         }
 
         register_activation_hook(__FILE__, [__CLASS__, 'activate']);
