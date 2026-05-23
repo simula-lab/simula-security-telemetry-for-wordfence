@@ -10,7 +10,7 @@
  * Author URI:  https://simula.no/
  * License:     GPL v2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: simula-wordfence-node-exporter-integration
+ * Text Domain: simula-wordfence-grafana-integration
  * Domain Path: /languages
  *
  * @package Simula_Wordfence_Grafana_Integration
@@ -28,7 +28,7 @@ final class Simula_Wordfence_Grafana_Config {
     public const SLUG        = 'wfne-metrics';
     public const CAPABILITY  = 'manage_options';
     public const VERSION     = '2.0.0';
-    public const TEXT_DOMAIN = 'simula-wordfence-node-exporter-integration';
+    public const TEXT_DOMAIN = 'simula-wordfence-grafana-integration';
     public const WINDOWS     = ['5m', '1h', '24h', '7d'];
 
     /** Returns the default plugin option values. */
@@ -52,140 +52,140 @@ final class Simula_Wordfence_Grafana_Config {
     public static function metric_definitions() {
         return [
             'export_success' => [
-                'label'       => __('Export success', self::TEXT_DOMAIN),
-                'description' => __('Reports whether the latest export completed successfully.', self::TEXT_DOMAIN),
+                'label'       => __('Export success', 'simula-wordfence-grafana-integration'),
+                'description' => __('Reports whether the latest export completed successfully.', 'simula-wordfence-grafana-integration'),
             ],
             'plugin_info' => [
-                'label'       => __('Plugin info', self::TEXT_DOMAIN),
-                'description' => __('Exports static plugin metadata including the installed version.', self::TEXT_DOMAIN),
+                'label'       => __('Plugin info', 'simula-wordfence-grafana-integration'),
+                'description' => __('Exports static plugin metadata including the installed version.', 'simula-wordfence-grafana-integration'),
             ],
             'enabled' => [
-                'label'       => __('Exporter enabled state', self::TEXT_DOMAIN),
-                'description' => __('Reports whether the exporter master switch is enabled. When off, both metrics and incident exports are disabled.', self::TEXT_DOMAIN),
+                'label'       => __('Exporter enabled state', 'simula-wordfence-grafana-integration'),
+                'description' => __('Reports whether the exporter master switch is enabled. When off, both metrics and incident exports are disabled.', 'simula-wordfence-grafana-integration'),
             ],
             'last_export_timestamp_seconds' => [
-                'label'       => __('Last export timestamp', self::TEXT_DOMAIN),
-                'description' => __('Exports the Unix timestamp of the most recent export attempt.', self::TEXT_DOMAIN),
+                'label'       => __('Last export timestamp', 'simula-wordfence-grafana-integration'),
+                'description' => __('Exports the Unix timestamp of the most recent export attempt.', 'simula-wordfence-grafana-integration'),
             ],
             'error_info' => [
-                'label'       => __('Error info', self::TEXT_DOMAIN),
-                'description' => __('Exports a bounded error type for the latest export failure.', self::TEXT_DOMAIN),
+                'label'       => __('Error info', 'simula-wordfence-grafana-integration'),
+                'description' => __('Exports a bounded error type for the latest export failure.', 'simula-wordfence-grafana-integration'),
             ],
             'blocked_events_total' => [
-                'label'       => __('Blocked events total', self::TEXT_DOMAIN),
-                'description' => __('Cumulative counter of newly observed blocked Wordfence hits.', self::TEXT_DOMAIN),
+                'label'       => __('Blocked events total', 'simula-wordfence-grafana-integration'),
+                'description' => __('Cumulative counter of newly observed blocked Wordfence hits.', 'simula-wordfence-grafana-integration'),
             ],
             'blocked_events_window' => [
-                'label'       => __('Blocked events by window', self::TEXT_DOMAIN),
-                'description' => __('Blocked Wordfence hits over 5m, 1h, 24h, and 7d windows.', self::TEXT_DOMAIN),
+                'label'       => __('Blocked events by window', 'simula-wordfence-grafana-integration'),
+                'description' => __('Blocked Wordfence hits over 5m, 1h, 24h, and 7d windows.', 'simula-wordfence-grafana-integration'),
             ],
             'blocked_events_by_status_24h' => [
-                'label'       => __('Blocked events by status (24h)', self::TEXT_DOMAIN),
-                'description' => __('Blocked Wordfence hits in the last 24 hours grouped by HTTP status code.', self::TEXT_DOMAIN),
+                'label'       => __('Blocked events by status (24h)', 'simula-wordfence-grafana-integration'),
+                'description' => __('Blocked Wordfence hits in the last 24 hours grouped by HTTP status code.', 'simula-wordfence-grafana-integration'),
             ],
             'failed_login_attempts_window' => [
-                'label'       => __('Failed login attempts by window', self::TEXT_DOMAIN),
-                'description' => __('Failed login activity over 5m, 1h, 24h, and 7d windows.', self::TEXT_DOMAIN),
+                'label'       => __('Failed login attempts by window', 'simula-wordfence-grafana-integration'),
+                'description' => __('Failed login activity over 5m, 1h, 24h, and 7d windows.', 'simula-wordfence-grafana-integration'),
             ],
             'locked_out_total' => [
-                'label'       => __('Current lockouts', self::TEXT_DOMAIN),
-                'description' => __('Current Wordfence lockout totals grouped by IP and user.', self::TEXT_DOMAIN),
+                'label'       => __('Current lockouts', 'simula-wordfence-grafana-integration'),
+                'description' => __('Current Wordfence lockout totals grouped by IP and user.', 'simula-wordfence-grafana-integration'),
             ],
             'two_factor_enabled' => [
-                'label'       => __('Two-factor enabled', self::TEXT_DOMAIN),
-                'description' => __('Whether Wordfence two-factor authentication appears configured.', self::TEXT_DOMAIN),
+                'label'       => __('Two-factor enabled', 'simula-wordfence-grafana-integration'),
+                'description' => __('Whether Wordfence two-factor authentication appears configured.', 'simula-wordfence-grafana-integration'),
             ],
             'two_factor_protected_users_total' => [
-                'label'       => __('Two-factor protected users', self::TEXT_DOMAIN),
-                'description' => __('Count of users with Wordfence two-factor secrets configured.', self::TEXT_DOMAIN),
+                'label'       => __('Two-factor protected users', 'simula-wordfence-grafana-integration'),
+                'description' => __('Count of users with Wordfence two-factor secrets configured.', 'simula-wordfence-grafana-integration'),
             ],
             'scan_issues_by_severity' => [
-                'label'       => __('Scan issues by severity', self::TEXT_DOMAIN),
-                'description' => __('Current Wordfence scan issues grouped by severity.', self::TEXT_DOMAIN),
+                'label'       => __('Scan issues by severity', 'simula-wordfence-grafana-integration'),
+                'description' => __('Current Wordfence scan issues grouped by severity.', 'simula-wordfence-grafana-integration'),
             ],
             'scan_findings_total' => [
-                'label'       => __('Scan findings total', self::TEXT_DOMAIN),
-                'description' => __('Current Wordfence scan findings for malware and file changes.', self::TEXT_DOMAIN),
+                'label'       => __('Scan findings total', 'simula-wordfence-grafana-integration'),
+                'description' => __('Current Wordfence scan findings for malware and file changes.', 'simula-wordfence-grafana-integration'),
             ],
             'rate_limited_events_window' => [
-                'label'       => __('Rate-limited events by window', self::TEXT_DOMAIN),
-                'description' => __('Rate-limited or throttled requests over 5m, 1h, 24h, and 7d windows.', self::TEXT_DOMAIN),
+                'label'       => __('Rate-limited events by window', 'simula-wordfence-grafana-integration'),
+                'description' => __('Rate-limited or throttled requests over 5m, 1h, 24h, and 7d windows.', 'simula-wordfence-grafana-integration'),
             ],
             'top_attack_sources_24h' => [
-                'label'       => __('Top attack sources (24h)', self::TEXT_DOMAIN),
-                'description' => __('Top blocked attack sources observed during the last 24 hours.', self::TEXT_DOMAIN),
+                'label'       => __('Top attack sources (24h)', 'simula-wordfence-grafana-integration'),
+                'description' => __('Top blocked attack sources observed during the last 24 hours.', 'simula-wordfence-grafana-integration'),
             ],
             'brute_force_events_window' => [
-                'label'       => __('Brute-force events by window', self::TEXT_DOMAIN),
-                'description' => __('Brute-force activity over 5m, 1h, 24h, and 7d windows.', self::TEXT_DOMAIN),
+                'label'       => __('Brute-force events by window', 'simula-wordfence-grafana-integration'),
+                'description' => __('Brute-force activity over 5m, 1h, 24h, and 7d windows.', 'simula-wordfence-grafana-integration'),
             ],
             'vulnerability_findings_total' => [
-                'label'       => __('Vulnerability findings total', self::TEXT_DOMAIN),
-                'description' => __('Current vulnerable or outdated core, plugin, and theme findings.', self::TEXT_DOMAIN),
+                'label'       => __('Vulnerability findings total', 'simula-wordfence-grafana-integration'),
+                'description' => __('Current vulnerable or outdated core, plugin, and theme findings.', 'simula-wordfence-grafana-integration'),
             ],
             'latest_hit_timestamp_seconds' => [
-                'label'       => __('Latest hit timestamp', self::TEXT_DOMAIN),
-                'description' => __('Unix timestamp of the latest observed Wordfence hit.', self::TEXT_DOMAIN),
+                'label'       => __('Latest hit timestamp', 'simula-wordfence-grafana-integration'),
+                'description' => __('Unix timestamp of the latest observed Wordfence hit.', 'simula-wordfence-grafana-integration'),
             ],
             'latest_blocked_hit_timestamp_seconds' => [
-                'label'       => __('Latest blocked hit timestamp', self::TEXT_DOMAIN),
-                'description' => __('Unix timestamp of the latest observed blocked Wordfence hit.', self::TEXT_DOMAIN),
+                'label'       => __('Latest blocked hit timestamp', 'simula-wordfence-grafana-integration'),
+                'description' => __('Unix timestamp of the latest observed blocked Wordfence hit.', 'simula-wordfence-grafana-integration'),
             ],
             'latest_scan_timestamp_seconds' => [
-                'label'       => __('Latest scan timestamp', self::TEXT_DOMAIN),
-                'description' => __('Unix timestamp of the latest observed Wordfence scan issue update when available.', self::TEXT_DOMAIN),
+                'label'       => __('Latest scan timestamp', 'simula-wordfence-grafana-integration'),
+                'description' => __('Unix timestamp of the latest observed Wordfence scan issue update when available.', 'simula-wordfence-grafana-integration'),
             ],
             'scan_age_seconds' => [
-                'label'       => __('Scan age', self::TEXT_DOMAIN),
-                'description' => __('Age in seconds of the latest observed Wordfence scan issue update.', self::TEXT_DOMAIN),
+                'label'       => __('Scan age', 'simula-wordfence-grafana-integration'),
+                'description' => __('Age in seconds of the latest observed Wordfence scan issue update.', 'simula-wordfence-grafana-integration'),
             ],
             'installed' => [
-                'label'       => __('Wordfence installed', self::TEXT_DOMAIN),
-                'description' => __('Whether Wordfence appears to be installed or present in the database.', self::TEXT_DOMAIN),
+                'label'       => __('Wordfence installed', 'simula-wordfence-grafana-integration'),
+                'description' => __('Whether Wordfence appears to be installed or present in the database.', 'simula-wordfence-grafana-integration'),
             ],
             'version_info' => [
-                'label'       => __('Wordfence version info', self::TEXT_DOMAIN),
-                'description' => __('Static Wordfence version metadata when available.', self::TEXT_DOMAIN),
+                'label'       => __('Wordfence version info', 'simula-wordfence-grafana-integration'),
+                'description' => __('Static Wordfence version metadata when available.', 'simula-wordfence-grafana-integration'),
             ],
             'firewall_enabled' => [
-                'label'       => __('Wordfence firewall enabled', self::TEXT_DOMAIN),
-                'description' => __('Whether the Wordfence firewall appears enabled.', self::TEXT_DOMAIN),
+                'label'       => __('Wordfence firewall enabled', 'simula-wordfence-grafana-integration'),
+                'description' => __('Whether the Wordfence firewall appears enabled.', 'simula-wordfence-grafana-integration'),
             ],
             'firewall_optimized' => [
-                'label'       => __('Wordfence firewall optimized', self::TEXT_DOMAIN),
-                'description' => __('Whether the Wordfence firewall appears optimized.', self::TEXT_DOMAIN),
+                'label'       => __('Wordfence firewall optimized', 'simula-wordfence-grafana-integration'),
+                'description' => __('Whether the Wordfence firewall appears optimized.', 'simula-wordfence-grafana-integration'),
             ],
             'live_traffic_enabled' => [
-                'label'       => __('Wordfence live traffic enabled', self::TEXT_DOMAIN),
-                'description' => __('Whether Wordfence live traffic appears enabled.', self::TEXT_DOMAIN),
+                'label'       => __('Wordfence live traffic enabled', 'simula-wordfence-grafana-integration'),
+                'description' => __('Whether Wordfence live traffic appears enabled.', 'simula-wordfence-grafana-integration'),
             ],
             'scan_enabled' => [
-                'label'       => __('Wordfence scan enabled', self::TEXT_DOMAIN),
-                'description' => __('Whether Wordfence scanning appears enabled.', self::TEXT_DOMAIN),
+                'label'       => __('Wordfence scan enabled', 'simula-wordfence-grafana-integration'),
+                'description' => __('Whether Wordfence scanning appears enabled.', 'simula-wordfence-grafana-integration'),
             ],
             'license_type' => [
-                'label'       => __('Wordfence license type', self::TEXT_DOMAIN),
-                'description' => __('Wordfence license type metadata as free, premium, or unknown.', self::TEXT_DOMAIN),
+                'label'       => __('Wordfence license type', 'simula-wordfence-grafana-integration'),
+                'description' => __('Wordfence license type metadata as free, premium, or unknown.', 'simula-wordfence-grafana-integration'),
             ],
             'core_update_available' => [
-                'label'       => __('WordPress core update available', self::TEXT_DOMAIN),
-                'description' => __('Whether a WordPress core update is available.', self::TEXT_DOMAIN),
+                'label'       => __('WordPress core update available', 'simula-wordfence-grafana-integration'),
+                'description' => __('Whether a WordPress core update is available.', 'simula-wordfence-grafana-integration'),
             ],
             'plugin_update_available_total' => [
-                'label'       => __('Plugin updates available', self::TEXT_DOMAIN),
-                'description' => __('Number of plugin updates available.', self::TEXT_DOMAIN),
+                'label'       => __('Plugin updates available', 'simula-wordfence-grafana-integration'),
+                'description' => __('Number of plugin updates available.', 'simula-wordfence-grafana-integration'),
             ],
             'theme_update_available_total' => [
-                'label'       => __('Theme updates available', self::TEXT_DOMAIN),
-                'description' => __('Number of theme updates available.', self::TEXT_DOMAIN),
+                'label'       => __('Theme updates available', 'simula-wordfence-grafana-integration'),
+                'description' => __('Number of theme updates available.', 'simula-wordfence-grafana-integration'),
             ],
             'admin_users_total' => [
-                'label'       => __('Admin users total', self::TEXT_DOMAIN),
-                'description' => __('Number of WordPress administrator users.', self::TEXT_DOMAIN),
+                'label'       => __('Admin users total', 'simula-wordfence-grafana-integration'),
+                'description' => __('Number of WordPress administrator users.', 'simula-wordfence-grafana-integration'),
             ],
             'admin_users_without_2fa_total' => [
-                'label'       => __('Admin users without 2FA', self::TEXT_DOMAIN),
-                'description' => __('Number of administrator users without a Wordfence two-factor secret.', self::TEXT_DOMAIN),
+                'label'       => __('Admin users without 2FA', 'simula-wordfence-grafana-integration'),
+                'description' => __('Number of administrator users without a Wordfence two-factor secret.', 'simula-wordfence-grafana-integration'),
             ],
         ];
     }
@@ -377,7 +377,7 @@ final class Simula_Wordfence_Grafana_Settings {
         $timestamp = (int) $timestamp;
 
         if ($timestamp <= 0) {
-            return __('Never', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+            return __('Never', 'simula-wordfence-grafana-integration');
         }
 
         return gmdate('Y-m-d H:i:s', $timestamp) . ' UTC';
@@ -391,10 +391,10 @@ final class Simula_Wordfence_Grafana_Settings {
             $value,
             $default,
             'wfne-prom-file',
-            __('The Prometheus file path must be absolute. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            __('The Prometheus file path must be absolute. The default path has been restored.', 'simula-wordfence-grafana-integration'),
             'wfne-prom-file-extension',
             '/\.prom$/',
-            __('The Prometheus file path must end with .prom. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+            __('The Prometheus file path must end with .prom. The default path has been restored.', 'simula-wordfence-grafana-integration')
         );
     }
 
@@ -406,10 +406,10 @@ final class Simula_Wordfence_Grafana_Settings {
             $value,
             $default,
             'wfne-incident-log-file',
-            __('The incident log file path must be absolute. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            __('The incident log file path must be absolute. The default path has been restored.', 'simula-wordfence-grafana-integration'),
             'wfne-incident-log-file-extension',
             '/\.(?:log|jsonl)$/',
-            __('The incident log file path must end with .log or .jsonl. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+            __('The incident log file path must end with .log or .jsonl. The default path has been restored.', 'simula-wordfence-grafana-integration')
         );
     }
 
@@ -495,7 +495,7 @@ final class Simula_Wordfence_Grafana_Output {
         $body  = [];
         $disabled_message = is_string($disabled_message) && $disabled_message !== ''
             ? $disabled_message
-            : __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+            : __('Export disabled.', 'simula-wordfence-grafana-integration');
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'export_success')) {
             self::append_metric_family(
@@ -634,15 +634,17 @@ final class Simula_Wordfence_Grafana_Output {
         $result_ok  = false;
 
         if (!preg_match('/\.prom$/', $file)) {
-            $message = __('Output file must end with .prom.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+            $message = __('Output file must end with .prom.', 'simula-wordfence-grafana-integration');
         } elseif (!is_dir($directory)) {
             $message = sprintf(
-                __('Output directory does not exist: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                /* translators: %s: Metrics output directory path. */
+                __('Output directory does not exist: %s', 'simula-wordfence-grafana-integration'),
                 $directory
             );
         } elseif (!is_writable($directory)) {
             $message = sprintf(
-                __('Output directory is not writable by PHP: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                /* translators: %s: Metrics output directory path. */
+                __('Output directory is not writable by PHP: %s', 'simula-wordfence-grafana-integration'),
                 $directory
             );
         } else {
@@ -655,13 +657,17 @@ final class Simula_Wordfence_Grafana_Output {
 
             $written = file_put_contents($tmp_name, $content, LOCK_EX);
             if ($written === false) {
-                $message = __('Failed writing the temporary metrics file.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+                $message = __('Failed writing the temporary metrics file.', 'simula-wordfence-grafana-integration');
             } elseif (!rename($tmp_name, $file)) {
                 @wp_delete_file($tmp_name);
-                $message = __('Failed moving the temporary metrics file into place.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+                $message = __('Failed moving the temporary metrics file into place.', 'simula-wordfence-grafana-integration');
             } else {
                 $ok        = true;
-                $message   = $error_message !== '' ? $error_message : sprintf(__('Metrics exported to %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), $file);
+                $message   = $error_message !== '' ? $error_message : sprintf(
+                    /* translators: %s: Metrics output file path. */
+                    __('Metrics exported to %s', 'simula-wordfence-grafana-integration'),
+                    $file
+                );
                 $result_ok = $error_message === '';
             }
         }
@@ -1818,7 +1824,7 @@ final class Simula_Wordfence_Grafana_Incidents {
         if (empty($options['enabled'])) {
             return [
                 'ok'      => false,
-                'message' => __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                'message' => __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', 'simula-wordfence-grafana-integration'),
                 'state'   => $state,
             ];
         }
@@ -1826,7 +1832,7 @@ final class Simula_Wordfence_Grafana_Incidents {
         if (empty($options['incident_log_enabled'])) {
             return [
                 'ok'      => true,
-                'message' => __('Incident log export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                'message' => __('Incident log export disabled.', 'simula-wordfence-grafana-integration'),
                 'state'   => $state,
             ];
         }
@@ -1835,7 +1841,8 @@ final class Simula_Wordfence_Grafana_Incidents {
 
         if (!Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($table)) {
             $message = sprintf(
-                __('Wordfence table not found. Tried: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                /* translators: %s: Comma-separated list of Wordfence table names that were checked. */
+                __('Wordfence table not found. Tried: %s', 'simula-wordfence-grafana-integration'),
                 implode(', ', Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table_candidates('wfHits'))
             );
 
@@ -1849,7 +1856,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             return self::update_failure_state(
                 $state,
                 $options,
-                __('Unsupported Wordfence hits schema: missing an incident ID column.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                __('Unsupported Wordfence hits schema: missing an incident ID column.', 'simula-wordfence-grafana-integration'),
                 $persist_state
             );
         }
@@ -1858,7 +1865,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             return self::update_failure_state(
                 $state,
                 $options,
-                __('Unsupported Wordfence hits schema: missing an incident timestamp column.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                __('Unsupported Wordfence hits schema: missing an incident timestamp column.', 'simula-wordfence-grafana-integration'),
                 $persist_state
             );
         }
@@ -1868,7 +1875,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             return self::update_failure_state(
                 $state,
                 $options,
-                __('Unsupported Wordfence hits schema: blocked incident filtering is unavailable.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                __('Unsupported Wordfence hits schema: blocked incident filtering is unavailable.', 'simula-wordfence-grafana-integration'),
                 $persist_state
             );
         }
@@ -1904,7 +1911,7 @@ final class Simula_Wordfence_Grafana_Incidents {
 
             return [
                 'ok'      => true,
-                'message' => __('No new Wordfence incidents to append.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                'message' => __('No new Wordfence incidents to append.', 'simula-wordfence-grafana-integration'),
                 'state'   => $state,
             ];
         }
@@ -1923,7 +1930,7 @@ final class Simula_Wordfence_Grafana_Incidents {
                 return self::update_failure_state(
                     $state,
                     $options,
-                    __('Failed formatting a Wordfence incident log line.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    __('Failed formatting a Wordfence incident log line.', 'simula-wordfence-grafana-integration'),
                     $persist_state
                 );
             }
@@ -1948,7 +1955,8 @@ final class Simula_Wordfence_Grafana_Incidents {
         return [
             'ok'      => true,
             'message' => sprintf(
-                __('Appended %1$d Wordfence incidents to %2$s.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                /* translators: 1: Number of incident rows appended, 2: Incident log file path. */
+                __('Appended %1$d Wordfence incidents to %2$s.', 'simula-wordfence-grafana-integration'),
                 count($rows),
                 $options['incident_log_file']
             ),
@@ -2103,7 +2111,8 @@ final class Simula_Wordfence_Grafana_Incidents {
             return [
                 'ok'      => false,
                 'message' => sprintf(
-                    __('Incident log directory does not exist: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    /* translators: %s: Incident log directory path. */
+                    __('Incident log directory does not exist: %s', 'simula-wordfence-grafana-integration'),
                     $directory
                 ),
             ];
@@ -2113,7 +2122,8 @@ final class Simula_Wordfence_Grafana_Incidents {
             return [
                 'ok'      => false,
                 'message' => sprintf(
-                    __('Incident log path is not writable by PHP: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    /* translators: %s: Incident log file path. */
+                    __('Incident log path is not writable by PHP: %s', 'simula-wordfence-grafana-integration'),
                     $file
                 ),
             ];
@@ -2124,7 +2134,8 @@ final class Simula_Wordfence_Grafana_Incidents {
             return [
                 'ok'      => false,
                 'message' => sprintf(
-                    __('Could not open the incident log for append: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    /* translators: %s: Incident log file path. */
+                    __('Could not open the incident log for append: %s', 'simula-wordfence-grafana-integration'),
                     $file
                 ),
             ];
@@ -2145,7 +2156,8 @@ final class Simula_Wordfence_Grafana_Incidents {
             return [
                 'ok'      => false,
                 'message' => sprintf(
-                    __('Failed appending the incident log: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    /* translators: %s: Incident log file path. */
+                    __('Failed appending the incident log: %s', 'simula-wordfence-grafana-integration'),
                     $file
                 ),
             ];
@@ -2153,7 +2165,7 @@ final class Simula_Wordfence_Grafana_Incidents {
 
         return [
             'ok'      => true,
-            'message' => __('Incident log appended.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'message' => __('Incident log appended.', 'simula-wordfence-grafana-integration'),
         ];
     }
 
@@ -2267,8 +2279,8 @@ final class Simula_Wordfence_Grafana_Service {
 
         if (empty($options['enabled'])) {
             $message = $force
-                ? __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
-                : __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+                ? __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', 'simula-wordfence-grafana-integration')
+                : __('Export disabled.', 'simula-wordfence-grafana-integration');
 
             return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state, $message);
         }
@@ -2290,8 +2302,8 @@ final class Simula_Wordfence_Grafana_Service {
 
         if (empty($options['enabled'])) {
             $message = $force
-                ? __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
-                : __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+                ? __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', 'simula-wordfence-grafana-integration')
+                : __('Export disabled.', 'simula-wordfence-grafana-integration');
 
             return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state, $message);
         }
@@ -2313,8 +2325,8 @@ final class Simula_Wordfence_Grafana_Service {
 
         if (empty($options['enabled'])) {
             $message = $force
-                ? __('Exporter is disabled. Enable the exporter before running slow metrics export.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
-                : __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+                ? __('Exporter is disabled. Enable the exporter before running slow metrics export.', 'simula-wordfence-grafana-integration')
+                : __('Export disabled.', 'simula-wordfence-grafana-integration');
 
             return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state, $message);
         }
@@ -2328,7 +2340,7 @@ final class Simula_Wordfence_Grafana_Service {
         $state   = Simula_Wordfence_Grafana_Settings::get_state();
 
         if (empty($options['enabled'])) {
-            return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state, __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN));
+            return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state, __('Export disabled.', 'simula-wordfence-grafana-integration'));
         }
 
         return self::export_metrics($options, $state, in_array($scope, ['all', 'fast', 'slow'], true) ? $scope : 'all', true);
@@ -2364,7 +2376,8 @@ final class Simula_Wordfence_Grafana_Service {
             return [
                 'ok'      => false,
                 'message' => sprintf(
-                    __('Wordfence table not found. Tried: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    /* translators: %s: Comma-separated list of Wordfence table names that were checked. */
+                    __('Wordfence table not found. Tried: %s', 'simula-wordfence-grafana-integration'),
                     implode(', ', Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table_candidates('wfHits'))
                 ),
             ];
@@ -2377,7 +2390,7 @@ final class Simula_Wordfence_Grafana_Service {
         if ($id_column === null || $time_column === null || $where_sql === '0=1') {
             return [
                 'ok'      => false,
-                'message' => __('Unsupported Wordfence hits schema.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                'message' => __('Unsupported Wordfence hits schema.', 'simula-wordfence-grafana-integration'),
             ];
         }
 
@@ -3110,7 +3123,7 @@ final class Simula_Wordfence_Grafana_Service {
             isset($incident_result['message']) ? (string) $incident_result['message'] : '',
         ]);
         $message         = $messages === []
-            ? __('Export completed.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+            ? __('Export completed.', 'simula-wordfence-grafana-integration')
             : implode(' ', $messages);
         $errors          = array_filter([
             empty($metric_result['ok']) && !empty($metric_result['message']) ? (string) $metric_result['message'] : '',
@@ -3171,8 +3184,8 @@ final class Simula_Wordfence_Grafana_Admin {
     /** Registers the plugin settings page under the WordPress Settings menu. */
     public static function admin_menu() {
         add_options_page(
-            __('Simula Wordfence Grafana Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-            __('Wordfence Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            __('Simula Wordfence Grafana Metrics', 'simula-wordfence-grafana-integration'),
+            __('Wordfence Metrics', 'simula-wordfence-grafana-integration'),
             Simula_Wordfence_Grafana_Config::CAPABILITY,
             Simula_Wordfence_Grafana_Config::SLUG,
             [__CLASS__, 'settings_page']
@@ -3188,7 +3201,7 @@ final class Simula_Wordfence_Grafana_Admin {
             sprintf(
                 '<a href="%s">%s</a>',
                 esc_url($url),
-                esc_html__('Settings', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+                esc_html__('Settings', 'simula-wordfence-grafana-integration')
             )
         );
 
@@ -3207,8 +3220,8 @@ final class Simula_Wordfence_Grafana_Admin {
         $state   = Simula_Wordfence_Grafana_Settings::get_state();
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h1>
-            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+            <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', 'simula-wordfence-grafana-integration'); ?></h1>
+            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', 'simula-wordfence-grafana-integration'); ?></p>
 
             <?php settings_errors('wfne_metrics'); ?>
 
@@ -3247,7 +3260,7 @@ final class Simula_Wordfence_Grafana_Admin {
             add_settings_error(
                 'wfne_metrics',
                 'wfne-reset-incident-cursor',
-                __('Incident cursor reset to 0. The next export can backfill retained Wordfence incidents up to the configured row limit.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                __('Incident cursor reset to 0. The next export can backfill retained Wordfence incidents up to the configured row limit.', 'simula-wordfence-grafana-integration'),
                 'updated'
             );
         }
@@ -3256,20 +3269,20 @@ final class Simula_Wordfence_Grafana_Admin {
     /** Renders the Prometheus exporter settings section. */
     private static function render_metrics_settings_section($options) {
         ?>
-        <h2><?php echo esc_html__('Prometheus metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <h2><?php echo esc_html__('Prometheus metrics', 'simula-wordfence-grafana-integration'); ?></h2>
         <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php echo esc_html__('Enable exporter', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
+                <th scope="row"><?php echo esc_html__('Enable exporter', 'simula-wordfence-grafana-integration'); ?></th>
                 <td>
                     <label>
                         <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled]" value="1" <?php checked($options['enabled'], 1); ?> />
-                        <?php echo esc_html__('Master switch for the exporter. When disabled, both Prometheus metrics and incident log exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
+                        <?php echo esc_html__('Master switch for the exporter. When disabled, both Prometheus metrics and incident log exports are off.', 'simula-wordfence-grafana-integration'); ?>
                     </label>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <select id="wfne-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[cron_interval]">
@@ -3279,12 +3292,12 @@ final class Simula_Wordfence_Grafana_Admin {
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="description"><?php echo esc_html__('Controls how often WP-Cron runs exports while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Controls how often WP-Cron runs exports while the exporter is enabled.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-slow-cron-interval"><?php echo esc_html__('Slow collector interval', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-slow-cron-interval"><?php echo esc_html__('Slow collector interval', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <select id="wfne-slow-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[slow_cron_interval]">
@@ -3294,38 +3307,38 @@ final class Simula_Wordfence_Grafana_Admin {
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="description"><?php echo esc_html__('Refreshes slow-changing scan, two-factor, WordPress posture, and Wordfence posture metrics.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Refreshes slow-changing scan, two-factor, WordPress posture, and Wordfence posture metrics.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-prom-file"><?php echo esc_html__('Prometheus file path', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-prom-file"><?php echo esc_html__('Prometheus file path', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <input id="wfne-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
-                    <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-metric-prefix"><?php echo esc_html__('Metric prefix', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-metric-prefix"><?php echo esc_html__('Metric prefix', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <input id="wfne-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
-                    <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-site-label"><?php echo esc_html__('Site label', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-site-label"><?php echo esc_html__('Site label', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <input id="wfne-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
-                    <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php echo esc_html__('Exported metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
+                <th scope="row"><?php echo esc_html__('Exported metrics', 'simula-wordfence-grafana-integration'); ?></th>
                 <td>
                     <fieldset>
                         <?php foreach (Simula_Wordfence_Grafana_Config::metric_definitions() as $metric_key => $metric_definition) : ?>
@@ -3347,45 +3360,45 @@ final class Simula_Wordfence_Grafana_Admin {
     /** Renders the incident log settings section. */
     private static function render_incident_settings_section($options) {
         ?>
-        <h2><?php echo esc_html__('Incident log', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <h2><?php echo esc_html__('Incident log', 'simula-wordfence-grafana-integration'); ?></h2>
         <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php echo esc_html__('Enable incident log export', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
+                <th scope="row"><?php echo esc_html__('Enable incident log export', 'simula-wordfence-grafana-integration'); ?></th>
                 <td>
                     <label>
                         <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_enabled]" value="1" <?php checked($options['incident_log_enabled'], 1); ?> />
-                        <?php echo esc_html__('Append blocked Wordfence hits to the incident log on each export run. This runs only while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
+                        <?php echo esc_html__('Append blocked Wordfence hits to the incident log on each export run. This runs only while the exporter is enabled.', 'simula-wordfence-grafana-integration'); ?>
                     </label>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-incident-log-file"><?php echo esc_html__('Incident log path', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-incident-log-file"><?php echo esc_html__('Incident log path', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <input id="wfne-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
-                    <p class="description"><?php echo esc_html__('Use an absolute log file path. A .log suffix is recommended; existing .jsonl paths are still accepted. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Use an absolute log file path. A .log suffix is recommended; existing .jsonl paths are still accepted. The directory must already exist and be writable by PHP.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-incident-log-format"><?php echo esc_html__('Incident log format', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-incident-log-format"><?php echo esc_html__('Incident log format', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <select id="wfne-incident-log-format" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_format]">
-                        <option value="text" <?php selected($options['incident_log_format'], 'text'); ?>><?php echo esc_html__('Text', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></option>
-                        <option value="jsonl" <?php selected($options['incident_log_format'], 'jsonl'); ?>><?php echo esc_html__('JSON Lines', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></option>
+                        <option value="text" <?php selected($options['incident_log_format'], 'text'); ?>><?php echo esc_html__('Text', 'simula-wordfence-grafana-integration'); ?></option>
+                        <option value="jsonl" <?php selected($options['incident_log_format'], 'jsonl'); ?>><?php echo esc_html__('JSON Lines', 'simula-wordfence-grafana-integration'); ?></option>
                     </select>
-                    <p class="description"><?php echo esc_html__('Text preserves the v1 log format. JSON Lines emits one structured JSON object per blocked event for Loki, ELK, and OpenSearch pipelines.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Text preserves the v1 log format. JSON Lines emits one structured JSON object per blocked event for Loki, ELK, and OpenSearch pipelines.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-incident-max-rows"><?php echo esc_html__('Max incidents per run', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                    <label for="wfne-incident-max-rows"><?php echo esc_html__('Max incidents per run', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
                     <input id="wfne-incident-max-rows" class="small-text" type="number" min="1" max="10000" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_max_rows]" value="<?php echo esc_attr((string) $options['incident_max_rows']); ?>" />
-                    <p class="description"><?php echo esc_html__('Caps each export pass so large retained Wordfence hit tables do not create long-running admin or cron requests.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Caps each export pass so large retained Wordfence hit tables do not create long-running admin or cron requests.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
         </table>
@@ -3397,13 +3410,13 @@ final class Simula_Wordfence_Grafana_Admin {
         ?>
         <form method="post" style="display:inline-block; margin-right: 12px;">
             <?php wp_nonce_field('wfne_export_now'); ?>
-            <?php submit_button(__('Export now', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'secondary', 'wfne_export_now'); ?>
+            <?php submit_button(__('Export now', 'simula-wordfence-grafana-integration'), 'secondary', 'wfne_export_now'); ?>
         </form>
-        <p class="description"><?php echo esc_html__('Manual export uses the same master exporter toggle. If the exporter is disabled, the button writes disabled metrics and reports that exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+        <p class="description"><?php echo esc_html__('Manual export uses the same master exporter toggle. If the exporter is disabled, the button writes disabled metrics and reports that exports are off.', 'simula-wordfence-grafana-integration'); ?></p>
 
         <form method="post" style="display:inline-block;">
             <?php wp_nonce_field('wfne_reset_incident_cursor'); ?>
-            <?php submit_button(__('Reset incident cursor for backfill', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'delete', 'wfne_reset_incident_cursor'); ?>
+            <?php submit_button(__('Reset incident cursor for backfill', 'simula-wordfence-grafana-integration'), 'delete', 'wfne_reset_incident_cursor'); ?>
         </form>
         <?php
     }
@@ -3411,21 +3424,21 @@ final class Simula_Wordfence_Grafana_Admin {
     /** Renders the current exporter state table. */
     private static function render_current_state_section($options, $state) {
         ?>
-        <h2><?php echo esc_html__('Current state', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <h2><?php echo esc_html__('Current state', 'simula-wordfence-grafana-integration'); ?></h2>
         <table class="widefat striped" style="max-width:900px">
             <tbody>
-                <?php self::render_state_row(__('Last export timestamp', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), Simula_Wordfence_Grafana_Settings::format_state_time($state['last_export'] ?? null)); ?>
-                <?php self::render_state_row(__('Observed blocked events', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['blocked_total'] ?? 0)); ?>
-                <?php self::render_state_row(__('Last processed hit ID', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_id'] ?? 0)); ?>
-                <?php self::render_state_row(__('Last result', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_result'] ?? __('No exports yet.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN))); ?>
-                <?php self::render_state_row(__('Last error', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_error'] ?? '')); ?>
-                <?php self::render_state_row(__('Incident cursor initialized', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), !empty($state['incident_cursor_initialized']) ? __('Yes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN) : __('No', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)); ?>
-                <?php self::render_state_row(__('Last incident export', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), Simula_Wordfence_Grafana_Settings::format_state_time($state['last_incident_export'] ?? null)); ?>
-                <?php self::render_state_row(__('Last incident hit ID', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_id'] ?? 0)); ?>
-                <?php self::render_state_row(__('Last incident row count', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_exported_rows'] ?? 0)); ?>
-                <?php self::render_state_row(__('Last incident log file', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_log_file'] ?? $options['incident_log_file'])); ?>
-                <?php self::render_state_row(__('Last incident error', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_error'] ?? '')); ?>
-                <?php self::render_state_row(__('Last slow collector refresh', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), Simula_Wordfence_Grafana_Settings::format_state_time($state['slow_metric_cache_at'] ?? null)); ?>
+                <?php self::render_state_row(__('Last export timestamp', 'simula-wordfence-grafana-integration'), Simula_Wordfence_Grafana_Settings::format_state_time($state['last_export'] ?? null)); ?>
+                <?php self::render_state_row(__('Observed blocked events', 'simula-wordfence-grafana-integration'), (string) ($state['blocked_total'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last processed hit ID', 'simula-wordfence-grafana-integration'), (string) ($state['last_id'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last result', 'simula-wordfence-grafana-integration'), (string) ($state['last_result'] ?? __('No exports yet.', 'simula-wordfence-grafana-integration'))); ?>
+                <?php self::render_state_row(__('Last error', 'simula-wordfence-grafana-integration'), (string) ($state['last_error'] ?? '')); ?>
+                <?php self::render_state_row(__('Incident cursor initialized', 'simula-wordfence-grafana-integration'), !empty($state['incident_cursor_initialized']) ? __('Yes', 'simula-wordfence-grafana-integration') : __('No', 'simula-wordfence-grafana-integration')); ?>
+                <?php self::render_state_row(__('Last incident export', 'simula-wordfence-grafana-integration'), Simula_Wordfence_Grafana_Settings::format_state_time($state['last_incident_export'] ?? null)); ?>
+                <?php self::render_state_row(__('Last incident hit ID', 'simula-wordfence-grafana-integration'), (string) ($state['last_incident_id'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last incident row count', 'simula-wordfence-grafana-integration'), (string) ($state['last_incident_exported_rows'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last incident log file', 'simula-wordfence-grafana-integration'), (string) ($state['last_incident_log_file'] ?? $options['incident_log_file'])); ?>
+                <?php self::render_state_row(__('Last incident error', 'simula-wordfence-grafana-integration'), (string) ($state['last_incident_error'] ?? '')); ?>
+                <?php self::render_state_row(__('Last slow collector refresh', 'simula-wordfence-grafana-integration'), Simula_Wordfence_Grafana_Settings::format_state_time($state['slow_metric_cache_at'] ?? null)); ?>
             </tbody>
         </table>
         <?php
@@ -3434,7 +3447,7 @@ final class Simula_Wordfence_Grafana_Admin {
     /** Renders the sample incident log block. */
     private static function render_sample_incident_section($options) {
         ?>
-        <h2><?php echo esc_html__('Sample incident log line', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <h2><?php echo esc_html__('Sample incident log line', 'simula-wordfence-grafana-integration'); ?></h2>
         <pre style="max-width:900px; overflow:auto;"><?php echo esc_html(Simula_Wordfence_Grafana_Incidents::sample_log_line($options)); ?></pre>
         <?php
     }
@@ -3469,7 +3482,7 @@ final class Simula_Wordfence_Grafana_CLI {
     /** Resets the incident cursor to 0 for controlled backfill. */
     public function reset_cursor() {
         Simula_Wordfence_Grafana_Incidents::reset_cursor();
-        WP_CLI::success(__('Incident cursor reset to 0.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN));
+        WP_CLI::success(__('Incident cursor reset to 0.', 'simula-wordfence-grafana-integration'));
     }
 
     /** Displays current exporter status. */
@@ -3497,7 +3510,7 @@ final class Simula_Wordfence_Grafana_CLI {
     /** Emits WP-CLI success or error from a service result. */
     private function finish($result) {
         $result  = is_array($result) ? $result : [];
-        $message = isset($result['message']) ? (string) $result['message'] : __('Export completed.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+        $message = isset($result['message']) ? (string) $result['message'] : __('Export completed.', 'simula-wordfence-grafana-integration');
 
         if (!empty($result['ok'])) {
             WP_CLI::success($message);
@@ -3530,25 +3543,25 @@ final class Simula_Wordfence_Grafana_Metrics {
 
     /** Loads the plugin translation files. */
     public static function load_textdomain() {
-        load_plugin_textdomain(Simula_Wordfence_Grafana_Config::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages');
+        load_plugin_textdomain('simula-wordfence-grafana-integration', false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
 
     /** Returns the selectable schedule labels for cron interval settings. */
     public static function cron_interval_labels() {
         return [
-            'wfne_five_minutes'    => __('Every five minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-            'wfne_fifteen_minutes' => __('Every fifteen minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-            'wfne_thirty_minutes'  => __('Every thirty minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-            'hourly'               => __('Hourly', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'wfne_five_minutes'    => __('Every five minutes', 'simula-wordfence-grafana-integration'),
+            'wfne_fifteen_minutes' => __('Every fifteen minutes', 'simula-wordfence-grafana-integration'),
+            'wfne_thirty_minutes'  => __('Every thirty minutes', 'simula-wordfence-grafana-integration'),
+            'hourly'               => __('Hourly', 'simula-wordfence-grafana-integration'),
         ];
     }
 
     /** Returns the selectable schedule labels for slow collector settings. */
     public static function slow_cron_interval_labels() {
         return [
-            'hourly'     => __('Hourly', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-            'twicedaily' => __('Twice daily', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-            'daily'      => __('Daily', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'hourly'     => __('Hourly', 'simula-wordfence-grafana-integration'),
+            'twicedaily' => __('Twice daily', 'simula-wordfence-grafana-integration'),
+            'daily'      => __('Daily', 'simula-wordfence-grafana-integration'),
         ];
     }
 
@@ -3556,15 +3569,15 @@ final class Simula_Wordfence_Grafana_Metrics {
     public static function cron_schedules($schedules) {
         $schedules['wfne_five_minutes'] = [
             'interval' => 300,
-            'display'  => __('Every five minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'display'  => __('Every five minutes', 'simula-wordfence-grafana-integration'),
         ];
         $schedules['wfne_fifteen_minutes'] = [
             'interval' => 900,
-            'display'  => __('Every fifteen minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'display'  => __('Every fifteen minutes', 'simula-wordfence-grafana-integration'),
         ];
         $schedules['wfne_thirty_minutes'] = [
             'interval' => 1800,
-            'display'  => __('Every thirty minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'display'  => __('Every thirty minutes', 'simula-wordfence-grafana-integration'),
         ];
 
         return $schedules;
