@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name: Simula Wordfence Grafana Integration
- * Plugin URI:  https://simula.no/
+ * Plugin URI:  https://github.com/simula-lab/simula-wordfence-grafana-integration
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
  * Version:     2.1.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author:      Simula
- * Author URI:  https://simula.no/
+ * Author URI:  https://simulalab.org
  * License:     GPL v2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: simula-wordfence-grafana-integration
