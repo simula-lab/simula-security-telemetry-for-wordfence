@@ -544,7 +544,7 @@ final class Simula_Wordfence_Grafana_Output {
     }
 }
 
-final class Simula_Wordfence_Grafana_Wordfence {
+final class Simula_Wordfence_Grafana_Wordfence_Schema {
     /** Returns the resolved Wordfence hits table name. */
     public static function wordfence_hits_table() {
         return self::wordfence_table_aliases(['wfHits', 'wfhits']);
@@ -568,17 +568,206 @@ final class Simula_Wordfence_Grafana_Wordfence {
         return Simula_Wordfence_Grafana_Util::resolve_first_candidate(self::table_columns($table), $candidates);
     }
 
+    /** Builds the likely table names for a Wordfence table suffix. */
+    public static function wordfence_table_candidates($suffix) {
+        global $wpdb;
+
+        $candidates = [];
+        $prefixes   = [
+            (string) $wpdb->prefix,
+            isset($wpdb->base_prefix) ? (string) $wpdb->base_prefix : (string) $wpdb->prefix,
+        ];
+
+        foreach ($prefixes as $prefix) {
+            if ($prefix === '') {
+                continue;
+            }
+
+            $table = $prefix . $suffix;
+            if (!in_array($table, $candidates, true)) {
+                $candidates[] = $table;
+            }
+        }
+
+        return $candidates;
+    }
+
+    /** Resolves a Wordfence table suffix to the best matching database table name. */
+    public static function wordfence_table($suffix) {
+        static $cache = [];
+
+        if (isset($cache[$suffix])) {
+            return $cache[$suffix];
+        }
+
+        $table = self::find_existing_table_name(self::wordfence_table_candidates($suffix));
+        if ($table !== null) {
+            $cache[$suffix] = $table;
+            return $cache[$suffix];
+        }
+
+        $matches = self::discover_wordfence_tables($suffix);
+        if (count($matches) === 1) {
+            $cache[$suffix] = $matches[0];
+            return $cache[$suffix];
+        }
+
+        $candidates     = self::wordfence_table_candidates($suffix);
+        $cache[$suffix] = isset($candidates[0]) ? $candidates[0] : (string) $suffix;
+
+        return $cache[$suffix];
+    }
+
+    /** Returns the column metadata for a table, cached by table name. */
+    public static function table_columns($table) {
+        static $cache = [];
+        global $wpdb;
+
+        if (isset($cache[$table])) {
+            return $cache[$table];
+        }
+
+        if (!self::table_exists($table)) {
+            $cache[$table] = [];
+            return $cache[$table];
+        }
+
+        $rows    = $wpdb->get_results("SHOW COLUMNS FROM `$table`", ARRAY_A);
+        $columns = [];
+
+        foreach ((array) $rows as $row) {
+            if (!isset($row['Field'])) {
+                continue;
+            }
+
+            $columns[(string) $row['Field']] = $row;
+        }
+
+        $cache[$table] = $columns;
+
+        return $cache[$table];
+    }
+
+    /** Returns the Wordfence scan issue table currently available in the database. */
+    public static function scan_issue_table() {
+        foreach (['wfIssues', 'wfPendingIssues'] as $suffix) {
+            $table = self::wordfence_table($suffix);
+            if (self::table_exists($table)) {
+                return $table;
+            }
+        }
+
+        return null;
+    }
+
+    /** Resolves a Wordfence table from multiple known suffix aliases. */
+    private static function wordfence_table_aliases($suffixes) {
+        static $cache = [];
+
+        $suffixes  = array_values(array_unique(array_filter(array_map('strval', (array) $suffixes))));
+        $cache_key = implode('|', $suffixes);
+
+        if (isset($cache[$cache_key])) {
+            return $cache[$cache_key];
+        }
+
+        foreach ($suffixes as $suffix) {
+            $resolved = self::wordfence_table($suffix);
+            if (self::table_exists($resolved)) {
+                $cache[$cache_key] = $resolved;
+                return $cache[$cache_key];
+            }
+        }
+
+        $fallback          = isset($suffixes[0]) ? self::wordfence_table($suffixes[0]) : '';
+        $cache[$cache_key] = $fallback;
+
+        return $cache[$cache_key];
+    }
+
+    /** Returns the first existing table name that matches the provided candidates. */
+    private static function find_existing_table_name($candidates) {
+        $tables = self::database_tables();
+
+        foreach ((array) $candidates as $candidate) {
+            foreach ($tables as $table) {
+                if (strcasecmp($table, (string) $candidate) === 0) {
+                    return $table;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Returns the list of database tables, cached for repeated lookups. */
+    private static function database_tables() {
+        static $cache = null;
+        global $wpdb;
+
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $rows  = $wpdb->get_col('SHOW TABLES');
+        $cache = [];
+
+        foreach ((array) $rows as $table) {
+            $table = (string) $table;
+            if ($table !== '') {
+                $cache[] = $table;
+            }
+        }
+
+        return $cache;
+    }
+
+    /** Finds database tables whose names end with the requested Wordfence suffix. */
+    private static function discover_wordfence_tables($suffix) {
+        static $cache = [];
+
+        $suffix = (string) $suffix;
+
+        if (isset($cache[$suffix])) {
+            return $cache[$suffix];
+        }
+
+        $rows    = self::database_tables();
+        $matches = [];
+
+        foreach ((array) $rows as $table) {
+            $table = (string) $table;
+            if ($table === '') {
+                continue;
+            }
+
+            if (strlen($table) < strlen($suffix) || strcasecmp(substr($table, -strlen($suffix)), $suffix) !== 0) {
+                continue;
+            }
+
+            if (!in_array($table, $matches, true)) {
+                $matches[] = $table;
+            }
+        }
+
+        $cache[$suffix] = $matches;
+
+        return $cache[$suffix];
+    }
+}
+
+final class Simula_Wordfence_Grafana_Wordfence_Collector {
     /** Builds the SQL condition used to identify blocked requests in a hits table. */
     public static function blocked_where_sql($table) {
         $clauses = [];
 
-        $action_column = self::first_available_column($table, ['action']);
+        $action_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['action']);
         if ($action_column !== null) {
             $action_identifier = self::quote_identifier($action_column);
             $clauses[]         = '(' . $action_identifier . " IS NOT NULL AND $action_identifier LIKE 'blocked:%')";
         }
 
-        $status_column = self::first_available_column($table, ['statusCode', 'status']);
+        $status_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['statusCode', 'status']);
         if ($status_column !== null) {
             $clauses[] = self::quote_identifier($status_column) . ' IN (403, 503)';
         }
@@ -659,7 +848,7 @@ final class Simula_Wordfence_Grafana_Wordfence {
         global $wpdb;
 
         $sources        = [];
-        $country_column = self::first_available_column($table, ['ctry', 'countryCode', 'country']);
+        $country_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['ctry', 'countryCode', 'country']);
 
         if ($country_column !== null) {
             $country_identifier = self::quote_identifier($country_column);
@@ -686,7 +875,7 @@ final class Simula_Wordfence_Grafana_Wordfence {
             }
         }
 
-        $ip_column = self::first_available_column($table, ['IP', 'ip']);
+        $ip_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['IP', 'ip']);
         if ($ip_column !== null) {
             $ip_identifier = self::quote_identifier($ip_column);
             $ip_rows       = $wpdb->get_results(
@@ -732,10 +921,10 @@ final class Simula_Wordfence_Grafana_Wordfence {
         global $wpdb;
 
         $counts           = ['ip' => 0, 'user' => 0];
-        $blocked_ip_table = self::wordfence_table('wfBlockedIPLog');
+        $blocked_ip_table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table('wfBlockedIPLog');
 
-        if (self::table_exists($blocked_ip_table)) {
-            $ip_column = self::first_available_column($blocked_ip_table, ['IP', 'ip']);
+        if (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($blocked_ip_table)) {
+            $ip_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($blocked_ip_table, ['IP', 'ip']);
             if ($ip_column !== null) {
                 $ip_identifier = self::quote_identifier($ip_column);
                 $lockout_where = self::lockout_active_where_sql($blocked_ip_table, $now);
@@ -748,7 +937,7 @@ final class Simula_Wordfence_Grafana_Wordfence {
                 $counts['ip'] = (int) $wpdb->get_var($query);
             }
 
-            $user_column = self::first_available_column($blocked_ip_table, ['username', 'userName', 'user_id', 'userID', 'userId']);
+            $user_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($blocked_ip_table, ['username', 'userName', 'user_id', 'userID', 'userId']);
             if ($user_column !== null) {
                 $user_identifier = self::quote_identifier($user_column);
                 $lockout_where   = self::lockout_active_where_sql($blocked_ip_table, $now);
@@ -762,9 +951,9 @@ final class Simula_Wordfence_Grafana_Wordfence {
             }
         }
 
-        $login_table = self::wordfence_table('wfLogins');
-        if ($counts['user'] === 0 && self::table_exists($login_table)) {
-            $user_column   = self::first_available_column($login_table, ['username', 'userName', 'user_id', 'userID', 'userId']);
+        $login_table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table('wfLogins');
+        if ($counts['user'] === 0 && Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($login_table)) {
+            $user_column   = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($login_table, ['username', 'userName', 'user_id', 'userID', 'userId']);
             $lockout_where = self::lockout_active_where_sql($login_table, $now);
 
             if ($user_column !== null && $lockout_where !== '') {
@@ -783,11 +972,11 @@ final class Simula_Wordfence_Grafana_Wordfence {
         global $wpdb;
 
         $metrics        = ['enabled' => 0, 'protected_users' => 0];
-        $secrets_table  = self::wordfence_table('wfls_2fa_secrets');
-        $settings_table = self::wordfence_table('wfls_settings');
+        $secrets_table  = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table('wfls_2fa_secrets');
+        $settings_table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table('wfls_settings');
 
-        if (self::table_exists($secrets_table)) {
-            $user_column = self::first_available_column($secrets_table, ['user_id', 'userID', 'userId', 'user']);
+        if (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($secrets_table)) {
+            $user_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($secrets_table, ['user_id', 'userID', 'userId', 'user']);
             if ($user_column !== null) {
                 $metrics['protected_users'] = (int) $wpdb->get_var(
                     'SELECT COUNT(DISTINCT ' . self::quote_identifier($user_column) . ") FROM `$secrets_table`"
@@ -799,7 +988,7 @@ final class Simula_Wordfence_Grafana_Wordfence {
 
         if ($metrics['protected_users'] > 0) {
             $metrics['enabled'] = 1;
-        } elseif (self::table_exists($settings_table)) {
+        } elseif (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($settings_table)) {
             $metrics['enabled'] = (int) ($wpdb->get_var("SELECT COUNT(*) FROM `$settings_table`") > 0);
         }
 
@@ -820,13 +1009,13 @@ final class Simula_Wordfence_Grafana_Wordfence {
                 'theme'  => 0,
             ],
         ];
-        $table   = self::scan_issue_table();
+        $table   = Simula_Wordfence_Grafana_Wordfence_Schema::scan_issue_table();
 
         if ($table === null) {
             return $metrics;
         }
 
-        $severity_column = self::first_available_column($table, ['severity', 'level', 'status']);
+        $severity_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['severity', 'level', 'status']);
         if ($severity_column !== null) {
             $severity_identifier = self::quote_identifier($severity_column);
             $metrics['severity'] = $wpdb->get_results(
@@ -878,184 +1067,12 @@ final class Simula_Wordfence_Grafana_Wordfence {
         return $metrics;
     }
 
-    /** Builds the likely table names for a Wordfence table suffix. */
-    public static function wordfence_table_candidates($suffix) {
-        global $wpdb;
-
-        $candidates = [];
-        $prefixes   = [
-            (string) $wpdb->prefix,
-            isset($wpdb->base_prefix) ? (string) $wpdb->base_prefix : (string) $wpdb->prefix,
-        ];
-
-        foreach ($prefixes as $prefix) {
-            if ($prefix === '') {
-                continue;
-            }
-
-            $table = $prefix . $suffix;
-            if (!in_array($table, $candidates, true)) {
-                $candidates[] = $table;
-            }
-        }
-
-        return $candidates;
-    }
-
-    /** Resolves a Wordfence table suffix to the best matching database table name. */
-    private static function wordfence_table($suffix) {
-        static $cache = [];
-
-        if (isset($cache[$suffix])) {
-            return $cache[$suffix];
-        }
-
-        $table = self::find_existing_table_name(self::wordfence_table_candidates($suffix));
-        if ($table !== null) {
-            $cache[$suffix] = $table;
-            return $cache[$suffix];
-        }
-
-        $matches = self::discover_wordfence_tables($suffix);
-        if (count($matches) === 1) {
-            $cache[$suffix] = $matches[0];
-            return $cache[$suffix];
-        }
-
-        $candidates    = self::wordfence_table_candidates($suffix);
-        $cache[$suffix] = isset($candidates[0]) ? $candidates[0] : (string) $suffix;
-
-        return $cache[$suffix];
-    }
-
-    /** Resolves a Wordfence table from multiple known suffix aliases. */
-    private static function wordfence_table_aliases($suffixes) {
-        static $cache = [];
-
-        $suffixes  = array_values(array_unique(array_filter(array_map('strval', (array) $suffixes))));
-        $cache_key = implode('|', $suffixes);
-
-        if (isset($cache[$cache_key])) {
-            return $cache[$cache_key];
-        }
-
-        foreach ($suffixes as $suffix) {
-            $resolved = self::wordfence_table($suffix);
-            if (self::table_exists($resolved)) {
-                $cache[$cache_key] = $resolved;
-                return $cache[$cache_key];
-            }
-        }
-
-        $fallback = isset($suffixes[0]) ? self::wordfence_table($suffixes[0]) : '';
-        $cache[$cache_key] = $fallback;
-
-        return $cache[$cache_key];
-    }
-
-    /** Returns the first existing table name that matches the provided candidates. */
-    private static function find_existing_table_name($candidates) {
-        $tables = self::database_tables();
-
-        foreach ((array) $candidates as $candidate) {
-            foreach ($tables as $table) {
-                if (strcasecmp($table, (string) $candidate) === 0) {
-                    return $table;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /** Returns the list of database tables, cached for repeated lookups. */
-    private static function database_tables() {
-        static $cache = null;
-        global $wpdb;
-
-        if ($cache !== null) {
-            return $cache;
-        }
-
-        $rows  = $wpdb->get_col('SHOW TABLES');
-        $cache = [];
-
-        foreach ((array) $rows as $table) {
-            $table = (string) $table;
-            if ($table !== '') {
-                $cache[] = $table;
-            }
-        }
-
-        return $cache;
-    }
-
-    /** Finds database tables whose names end with the requested Wordfence suffix. */
-    private static function discover_wordfence_tables($suffix) {
-        static $cache = [];
-
-        $suffix = (string) $suffix;
-
-        if (isset($cache[$suffix])) {
-            return $cache[$suffix];
-        }
-
-        $rows    = self::database_tables();
-        $matches = [];
-
-        foreach ((array) $rows as $table) {
-            $table = (string) $table;
-            if ($table === '') {
-                continue;
-            }
-
-            if (strlen($table) < strlen($suffix) || strcasecmp(substr($table, -strlen($suffix)), $suffix) !== 0) {
-                continue;
-            }
-
-            if (!in_array($table, $matches, true)) {
-                $matches[] = $table;
-            }
-        }
-
-        $cache[$suffix] = $matches;
-
-        return $cache[$suffix];
-    }
-
-    /** Returns the column metadata for a table, cached by table name. */
-    public static function table_columns($table) {
-        static $cache = [];
-        global $wpdb;
-
-        if (isset($cache[$table])) {
-            return $cache[$table];
-        }
-
-        if (!self::table_exists($table)) {
-            $cache[$table] = [];
-            return $cache[$table];
-        }
-
-        $rows    = $wpdb->get_results("SHOW COLUMNS FROM `$table`", ARRAY_A);
-        $columns = [];
-
-        foreach ((array) $rows as $row) {
-            if (!isset($row['Field'])) {
-                continue;
-            }
-
-            $columns[(string) $row['Field']] = $row;
-        }
-
-        $cache[$table] = $columns;
-
-        return $cache[$table];
-    }
-
     /** Filters a list of candidate column names down to those present in a table. */
     private static function available_columns($table, $candidates) {
-        return Simula_Wordfence_Grafana_Util::resolve_available_candidates(self::table_columns($table), $candidates);
+        return Simula_Wordfence_Grafana_Util::resolve_available_candidates(
+            Simula_Wordfence_Grafana_Wordfence_Schema::table_columns($table),
+            $candidates
+        );
     }
 
     /** Builds a text-search SQL condition across matching columns in a table. */
@@ -1135,18 +1152,18 @@ final class Simula_Wordfence_Grafana_Wordfence {
         $clauses = [];
 
         foreach (['expiration', 'blockedUntil', 'expiresAt', 'lockedOutUntil', 'lockoutTime'] as $column) {
-            if (self::first_available_column($table, [$column]) !== null) {
+            if (Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, [$column]) !== null) {
                 $clauses[] = self::quote_identifier($column) . ' > ' . (int) $now;
             }
         }
 
         foreach (['blocked', 'lockedOut', 'isLocked'] as $column) {
-            if (self::first_available_column($table, [$column]) !== null) {
+            if (Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, [$column]) !== null) {
                 $clauses[] = self::quote_identifier($column) . ' = 1';
             }
         }
 
-        $status_column = self::first_available_column($table, ['status']);
+        $status_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['status']);
         if ($status_column !== null) {
             $status_identifier = self::quote_identifier($status_column);
             $clauses[]         = "LOWER(COALESCE(CAST($status_identifier AS CHAR), '')) LIKE '%lock%'";
@@ -1157,18 +1174,6 @@ final class Simula_Wordfence_Grafana_Wordfence {
         }
 
         return self::combine_where_any($clauses);
-    }
-
-    /** Returns the Wordfence scan issue table currently available in the database. */
-    private static function scan_issue_table() {
-        foreach (['wfIssues', 'wfPendingIssues'] as $suffix) {
-            $table = self::wordfence_table($suffix);
-            if (self::table_exists($table)) {
-                return $table;
-            }
-        }
-
-        return null;
     }
 
     /** Normalizes an IP value into a /24 IPv4 or /64 IPv6 range label. */
@@ -1217,6 +1222,83 @@ final class Simula_Wordfence_Grafana_Wordfence {
     }
 }
 
+final class Simula_Wordfence_Grafana_Wordfence {
+    /** Returns the resolved Wordfence hits table name. */
+    public static function wordfence_hits_table() {
+        return Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table();
+    }
+
+    /** Checks whether a database table exists, using a local cache. */
+    public static function table_exists($table) {
+        return Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($table);
+    }
+
+    /** Returns the first column name that exists from a list of candidates. */
+    public static function first_available_column($table, $candidates) {
+        return Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, $candidates);
+    }
+
+    /** Builds the SQL condition used to identify blocked requests in a hits table. */
+    public static function blocked_where_sql($table) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::blocked_where_sql($table);
+    }
+
+    /** Builds the SQL condition used to detect failed login activity. */
+    public static function failed_login_where_sql($table) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::failed_login_where_sql($table);
+    }
+
+    /** Builds the SQL condition used to detect throttled or rate-limited requests. */
+    public static function rate_limited_where_sql($table) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::rate_limited_where_sql($table);
+    }
+
+    /** Builds the SQL condition used to detect username/password brute-force activity. */
+    public static function brute_force_username_where_sql($table) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::brute_force_username_where_sql($table);
+    }
+
+    /** Builds the SQL condition used to detect XML-RPC brute-force activity. */
+    public static function brute_force_xmlrpc_where_sql($table) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::brute_force_xmlrpc_where_sql($table);
+    }
+
+    /** Builds SQL SELECT expressions that count matching rows across configured time windows. */
+    public static function build_window_count_select_sql($prefix, $condition_sql, $time_identifier, $windows) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::build_window_count_select_sql($prefix, $condition_sql, $time_identifier, $windows);
+    }
+
+    /** Collects the top blocked attack sources by country and normalized IP range. */
+    public static function collect_top_attack_sources($table, $time_identifier, $blocked_where, $since_timestamp) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::collect_top_attack_sources($table, $time_identifier, $blocked_where, $since_timestamp);
+    }
+
+    /** Collects current IP and user lockout totals from available Wordfence tables. */
+    public static function collect_lockout_counts($now) {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::collect_lockout_counts($now);
+    }
+
+    /** Collects Wordfence two-factor status and protected-user counts. */
+    public static function collect_two_factor_metrics() {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::collect_two_factor_metrics();
+    }
+
+    /** Collects scan issue totals grouped by severity and finding category. */
+    public static function collect_scan_issue_metrics() {
+        return Simula_Wordfence_Grafana_Wordfence_Collector::collect_scan_issue_metrics();
+    }
+
+    /** Builds the likely table names for a Wordfence table suffix. */
+    public static function wordfence_table_candidates($suffix) {
+        return Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table_candidates($suffix);
+    }
+
+    /** Returns the column metadata for a table, cached by table name. */
+    public static function table_columns($table) {
+        return Simula_Wordfence_Grafana_Wordfence_Schema::table_columns($table);
+    }
+}
+
 final class Simula_Wordfence_Grafana_Incidents {
     /** Initializes the incident cursor from the current maximum Wordfence hit ID. */
     public static function initialize_cursor_if_needed() {
@@ -1227,13 +1309,13 @@ final class Simula_Wordfence_Grafana_Incidents {
             return;
         }
 
-        $table      = Simula_Wordfence_Grafana_Wordfence::wordfence_hits_table();
+        $table      = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table();
         $last_id    = 0;
         $id_column  = null;
 
-        if (Simula_Wordfence_Grafana_Wordfence::table_exists($table)) {
+        if (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($table)) {
             $id_column = Simula_Wordfence_Grafana_Util::resolve_first_candidate(
-                Simula_Wordfence_Grafana_Wordfence::table_columns($table),
+                Simula_Wordfence_Grafana_Wordfence_Schema::table_columns($table),
                 ['id']
             );
         }
@@ -1271,13 +1353,13 @@ final class Simula_Wordfence_Grafana_Incidents {
             ];
         }
 
-        $table = Simula_Wordfence_Grafana_Wordfence::wordfence_hits_table();
+        $table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table();
         $state = Simula_Wordfence_Grafana_Settings::get_state();
 
-        if (!Simula_Wordfence_Grafana_Wordfence::table_exists($table)) {
+        if (!Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($table)) {
             $message = sprintf(
                 __('Wordfence table not found. Tried: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-                implode(', ', Simula_Wordfence_Grafana_Wordfence::wordfence_table_candidates('wfHits'))
+                implode(', ', Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table_candidates('wfHits'))
             );
 
             return self::update_failure_state($state, $options, $message);
@@ -1303,7 +1385,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             );
         }
 
-        $where_sql = Simula_Wordfence_Grafana_Wordfence::blocked_where_sql($table);
+        $where_sql = Simula_Wordfence_Grafana_Wordfence_Collector::blocked_where_sql($table);
         if ($where_sql === '0=1') {
             return self::update_failure_state(
                 $state,
@@ -1401,7 +1483,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             'wordpress_home' => home_url('/'),
             'hostname'       => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
             'blog_id'        => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
-            'wp_table'       => Simula_Wordfence_Grafana_Wordfence::wordfence_hits_table(),
+            'wp_table'       => Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table(),
             'wf_hit_id'      => 123,
             'ip'             => '203.0.113.10',
             'http_status'    => 403,
@@ -1428,7 +1510,7 @@ final class Simula_Wordfence_Grafana_Incidents {
 
     /** Resolves the Wordfence hits schema columns used by the incident exporter. */
     private static function resolve_schema($table) {
-        $columns = Simula_Wordfence_Grafana_Wordfence::table_columns($table);
+        $columns = Simula_Wordfence_Grafana_Wordfence_Schema::table_columns($table);
 
         return [
             'columns'    => $columns,
@@ -1669,11 +1751,11 @@ final class Simula_Wordfence_Grafana_Service {
         global $wpdb;
 
         $now = time();
-        $table = Simula_Wordfence_Grafana_Wordfence::wordfence_hits_table();
-        if (!Simula_Wordfence_Grafana_Wordfence::table_exists($table)) {
+        $table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table();
+        if (!Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($table)) {
             $message = sprintf(
                 __('Wordfence table not found. Tried: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-                implode(', ', Simula_Wordfence_Grafana_Wordfence::wordfence_table_candidates('wfHits'))
+                implode(', ', Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table_candidates('wfHits'))
             );
 
             return Simula_Wordfence_Grafana_Output::write_metrics(
@@ -1684,9 +1766,9 @@ final class Simula_Wordfence_Grafana_Service {
             );
         }
 
-        $id_column   = Simula_Wordfence_Grafana_Wordfence::first_available_column($table, ['id']);
-        $time_column = Simula_Wordfence_Grafana_Wordfence::first_available_column($table, ['attackLogTime', 'ctime', 'time']);
-        $where_sql   = Simula_Wordfence_Grafana_Wordfence::blocked_where_sql($table);
+        $id_column   = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['id']);
+        $time_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['attackLogTime', 'ctime', 'time']);
+        $where_sql   = Simula_Wordfence_Grafana_Wordfence_Collector::blocked_where_sql($table);
 
         if ($id_column === null || $time_column === null || $where_sql === '0=1') {
             $message = __('Unsupported Wordfence hits schema.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
@@ -1734,37 +1816,37 @@ final class Simula_Wordfence_Grafana_Service {
             $window_selects = [];
 
             if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_window')) {
-                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql('blocked', $where_sql, $time_identifier, $windows);
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence_Collector::build_window_count_select_sql('blocked', $where_sql, $time_identifier, $windows);
             }
 
             if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'failed_login_attempts_window')) {
-                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence_Collector::build_window_count_select_sql(
                     'failed_login',
-                    Simula_Wordfence_Grafana_Wordfence::failed_login_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence_Collector::failed_login_where_sql($table),
                     $time_identifier,
                     $windows
                 );
             }
 
             if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'rate_limited_events_window')) {
-                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence_Collector::build_window_count_select_sql(
                     'rate_limited',
-                    Simula_Wordfence_Grafana_Wordfence::rate_limited_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence_Collector::rate_limited_where_sql($table),
                     $time_identifier,
                     $windows
                 );
             }
 
             if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'brute_force_events_window')) {
-                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence_Collector::build_window_count_select_sql(
                     'brute_username',
-                    Simula_Wordfence_Grafana_Wordfence::brute_force_username_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence_Collector::brute_force_username_where_sql($table),
                     $time_identifier,
                     $windows
                 );
-                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence_Collector::build_window_count_select_sql(
                     'brute_xmlrpc',
-                    Simula_Wordfence_Grafana_Wordfence::brute_force_xmlrpc_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence_Collector::brute_force_xmlrpc_where_sql($table),
                     $time_identifier,
                     $windows
                 );
@@ -1781,7 +1863,7 @@ final class Simula_Wordfence_Grafana_Service {
 
         $status_counts = [];
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_by_status_24h')) {
-            $status_column = Simula_Wordfence_Grafana_Wordfence::first_available_column($table, ['statusCode', 'status']);
+            $status_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['statusCode', 'status']);
             if ($status_column !== null) {
                 $status_identifier = Simula_Wordfence_Grafana_Util::quote_identifier($status_column);
                 $status_counts     = $wpdb->get_results(
@@ -1797,12 +1879,12 @@ final class Simula_Wordfence_Grafana_Service {
 
         $top_attack_sources = [];
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'top_attack_sources_24h')) {
-            $top_attack_sources = Simula_Wordfence_Grafana_Wordfence::collect_top_attack_sources($table, $time_identifier, $where_sql, $windows['24h']);
+            $top_attack_sources = Simula_Wordfence_Grafana_Wordfence_Collector::collect_top_attack_sources($table, $time_identifier, $where_sql, $windows['24h']);
         }
 
         $lockout_counts = [];
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'locked_out_total')) {
-            $lockout_counts = Simula_Wordfence_Grafana_Wordfence::collect_lockout_counts($now);
+            $lockout_counts = Simula_Wordfence_Grafana_Wordfence_Collector::collect_lockout_counts($now);
         }
 
         $two_factor_metrics = [];
@@ -1810,12 +1892,12 @@ final class Simula_Wordfence_Grafana_Service {
             Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'two_factor_enabled') ||
             Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'two_factor_protected_users_total')
         ) {
-            $two_factor_metrics = Simula_Wordfence_Grafana_Wordfence::collect_two_factor_metrics();
+            $two_factor_metrics = Simula_Wordfence_Grafana_Wordfence_Collector::collect_two_factor_metrics();
         }
 
         $scan_issue_metrics = [];
         if ($needs_scan_metrics) {
-            $scan_issue_metrics = Simula_Wordfence_Grafana_Wordfence::collect_scan_issue_metrics();
+            $scan_issue_metrics = Simula_Wordfence_Grafana_Wordfence_Collector::collect_scan_issue_metrics();
         }
 
         if ($wpdb->last_error !== '') {
