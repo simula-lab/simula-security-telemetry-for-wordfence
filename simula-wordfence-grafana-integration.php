@@ -396,27 +396,51 @@ final class Simula_Wordfence_Grafana_Output {
         $body  = [];
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'export_success')) {
-            $body[] = '# HELP ' . $options['metric_prefix'] . '_export_success Whether the last Wordfence metrics export succeeded.';
-            $body[] = '# TYPE ' . $options['metric_prefix'] . '_export_success gauge';
-            $body[] = $options['metric_prefix'] . '_export_success{site="' . $site . '"} 0';
+            self::append_metric_family(
+                $body,
+                $options['metric_prefix'] . '_export_success',
+                'gauge',
+                'Whether the last Wordfence metrics export succeeded.',
+                [
+                    ['labels' => ['site' => $site], 'value' => 0],
+                ]
+            );
         }
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'plugin_info')) {
-            $body[] = '# HELP ' . $options['metric_prefix'] . '_plugin_info Plugin metadata for the exporter.';
-            $body[] = '# TYPE ' . $options['metric_prefix'] . '_plugin_info gauge';
-            $body[] = $options['metric_prefix'] . '_plugin_info{site="' . $site . '",version="' . self::escape_label(Simula_Wordfence_Grafana_Config::VERSION) . '"} 1';
+            self::append_metric_family(
+                $body,
+                $options['metric_prefix'] . '_plugin_info',
+                'gauge',
+                'Plugin metadata for the exporter.',
+                [
+                    ['labels' => ['site' => $site, 'version' => self::escape_label(Simula_Wordfence_Grafana_Config::VERSION)], 'value' => 1],
+                ]
+            );
         }
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'enabled')) {
-            $body[] = '# HELP ' . $options['metric_prefix'] . '_enabled Whether scheduled exporting is enabled.';
-            $body[] = '# TYPE ' . $options['metric_prefix'] . '_enabled gauge';
-            $body[] = $options['metric_prefix'] . '_enabled{site="' . $site . '"} 0';
+            self::append_metric_family(
+                $body,
+                $options['metric_prefix'] . '_enabled',
+                'gauge',
+                'Whether scheduled exporting is enabled.',
+                [
+                    ['labels' => ['site' => $site], 'value' => 0],
+                ]
+            );
         }
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
-            $body[] = '# HELP ' . $options['metric_prefix'] . '_last_export_timestamp_seconds Unix timestamp of the last export attempt.';
-            $body[] = '# TYPE ' . $options['metric_prefix'] . '_last_export_timestamp_seconds gauge';
-            $body[] = $options['metric_prefix'] . '_last_export_timestamp_seconds{site="' . $site . '"} ' . $now;
+            self::append_metric_family(
+                $body,
+                $options['metric_prefix'] . '_last_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the last export attempt.',
+                [
+                    ['labels' => ['site' => $site], 'value' => $now],
+                ]
+            );
         }
 
         $state['last_export'] = $now;
@@ -437,33 +461,63 @@ final class Simula_Wordfence_Grafana_Output {
         $metrics   = [];
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'export_success')) {
-            $metrics[] = '# HELP ' . $prefix . '_export_success Whether the last Wordfence metrics export succeeded.';
-            $metrics[] = '# TYPE ' . $prefix . '_export_success gauge';
-            $metrics[] = $prefix . '_export_success{site="' . $site . '"} 0';
+            self::append_metric_family(
+                $metrics,
+                $prefix . '_export_success',
+                'gauge',
+                'Whether the last Wordfence metrics export succeeded.',
+                [
+                    ['labels' => ['site' => $site], 'value' => 0],
+                ]
+            );
         }
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'plugin_info')) {
-            $metrics[] = '# HELP ' . $prefix . '_plugin_info Plugin metadata for the exporter.';
-            $metrics[] = '# TYPE ' . $prefix . '_plugin_info gauge';
-            $metrics[] = $prefix . '_plugin_info{site="' . $site . '",version="' . self::escape_label(Simula_Wordfence_Grafana_Config::VERSION) . '"} 1';
+            self::append_metric_family(
+                $metrics,
+                $prefix . '_plugin_info',
+                'gauge',
+                'Plugin metadata for the exporter.',
+                [
+                    ['labels' => ['site' => $site, 'version' => self::escape_label(Simula_Wordfence_Grafana_Config::VERSION)], 'value' => 1],
+                ]
+            );
         }
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'enabled')) {
-            $metrics[] = '# HELP ' . $prefix . '_enabled Whether scheduled exporting is enabled.';
-            $metrics[] = '# TYPE ' . $prefix . '_enabled gauge';
-            $metrics[] = $prefix . '_enabled{site="' . $site . '"} ' . (int) $enabled;
+            self::append_metric_family(
+                $metrics,
+                $prefix . '_enabled',
+                'gauge',
+                'Whether scheduled exporting is enabled.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) $enabled],
+                ]
+            );
         }
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
-            $metrics[] = '# HELP ' . $prefix . '_last_export_timestamp_seconds Unix timestamp of the last export attempt.';
-            $metrics[] = '# TYPE ' . $prefix . '_last_export_timestamp_seconds gauge';
-            $metrics[] = $prefix . '_last_export_timestamp_seconds{site="' . $site . '"} ' . $timestamp;
+            self::append_metric_family(
+                $metrics,
+                $prefix . '_last_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the last export attempt.',
+                [
+                    ['labels' => ['site' => $site], 'value' => $timestamp],
+                ]
+            );
         }
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'error_info')) {
-            $metrics[] = '# HELP ' . $prefix . '_error_info Static error indicator for the latest export.';
-            $metrics[] = '# TYPE ' . $prefix . '_error_info gauge';
-            $metrics[] = $prefix . '_error_info{site="' . $site . '",message="' . self::escape_label((string) $message) . '"} 1';
+            self::append_metric_family(
+                $metrics,
+                $prefix . '_error_info',
+                'gauge',
+                'Static error indicator for the latest export.',
+                [
+                    ['labels' => ['site' => $site, 'message' => self::escape_label((string) $message)], 'value' => 1],
+                ]
+            );
         }
 
         return empty($metrics) ? '' : implode("\n", $metrics) . "\n";
@@ -525,6 +579,25 @@ final class Simula_Wordfence_Grafana_Output {
         ];
     }
 
+    /** Appends a HELP/TYPE block and one or more metric samples using pre-escaped label values. */
+    public static function append_metric_family(&$lines, $metric_name, $type, $help, $samples) {
+        $lines[] = '# HELP ' . $metric_name . ' ' . $help;
+        $lines[] = '# TYPE ' . $metric_name . ' ' . $type;
+
+        foreach ((array) $samples as $sample) {
+            $labels = isset($sample['labels']) && is_array($sample['labels']) ? $sample['labels'] : [];
+            $value  = $sample['value'] ?? 0;
+            $lines[] = self::build_metric_sample_line($metric_name, $labels, $value);
+        }
+    }
+
+    /** Builds a single metric sample line using pre-escaped label values. */
+    public static function build_metric_sample_line($metric_name, $labels, $value) {
+        $label_sql = self::format_metric_labels($labels);
+
+        return $metric_name . $label_sql . ' ' . self::format_metric_value($value);
+    }
+
     /** Escapes a string for safe use in Prometheus label values. */
     public static function escape_label($value) {
         return str_replace(
@@ -541,6 +614,26 @@ final class Simula_Wordfence_Grafana_Output {
         }
 
         return rtrim(rtrim(sprintf('%.6F', (float) $value), '0'), '.');
+    }
+
+    /** Formats a metric label set from pre-escaped label values. */
+    private static function format_metric_labels($labels) {
+        $parts = [];
+
+        foreach ((array) $labels as $key => $value) {
+            $parts[] = $key . '="' . (string) $value . '"';
+        }
+
+        return $parts === [] ? '' : '{' . implode(',', $parts) . '}';
+    }
+
+    /** Formats a metric sample value. */
+    private static function format_metric_value($value) {
+        if (is_int($value) || is_float($value) || is_numeric($value)) {
+            return self::format_number($value);
+        }
+
+        return (string) $value;
     }
 }
 
@@ -1980,27 +2073,51 @@ final class Simula_Wordfence_Grafana_Service {
         $site    = $data['site'];
 
         if (!empty($flags['export_success'])) {
-            $metrics[] = '# HELP ' . $prefix . '_export_success Whether the last Wordfence metrics export succeeded.';
-            $metrics[] = '# TYPE ' . $prefix . '_export_success gauge';
-            $metrics[] = $prefix . '_export_success{site="' . $site . '"} 1';
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_export_success',
+                'gauge',
+                'Whether the last Wordfence metrics export succeeded.',
+                [
+                    ['labels' => ['site' => $site], 'value' => 1],
+                ]
+            );
         }
 
         if (!empty($flags['plugin_info'])) {
-            $metrics[] = '# HELP ' . $prefix . '_plugin_info Plugin metadata for the exporter.';
-            $metrics[] = '# TYPE ' . $prefix . '_plugin_info gauge';
-            $metrics[] = $prefix . '_plugin_info{site="' . $site . '",version="' . Simula_Wordfence_Grafana_Output::escape_label(Simula_Wordfence_Grafana_Config::VERSION) . '"} 1';
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_plugin_info',
+                'gauge',
+                'Plugin metadata for the exporter.',
+                [
+                    ['labels' => ['site' => $site, 'version' => Simula_Wordfence_Grafana_Output::escape_label(Simula_Wordfence_Grafana_Config::VERSION)], 'value' => 1],
+                ]
+            );
         }
 
         if (!empty($flags['last_export_timestamp_seconds'])) {
-            $metrics[] = '# HELP ' . $prefix . '_last_export_timestamp_seconds Unix timestamp of the last successful export.';
-            $metrics[] = '# TYPE ' . $prefix . '_last_export_timestamp_seconds gauge';
-            $metrics[] = $prefix . '_last_export_timestamp_seconds{site="' . $site . '"} ' . $now;
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_last_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the last successful export.',
+                [
+                    ['labels' => ['site' => $site], 'value' => $now],
+                ]
+            );
         }
 
         if (!empty($flags['enabled'])) {
-            $metrics[] = '# HELP ' . $prefix . '_enabled Whether scheduled exporting is enabled.';
-            $metrics[] = '# TYPE ' . $prefix . '_enabled gauge';
-            $metrics[] = $prefix . '_enabled{site="' . $site . '"} ' . (int) !empty($options['enabled']);
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_enabled',
+                'gauge',
+                'Whether scheduled exporting is enabled.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) !empty($options['enabled'])],
+                ]
+            );
         }
 
         return $metrics;
@@ -2014,39 +2131,70 @@ final class Simula_Wordfence_Grafana_Service {
         $site    = $data['site'];
 
         if (!empty($flags['blocked_events_total'])) {
-            $metrics[] = '# HELP ' . $prefix . '_blocked_events_total Cumulative count of newly observed blocked Wordfence hits.';
-            $metrics[] = '# TYPE ' . $prefix . '_blocked_events_total counter';
-            $metrics[] = $prefix . '_blocked_events_total{site="' . $site . '"} ' . Simula_Wordfence_Grafana_Output::format_number($data['blocked_total']);
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_blocked_events_total',
+                'counter',
+                'Cumulative count of newly observed blocked Wordfence hits.',
+                [
+                    ['labels' => ['site' => $site], 'value' => $data['blocked_total']],
+                ]
+            );
         }
 
         if (!empty($flags['blocked_events_window'])) {
-            $metrics[] = '# HELP ' . $prefix . '_blocked_events_window Blocked Wordfence hits seen within recent windows.';
-            $metrics[] = '# TYPE ' . $prefix . '_blocked_events_window gauge';
-            foreach (Simula_Wordfence_Grafana_Config::WINDOWS as $window) {
-                $metrics[] = $prefix . '_blocked_events_window{site="' . $site . '",window="' . $window . '"} ' . self::window_metric_value($data['window_counts'], 'blocked', $window);
-            }
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_blocked_events_window',
+                'gauge',
+                'Blocked Wordfence hits seen within recent windows.',
+                self::build_window_metric_samples($site, $data['window_counts'], 'blocked')
+            );
         }
 
         if (!empty($flags['blocked_events_by_status_24h'])) {
-            $metrics[] = '# HELP ' . $prefix . '_blocked_events_by_status_24h Blocked Wordfence hits in the last 24 hours grouped by HTTP status code.';
-            $metrics[] = '# TYPE ' . $prefix . '_blocked_events_by_status_24h gauge';
-
+            $samples = [];
             foreach ((array) $data['status_counts'] as $row) {
                 $status = isset($row['status_code']) && $row['status_code'] !== '' ? (string) $row['status_code'] : 'unknown';
                 $count  = isset($row['count_total']) ? (int) $row['count_total'] : 0;
-                $metrics[] = $prefix . '_blocked_events_by_status_24h{site="' . $site . '",status="' . Simula_Wordfence_Grafana_Output::escape_label($status) . '"} ' . $count;
+                $samples[] = [
+                    'labels' => ['site' => $site, 'status' => Simula_Wordfence_Grafana_Output::escape_label($status)],
+                    'value'  => $count,
+                ];
             }
+
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_blocked_events_by_status_24h',
+                'gauge',
+                'Blocked Wordfence hits in the last 24 hours grouped by HTTP status code.',
+                $samples
+            );
         }
 
         if (!empty($flags['top_attack_sources_24h'])) {
-            $metrics[] = '# HELP ' . $prefix . '_top_attack_sources_24h Top blocked attack sources over the last 24 hours.';
-            $metrics[] = '# TYPE ' . $prefix . '_top_attack_sources_24h gauge';
+            $samples = [];
             foreach ((array) $data['top_attack_sources'] as $row) {
                 $source_type = isset($row['source_type']) ? (string) $row['source_type'] : 'unknown';
                 $source_name = isset($row['source']) ? (string) $row['source'] : 'unknown';
                 $count       = isset($row['count_total']) ? (int) $row['count_total'] : 0;
-                $metrics[] = $prefix . '_top_attack_sources_24h{site="' . $site . '",source_type="' . Simula_Wordfence_Grafana_Output::escape_label($source_type) . '",source="' . Simula_Wordfence_Grafana_Output::escape_label($source_name) . '"} ' . $count;
+                $samples[] = [
+                    'labels' => [
+                        'site'        => $site,
+                        'source_type' => Simula_Wordfence_Grafana_Output::escape_label($source_type),
+                        'source'      => Simula_Wordfence_Grafana_Output::escape_label($source_name),
+                    ],
+                    'value'  => $count,
+                ];
             }
+
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_top_attack_sources_24h',
+                'gauge',
+                'Top blocked attack sources over the last 24 hours.',
+                $samples
+            );
         }
 
         return $metrics;
@@ -2060,28 +2208,36 @@ final class Simula_Wordfence_Grafana_Service {
         $site    = $data['site'];
 
         if (!empty($flags['failed_login_attempts_window'])) {
-            $metrics[] = '# HELP ' . $prefix . '_failed_login_attempts_window Failed login attempts observed within recent windows.';
-            $metrics[] = '# TYPE ' . $prefix . '_failed_login_attempts_window gauge';
-            foreach (Simula_Wordfence_Grafana_Config::WINDOWS as $window) {
-                $metrics[] = $prefix . '_failed_login_attempts_window{site="' . $site . '",window="' . $window . '"} ' . self::window_metric_value($data['window_counts'], 'failed_login', $window);
-            }
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_failed_login_attempts_window',
+                'gauge',
+                'Failed login attempts observed within recent windows.',
+                self::build_window_metric_samples($site, $data['window_counts'], 'failed_login')
+            );
         }
 
         if (!empty($flags['rate_limited_events_window'])) {
-            $metrics[] = '# HELP ' . $prefix . '_rate_limited_events_window Rate-limited or throttled requests observed within recent windows.';
-            $metrics[] = '# TYPE ' . $prefix . '_rate_limited_events_window gauge';
-            foreach (Simula_Wordfence_Grafana_Config::WINDOWS as $window) {
-                $metrics[] = $prefix . '_rate_limited_events_window{site="' . $site . '",window="' . $window . '"} ' . self::window_metric_value($data['window_counts'], 'rate_limited', $window);
-            }
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_rate_limited_events_window',
+                'gauge',
+                'Rate-limited or throttled requests observed within recent windows.',
+                self::build_window_metric_samples($site, $data['window_counts'], 'rate_limited')
+            );
         }
 
         if (!empty($flags['brute_force_events_window'])) {
-            $metrics[] = '# HELP ' . $prefix . '_brute_force_events_window Brute-force activity observed within recent windows.';
-            $metrics[] = '# TYPE ' . $prefix . '_brute_force_events_window gauge';
-            foreach (Simula_Wordfence_Grafana_Config::WINDOWS as $window) {
-                $metrics[] = $prefix . '_brute_force_events_window{site="' . $site . '",vector="username",window="' . $window . '"} ' . self::window_metric_value($data['window_counts'], 'brute_username', $window);
-                $metrics[] = $prefix . '_brute_force_events_window{site="' . $site . '",vector="xmlrpc",window="' . $window . '"} ' . self::window_metric_value($data['window_counts'], 'brute_xmlrpc', $window);
-            }
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_brute_force_events_window',
+                'gauge',
+                'Brute-force activity observed within recent windows.',
+                array_merge(
+                    self::build_window_metric_samples($site, $data['window_counts'], 'brute_username', ['vector' => 'username']),
+                    self::build_window_metric_samples($site, $data['window_counts'], 'brute_xmlrpc', ['vector' => 'xmlrpc'])
+                )
+            );
         }
 
         return $metrics;
@@ -2095,22 +2251,40 @@ final class Simula_Wordfence_Grafana_Service {
         $site    = $data['site'];
 
         if (!empty($flags['locked_out_total'])) {
-            $metrics[] = '# HELP ' . $prefix . '_locked_out_total Current Wordfence lockout totals by target type when available.';
-            $metrics[] = '# TYPE ' . $prefix . '_locked_out_total gauge';
-            $metrics[] = $prefix . '_locked_out_total{site="' . $site . '",target="ip"} ' . (int) ($data['lockout_counts']['ip'] ?? 0);
-            $metrics[] = $prefix . '_locked_out_total{site="' . $site . '",target="user"} ' . (int) ($data['lockout_counts']['user'] ?? 0);
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_locked_out_total',
+                'gauge',
+                'Current Wordfence lockout totals by target type when available.',
+                [
+                    ['labels' => ['site' => $site, 'target' => 'ip'], 'value' => (int) ($data['lockout_counts']['ip'] ?? 0)],
+                    ['labels' => ['site' => $site, 'target' => 'user'], 'value' => (int) ($data['lockout_counts']['user'] ?? 0)],
+                ]
+            );
         }
 
         if (!empty($flags['two_factor_enabled'])) {
-            $metrics[] = '# HELP ' . $prefix . '_two_factor_enabled Whether Wordfence two-factor authentication appears to be configured.';
-            $metrics[] = '# TYPE ' . $prefix . '_two_factor_enabled gauge';
-            $metrics[] = $prefix . '_two_factor_enabled{site="' . $site . '"} ' . (int) ($data['two_factor_metrics']['enabled'] ?? 0);
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_two_factor_enabled',
+                'gauge',
+                'Whether Wordfence two-factor authentication appears to be configured.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($data['two_factor_metrics']['enabled'] ?? 0)],
+                ]
+            );
         }
 
         if (!empty($flags['two_factor_protected_users_total'])) {
-            $metrics[] = '# HELP ' . $prefix . '_two_factor_protected_users_total Count of users with Wordfence two-factor secrets configured.';
-            $metrics[] = '# TYPE ' . $prefix . '_two_factor_protected_users_total gauge';
-            $metrics[] = $prefix . '_two_factor_protected_users_total{site="' . $site . '"} ' . (int) ($data['two_factor_metrics']['protected_users'] ?? 0);
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_two_factor_protected_users_total',
+                'gauge',
+                'Count of users with Wordfence two-factor secrets configured.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($data['two_factor_metrics']['protected_users'] ?? 0)],
+                ]
+            );
         }
 
         return $metrics;
@@ -2124,31 +2298,67 @@ final class Simula_Wordfence_Grafana_Service {
         $site    = $data['site'];
 
         if (!empty($flags['scan_issues_by_severity'])) {
-            $metrics[] = '# HELP ' . $prefix . '_scan_issues_by_severity Current Wordfence scan issues grouped by severity.';
-            $metrics[] = '# TYPE ' . $prefix . '_scan_issues_by_severity gauge';
+            $samples = [];
             foreach ((array) ($data['scan_issue_metrics']['severity'] ?? []) as $row) {
                 $severity = isset($row['severity']) && $row['severity'] !== '' ? strtolower((string) $row['severity']) : 'unknown';
                 $count    = isset($row['count_total']) ? (int) $row['count_total'] : 0;
-                $metrics[] = $prefix . '_scan_issues_by_severity{site="' . $site . '",severity="' . Simula_Wordfence_Grafana_Output::escape_label($severity) . '"} ' . $count;
+                $samples[] = [
+                    'labels' => ['site' => $site, 'severity' => Simula_Wordfence_Grafana_Output::escape_label($severity)],
+                    'value'  => $count,
+                ];
             }
+
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_scan_issues_by_severity',
+                'gauge',
+                'Current Wordfence scan issues grouped by severity.',
+                $samples
+            );
         }
 
         if (!empty($flags['scan_findings_total'])) {
-            $metrics[] = '# HELP ' . $prefix . '_scan_findings_total Current Wordfence scan findings for selected categories.';
-            $metrics[] = '# TYPE ' . $prefix . '_scan_findings_total gauge';
-            $metrics[] = $prefix . '_scan_findings_total{site="' . $site . '",category="malware"} ' . (int) ($data['scan_issue_metrics']['malware'] ?? 0);
-            $metrics[] = $prefix . '_scan_findings_total{site="' . $site . '",category="file_change"} ' . (int) ($data['scan_issue_metrics']['file_change'] ?? 0);
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_scan_findings_total',
+                'gauge',
+                'Current Wordfence scan findings for selected categories.',
+                [
+                    ['labels' => ['site' => $site, 'category' => 'malware'], 'value' => (int) ($data['scan_issue_metrics']['malware'] ?? 0)],
+                    ['labels' => ['site' => $site, 'category' => 'file_change'], 'value' => (int) ($data['scan_issue_metrics']['file_change'] ?? 0)],
+                ]
+            );
         }
 
         if (!empty($flags['vulnerability_findings_total'])) {
-            $metrics[] = '# HELP ' . $prefix . '_vulnerability_findings_total Current Wordfence scan findings indicating outdated or vulnerable components.';
-            $metrics[] = '# TYPE ' . $prefix . '_vulnerability_findings_total gauge';
-            $metrics[] = $prefix . '_vulnerability_findings_total{site="' . $site . '",component="core"} ' . (int) ($data['scan_issue_metrics']['vulnerabilities']['core'] ?? 0);
-            $metrics[] = $prefix . '_vulnerability_findings_total{site="' . $site . '",component="plugin"} ' . (int) ($data['scan_issue_metrics']['vulnerabilities']['plugin'] ?? 0);
-            $metrics[] = $prefix . '_vulnerability_findings_total{site="' . $site . '",component="theme"} ' . (int) ($data['scan_issue_metrics']['vulnerabilities']['theme'] ?? 0);
+            Simula_Wordfence_Grafana_Output::append_metric_family(
+                $metrics,
+                $prefix . '_vulnerability_findings_total',
+                'gauge',
+                'Current Wordfence scan findings indicating outdated or vulnerable components.',
+                [
+                    ['labels' => ['site' => $site, 'component' => 'core'], 'value' => (int) ($data['scan_issue_metrics']['vulnerabilities']['core'] ?? 0)],
+                    ['labels' => ['site' => $site, 'component' => 'plugin'], 'value' => (int) ($data['scan_issue_metrics']['vulnerabilities']['plugin'] ?? 0)],
+                    ['labels' => ['site' => $site, 'component' => 'theme'], 'value' => (int) ($data['scan_issue_metrics']['vulnerabilities']['theme'] ?? 0)],
+                ]
+            );
         }
 
         return $metrics;
+    }
+
+    /** Builds metric samples for all configured time windows with stable label ordering. */
+    private static function build_window_metric_samples($site, $window_counts, $count_prefix, $extra_labels = []) {
+        $samples = [];
+
+        foreach (Simula_Wordfence_Grafana_Config::WINDOWS as $window) {
+            $samples[] = [
+                'labels' => array_merge(['site' => $site], $extra_labels, ['window' => $window]),
+                'value'  => self::window_metric_value($window_counts, $count_prefix, $window),
+            ];
+        }
+
+        return $samples;
     }
 
     /** Writes failure metrics for an unsuccessful metrics export attempt. */
