@@ -3,7 +3,7 @@
  * Plugin Name: Simula Wordfence Grafana Integration
  * Plugin URI:  https://simula.no/
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
- * Version:     2.0.0
+ * Version:     2.1.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author:      Simula
@@ -27,7 +27,7 @@ final class Simula_Wordfence_Grafana_Config {
     public const SLOW_CRON_HOOK = 'wfne_metrics_slow_export_event';
     public const SLUG        = 'wfne-metrics';
     public const CAPABILITY  = 'manage_options';
-    public const VERSION     = '2.0.0';
+    public const VERSION     = '2.1.0';
     public const TEXT_DOMAIN = 'simula-wordfence-grafana-integration';
     public const WINDOWS     = ['5m', '1h', '24h', '7d'];
 

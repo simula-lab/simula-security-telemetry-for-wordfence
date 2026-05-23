@@ -176,7 +176,7 @@ All metrics include a `site` label.
 
 - `wordpress_wordfence_export_success`
   Indicates whether the last export succeeded.
-- `wordpress_wordfence_plugin_info{version="2.0.0"}`
+- `wordpress_wordfence_plugin_info{version="2.1.0"}`
   Static plugin metadata metric.
 - `wordpress_wordfence_last_export_timestamp_seconds`
   Unix timestamp of the last export attempt or successful export.

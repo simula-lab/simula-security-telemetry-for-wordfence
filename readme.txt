@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -165,13 +165,16 @@ The directory that will contain the .prom file must already exist and be writabl
 
 == Changelog ==
 
+= 2.1.0 =
+
+* Added incident privacy controls for IPs, URL and referer query strings, referers, user agents, private/internal IP ranges, and retention notes.
+
 = 2.0.0 =
 
 * Changed the default fast export interval to 15 minutes.
 * Added a slow collector for scan, two-factor, WordPress posture, and Wordfence posture metrics.
 * Added WP-CLI export, status, and incident cursor commands.
 * Added optional JSON Lines incident output.
-* Added incident privacy controls for IPs, URL query strings, referers, user agents, private/internal IP ranges, and retention notes.
 * Added source freshness, Wordfence posture, and WordPress posture metrics.
 * Replaced unbounded error message labels with bounded error type labels.
 * Added a Grafana dashboard and sample Prometheus alert rules.
@@ -186,6 +189,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+
+Adds incident privacy controls for sensitive IP, URL, referer, user-agent, private/internal IP, and retention-note handling.
 
 = 2.0.0 =
 
