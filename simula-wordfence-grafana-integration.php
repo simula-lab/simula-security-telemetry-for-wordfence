@@ -2485,6 +2485,35 @@ final class Simula_Wordfence_Grafana_Admin {
             return;
         }
 
+        self::handle_settings_page_actions();
+
+        $options = Simula_Wordfence_Grafana_Settings::get_options();
+        $state   = Simula_Wordfence_Grafana_Settings::get_state();
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h1>
+            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a Loki-friendly JSON Lines log.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+
+            <?php settings_errors('wfne_metrics'); ?>
+
+            <form method="post" action="options.php">
+                <?php settings_fields('wfne_metrics'); ?>
+                <?php self::render_metrics_settings_section($options); ?>
+                <?php self::render_incident_settings_section($options); ?>
+                <?php submit_button(); ?>
+            </form>
+
+            <hr />
+
+            <?php self::render_manual_actions_section(); ?>
+            <?php self::render_current_state_section($options, $state); ?>
+            <?php self::render_sample_incident_section($options); ?>
+        </div>
+        <?php
+    }
+
+    /** Handles manual export and cursor reset actions from the settings page. */
+    private static function handle_settings_page_actions() {
         if (isset($_POST['wfne_export_now'])) {
             check_admin_referer('wfne_export_now');
             $result = Simula_Wordfence_Grafana_Service::export(true);
@@ -2506,189 +2535,173 @@ final class Simula_Wordfence_Grafana_Admin {
                 'updated'
             );
         }
+    }
 
-        $options = Simula_Wordfence_Grafana_Settings::get_options();
-        $state   = Simula_Wordfence_Grafana_Settings::get_state();
+    /** Renders the Prometheus exporter settings section. */
+    private static function render_metrics_settings_section($options) {
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h1>
-            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a Loki-friendly JSON Lines log.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
-
-            <?php settings_errors('wfne_metrics'); ?>
-
-            <form method="post" action="options.php">
-                <?php settings_fields('wfne_metrics'); ?>
-                <h2><?php echo esc_html__('Prometheus metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
-                <table class="form-table" role="presentation">
-                    <tr>
-                        <th scope="row"><?php echo esc_html__('Enable exporter', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
-                        <td>
-                            <label>
-                                <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled]" value="1" <?php checked($options['enabled'], 1); ?> />
-                                <?php echo esc_html__('Master switch for the exporter. When disabled, both Prometheus metrics and incident log exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
+        <h2><?php echo esc_html__('Prometheus metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row"><?php echo esc_html__('Enable exporter', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled]" value="1" <?php checked($options['enabled'], 1); ?> />
+                        <?php echo esc_html__('Master switch for the exporter. When disabled, both Prometheus metrics and incident log exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                </th>
+                <td>
+                    <select id="wfne-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[cron_interval]">
+                        <?php foreach (Simula_Wordfence_Grafana_Metrics::cron_interval_labels() as $interval_key => $interval_label) : ?>
+                            <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['cron_interval'], $interval_key); ?>>
+                                <?php echo esc_html($interval_label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="description"><?php echo esc_html__('Controls how often WP-Cron runs exports while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-prom-file"><?php echo esc_html__('Prometheus file path', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                </th>
+                <td>
+                    <input id="wfne-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
+                    <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-metric-prefix"><?php echo esc_html__('Metric prefix', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                </th>
+                <td>
+                    <input id="wfne-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
+                    <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-site-label"><?php echo esc_html__('Site label', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                </th>
+                <td>
+                    <input id="wfne-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
+                    <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php echo esc_html__('Exported metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
+                <td>
+                    <fieldset>
+                        <?php foreach (Simula_Wordfence_Grafana_Config::metric_definitions() as $metric_key => $metric_definition) : ?>
+                            <label style="display:block; margin-bottom:12px;">
+                                <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled_metrics][<?php echo esc_attr($metric_key); ?>]" value="1" <?php checked(!empty($options['enabled_metrics'][$metric_key])); ?> />
+                                <strong><code><?php echo esc_html($options['metric_prefix'] . '_' . $metric_key); ?></code></strong>
+                                <?php echo esc_html($metric_definition['label']); ?>
+                                <br />
+                                <span class="description"><?php echo esc_html($metric_definition['description']); ?></span>
                             </label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
-                        </th>
-                        <td>
-                            <select id="wfne-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[cron_interval]">
-                                <?php foreach (Simula_Wordfence_Grafana_Metrics::cron_interval_labels() as $interval_key => $interval_label) : ?>
-                                    <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['cron_interval'], $interval_key); ?>>
-                                        <?php echo esc_html($interval_label); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="description"><?php echo esc_html__('Controls how often WP-Cron runs exports while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wfne-prom-file"><?php echo esc_html__('Prometheus file path', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
-                        </th>
-                        <td>
-                            <input id="wfne-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
-                            <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wfne-metric-prefix"><?php echo esc_html__('Metric prefix', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
-                        </th>
-                        <td>
-                            <input id="wfne-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
-                            <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wfne-site-label"><?php echo esc_html__('Site label', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
-                        </th>
-                        <td>
-                            <input id="wfne-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
-                            <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php echo esc_html__('Exported metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
-                        <td>
-                            <fieldset>
-                                <?php foreach (Simula_Wordfence_Grafana_Config::metric_definitions() as $metric_key => $metric_definition) : ?>
-                                    <label style="display:block; margin-bottom:12px;">
-                                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled_metrics][<?php echo esc_attr($metric_key); ?>]" value="1" <?php checked(!empty($options['enabled_metrics'][$metric_key])); ?> />
-                                        <strong><code><?php echo esc_html($options['metric_prefix'] . '_' . $metric_key); ?></code></strong>
-                                        <?php echo esc_html($metric_definition['label']); ?>
-                                        <br />
-                                        <span class="description"><?php echo esc_html($metric_definition['description']); ?></span>
-                                    </label>
-                                <?php endforeach; ?>
-                            </fieldset>
-                        </td>
-                    </tr>
-                </table>
+                        <?php endforeach; ?>
+                    </fieldset>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
 
-                <h2><?php echo esc_html__('Loki / incident log', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
-                <table class="form-table" role="presentation">
-                    <tr>
-                        <th scope="row"><?php echo esc_html__('Enable incident log export', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
-                        <td>
-                            <label>
-                                <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_enabled]" value="1" <?php checked($options['incident_log_enabled'], 1); ?> />
-                                <?php echo esc_html__('Append blocked Wordfence hits to the incident log on each export run. This runs only while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
-                            </label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wfne-incident-log-file"><?php echo esc_html__('Incident log path', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
-                        </th>
-                        <td>
-                            <input id="wfne-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
-                            <p class="description"><?php echo esc_html__('Use an absolute .log or .jsonl path. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wfne-incident-max-rows"><?php echo esc_html__('Max incidents per run', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
-                        </th>
-                        <td>
-                            <input id="wfne-incident-max-rows" class="small-text" type="number" min="1" max="10000" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_max_rows]" value="<?php echo esc_attr((string) $options['incident_max_rows']); ?>" />
-                            <p class="description"><?php echo esc_html__('Caps each export pass so large retained Wordfence hit tables do not create long-running admin or cron requests.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                </table>
+    /** Renders the incident log settings section. */
+    private static function render_incident_settings_section($options) {
+        ?>
+        <h2><?php echo esc_html__('Loki / incident log', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row"><?php echo esc_html__('Enable incident log export', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_enabled]" value="1" <?php checked($options['incident_log_enabled'], 1); ?> />
+                        <?php echo esc_html__('Append blocked Wordfence hits to the incident log on each export run. This runs only while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-incident-log-file"><?php echo esc_html__('Incident log path', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                </th>
+                <td>
+                    <input id="wfne-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
+                    <p class="description"><?php echo esc_html__('Use an absolute .log or .jsonl path. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="wfne-incident-max-rows"><?php echo esc_html__('Max incidents per run', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
+                </th>
+                <td>
+                    <input id="wfne-incident-max-rows" class="small-text" type="number" min="1" max="10000" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_max_rows]" value="<?php echo esc_attr((string) $options['incident_max_rows']); ?>" />
+                    <p class="description"><?php echo esc_html__('Caps each export pass so large retained Wordfence hit tables do not create long-running admin or cron requests.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
 
-                <?php submit_button(); ?>
-            </form>
+    /** Renders manual exporter actions below the settings form. */
+    private static function render_manual_actions_section() {
+        ?>
+        <form method="post" style="display:inline-block; margin-right: 12px;">
+            <?php wp_nonce_field('wfne_export_now'); ?>
+            <?php submit_button(__('Export now', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'secondary', 'wfne_export_now'); ?>
+        </form>
+        <p class="description"><?php echo esc_html__('Manual export uses the same master exporter toggle. If the exporter is disabled, the button writes disabled metrics and reports that exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
 
-            <hr />
+        <form method="post" style="display:inline-block;">
+            <?php wp_nonce_field('wfne_reset_incident_cursor'); ?>
+            <?php submit_button(__('Reset incident cursor for backfill', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'delete', 'wfne_reset_incident_cursor'); ?>
+        </form>
+        <?php
+    }
 
-            <form method="post" style="display:inline-block; margin-right: 12px;">
-                <?php wp_nonce_field('wfne_export_now'); ?>
-                <?php submit_button(__('Export now', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'secondary', 'wfne_export_now'); ?>
-            </form>
-            <p class="description"><?php echo esc_html__('Manual export uses the same master exporter toggle. If the exporter is disabled, the button writes disabled metrics and reports that exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+    /** Renders the current exporter state table. */
+    private static function render_current_state_section($options, $state) {
+        ?>
+        <h2><?php echo esc_html__('Current state', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <table class="widefat striped" style="max-width:900px">
+            <tbody>
+                <?php self::render_state_row(__('Last export timestamp', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), Simula_Wordfence_Grafana_Settings::format_state_time($state['last_export'] ?? null)); ?>
+                <?php self::render_state_row(__('Observed blocked events', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['blocked_total'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last processed hit ID', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_id'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last result', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_result'] ?? __('No exports yet.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN))); ?>
+                <?php self::render_state_row(__('Last error', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_error'] ?? '')); ?>
+                <?php self::render_state_row(__('Incident cursor initialized', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), !empty($state['incident_cursor_initialized']) ? __('Yes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN) : __('No', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)); ?>
+                <?php self::render_state_row(__('Last incident export', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), Simula_Wordfence_Grafana_Settings::format_state_time($state['last_incident_export'] ?? null)); ?>
+                <?php self::render_state_row(__('Last incident hit ID', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_id'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last incident row count', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_exported_rows'] ?? 0)); ?>
+                <?php self::render_state_row(__('Last incident log file', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_log_file'] ?? $options['incident_log_file'])); ?>
+                <?php self::render_state_row(__('Last incident error', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), (string) ($state['last_incident_error'] ?? '')); ?>
+            </tbody>
+        </table>
+        <?php
+    }
 
-            <form method="post" style="display:inline-block;">
-                <?php wp_nonce_field('wfne_reset_incident_cursor'); ?>
-                <?php submit_button(__('Reset incident cursor for backfill', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'delete', 'wfne_reset_incident_cursor'); ?>
-            </form>
+    /** Renders the sample incident JSON block. */
+    private static function render_sample_incident_section($options) {
+        ?>
+        <h2><?php echo esc_html__('Sample incident JSON line', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <pre style="max-width:900px; overflow:auto;"><?php echo esc_html(Simula_Wordfence_Grafana_Incidents::sample_json_line($options)); ?></pre>
+        <?php
+    }
 
-            <h2><?php echo esc_html__('Current state', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
-            <table class="widefat striped" style="max-width:900px">
-                <tbody>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last export timestamp', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html(Simula_Wordfence_Grafana_Settings::format_state_time($state['last_export'] ?? null)); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Observed blocked events', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['blocked_total'] ?? 0)); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last processed hit ID', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_id'] ?? 0)); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last result', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_result'] ?? __('No exports yet.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN))); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last error', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_error'] ?? '')); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Incident cursor initialized', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html(!empty($state['incident_cursor_initialized']) ? __('Yes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN) : __('No', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last incident export', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html(Simula_Wordfence_Grafana_Settings::format_state_time($state['last_incident_export'] ?? null)); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last incident hit ID', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_incident_id'] ?? 0)); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last incident row count', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_incident_exported_rows'] ?? 0)); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last incident log file', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_incident_log_file'] ?? $options['incident_log_file'])); ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php echo esc_html__('Last incident error', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_incident_error'] ?? '')); ?></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <h2><?php echo esc_html__('Sample incident JSON line', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
-            <pre style="max-width:900px; overflow:auto;"><?php echo esc_html(Simula_Wordfence_Grafana_Incidents::sample_json_line($options)); ?></pre>
-        </div>
+    /** Renders one row in the exporter state table. */
+    private static function render_state_row($label, $value) {
+        ?>
+        <tr>
+            <td><strong><?php echo esc_html($label); ?></strong></td>
+            <td><?php echo esc_html((string) $value); ?></td>
+        </tr>
         <?php
     }
 }
