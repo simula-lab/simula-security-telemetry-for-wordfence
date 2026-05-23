@@ -1,0 +1,101 @@
+groups:
+  - name: wordpress-wordfence
+    rules:
+      - alert: WordfenceExporterStale
+        expr: time() - wordpress_wordfence_last_export_timestamp_seconds > 2700
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Wordfence metrics exporter is stale for {{ $labels.site }}
+          description: No successful Wordfence metrics export has been observed for more than 45 minutes.
+
+      - alert: WordfenceExporterFailed
+        expr: wordpress_wordfence_export_success == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Wordfence metrics export failed for {{ $labels.site }}
+          description: The latest export failed. Check WordPress admin or WP-CLI status for the detailed error.
+
+      - alert: WordfenceBlockedRequestSpike
+        expr: wordpress_wordfence_blocked_events_window{window="5m"} > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Wordfence blocked request spike on {{ $labels.site }}
+          description: More than 100 blocked requests were observed in a 5 minute window.
+
+      - alert: WordfenceFailedLoginBurst
+        expr: wordpress_wordfence_failed_login_attempts_window{window="5m"} > 25
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Wordfence failed login burst on {{ $labels.site }}
+          description: More than 25 failed login attempts were observed in a 5 minute window.
+
+      - alert: WordfenceXmlRpcBruteForce
+        expr: wordpress_wordfence_brute_force_events_window{vector="xmlrpc",window="5m"} > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: XML-RPC brute-force activity on {{ $labels.site }}
+          description: XML-RPC brute-force activity exceeded the configured threshold.
+
+      - alert: WordfenceMalwareFinding
+        expr: wordpress_wordfence_scan_findings_total{category="malware"} > 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: Wordfence malware finding on {{ $labels.site }}
+          description: Wordfence reports one or more malware-like findings.
+
+      - alert: WordfenceHighScanIssue
+        expr: wordpress_wordfence_scan_issues_by_severity{severity=~"high|critical"} > 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: High severity Wordfence scan issue on {{ $labels.site }}
+          description: Wordfence reports at least one high or critical scan issue.
+
+      - alert: WordfenceVulnerabilityFinding
+        expr: wordpress_wordfence_vulnerability_findings_total > 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: Vulnerable WordPress component on {{ $labels.site }}
+          description: Wordfence reports vulnerable or outdated core, plugin, or theme findings.
+
+      - alert: WordfenceTwoFactorDisabled
+        expr: wordpress_wordfence_two_factor_enabled == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: Wordfence two-factor appears disabled on {{ $labels.site }}
+          description: Wordfence two-factor authentication does not appear configured.
+
+      - alert: WordPressAdminsWithoutTwoFactor
+        expr: wordpress_wordfence_admin_users_without_2fa_total > 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: WordPress administrators without 2FA on {{ $labels.site }}
+          description: One or more administrator users do not have a Wordfence two-factor secret.
+
+      - alert: WordfenceSourceDataStale
+        expr: time() - wordpress_wordfence_latest_hit_timestamp_seconds > 86400
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: Wordfence source data appears stale on {{ $labels.site }}
+          description: No recent Wordfence hit data has been observed for more than 24 hours.

@@ -4,7 +4,7 @@ Tags: wordfence, prometheus, monitoring, node-exporter, metrics, security, grafa
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 2.0.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -20,10 +20,11 @@ Simula Wordfence Grafana Integration exports Wordfence security telemetry in two
 
 This plugin is intended for WordPress sites that already use Wordfence and Prometheus-based infrastructure. Instead of exposing a public metrics endpoint from WordPress, the plugin writes local files that node_exporter and log-based tooling can consume.
 
-By default, the plugin runs every 5 minutes using WP-Cron and supports:
+By default, the plugin runs a fast collector every 15 minutes and a slow collector hourly using WP-Cron. It supports:
 
 * Exporter health and plugin metadata metrics
 * Configurable cron interval
+* Separate fast and slow collector intervals
 * Per-metric-family enable or disable controls
 * Blocked event counters and recent activity windows
 * Blocked event counts by HTTP status code over the last 24 hours
@@ -36,6 +37,10 @@ By default, the plugin runs every 5 minutes using WP-Cron and supports:
 * Incident log export for newly observed blocked requests
 * Manual export and incident cursor reset from the admin UI
 * Current exporter and incident state visibility in the admin UI
+* Optional JSON Lines incident output
+* WP-CLI exports for system cron
+* Source freshness and WordPress/Wordfence posture metrics
+* A ready-to-import Grafana dashboard and sample Prometheus alert rules
 
 Blocked events are currently identified from the Wordfence hits table where:
 
@@ -46,12 +51,14 @@ The plugin includes an admin settings screen under Settings > Wordfence Metrics,
 
 * Enable or disable the exporter master switch
 * Choose the export cron interval
+* Choose the slow collector interval
 * Set the .prom output path
 * Set a custom metric prefix
 * Set a custom site label
 * Enable or disable individual metric families
 * Enable or disable incident log export
 * Set the incident log path
+* Choose text or JSON Lines incident output
 * Limit the number of incidents appended per run
 * Trigger a manual export
 * Reset the incident cursor for backfill
@@ -80,7 +87,7 @@ Yes. The plugin reads Wordfence data from the WordPress database. If required Wo
 
 = How often are metrics exported? =
 
-The plugin schedules exports with WP-Cron. The default interval is every 5 minutes, and the admin UI also supports every 15 minutes, every 30 minutes, and hourly. On low-traffic sites, WP-Cron may not run exactly on schedule unless you trigger WordPress cron processing through a system cron job.
+The plugin schedules fast exports with WP-Cron. The default fast interval is every 15 minutes, and the admin UI also supports every 5 minutes, every 30 minutes, and hourly. Slow posture and scan metrics refresh hourly by default and can be set to hourly, twice daily, or daily. On low-traffic sites, WP-Cron may not run exactly on schedule unless you trigger WordPress cron processing through a system cron job or WP-CLI.
 
 = What metrics does the plugin export? =
 
@@ -104,12 +111,44 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_scan_issues_by_severity
 * wordpress_wordfence_scan_findings_total
 * wordpress_wordfence_vulnerability_findings_total
+* wordpress_wordfence_latest_hit_timestamp_seconds
+* wordpress_wordfence_latest_blocked_hit_timestamp_seconds
+* wordpress_wordfence_latest_scan_timestamp_seconds
+* wordpress_wordfence_scan_age_seconds
+* wordpress_wordfence_installed
+* wordpress_wordfence_version_info
+* wordpress_wordfence_firewall_enabled
+* wordpress_wordfence_firewall_optimized
+* wordpress_wordfence_live_traffic_enabled
+* wordpress_wordfence_scan_enabled
+* wordpress_wordfence_license_type
+* wordpress_wordfence_core_update_available
+* wordpress_wordfence_plugin_update_available_total
+* wordpress_wordfence_theme_update_available_total
+* wordpress_wordfence_admin_users_total
+* wordpress_wordfence_admin_users_without_2fa_total
 
 Each metric family can be enabled or disabled independently from the settings screen.
 
 = What does the incident log export do? =
 
-It appends newly observed blocked Wordfence hits as plain-text log lines to a local .log path. Existing .jsonl paths are also accepted for compatibility, but the output is still plain text rather than JSON. The exporter tracks the last processed hit ID, and you can reset the incident cursor from the admin UI to backfill retained history up to the configured per-run limit.
+It appends newly observed blocked Wordfence hits to a local .log or .jsonl path. The default text format preserves the original plain-text log line. The JSON Lines format emits one structured JSON object per blocked event for Loki, ELK, OpenSearch, and similar tooling. The exporter tracks the last processed hit ID, and you can reset the incident cursor from the admin UI or WP-CLI to backfill retained history up to the configured per-run limit.
+
+= What WP-CLI commands are available? =
+
+If WP-CLI is available, the plugin registers:
+
+* wp wordfence-metrics export
+* wp wordfence-metrics export --metrics-only
+* wp wordfence-metrics export --metrics-only --scope=fast
+* wp wordfence-metrics export --metrics-only --scope=slow
+* wp wordfence-metrics export --incidents-only
+* wp wordfence-metrics reset-cursor
+* wp wordfence-metrics status
+
+= Does the plugin include Grafana and Prometheus assets? =
+
+Yes. Import examples/grafana/grafana-dashboard-wordfence-security-overview.json into Grafana and load examples/prometheus/wordfence-alerts.yml into Prometheus or your rule management workflow.
 
 = What permissions are required? =
 
@@ -121,6 +160,16 @@ The directory that will contain the .prom file must already exist and be writabl
 
 == Changelog ==
 
+= 2.0.0 =
+
+* Changed the default fast export interval to 15 minutes.
+* Added a slow collector for scan, two-factor, WordPress posture, and Wordfence posture metrics.
+* Added WP-CLI export, status, and incident cursor commands.
+* Added optional JSON Lines incident output.
+* Added source freshness, Wordfence posture, and WordPress posture metrics.
+* Replaced unbounded error message labels with bounded error type labels.
+* Added a Grafana dashboard and sample Prometheus alert rules.
+
 = 1.0.0 =
 
 * Added configurable WP-Cron export intervals.
@@ -131,6 +180,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+
+Adds ops-ready dashboard, alert, WP-CLI, JSON Lines incident, freshness, and posture capabilities while preserving the node_exporter textfile collection model.
 
 = 1.0.0 =
 
