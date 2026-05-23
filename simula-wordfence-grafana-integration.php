@@ -523,8 +523,8 @@ final class Simula_Wordfence_Grafana_Output {
         return empty($metrics) ? '' : implode("\n", $metrics) . "\n";
     }
 
-    /** Atomically writes the metrics file and persists the outcome to plugin state. */
-    public static function write_metrics($file, $content, $error_message, $state) {
+    /** Atomically writes the metrics file and optionally persists the outcome to plugin state. */
+    public static function write_metrics($file, $content, $error_message, $state, $persist_state = true) {
         $state      = is_array($state) ? $state : [];
         $directory  = dirname($file);
         $ok         = false;
@@ -571,11 +571,14 @@ final class Simula_Wordfence_Grafana_Output {
         $state['last_result']    = $message;
         $state['last_result_ok'] = $result_ok ? 1 : 0;
         $state['last_error']     = $result_ok ? '' : $message;
-        update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        if ($persist_state) {
+            update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        }
 
         return [
             'ok'      => $result_ok,
             'message' => $message,
+            'state'   => $state,
         ];
     }
 
