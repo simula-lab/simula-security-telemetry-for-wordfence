@@ -1444,7 +1444,7 @@ final class Simula_Wordfence_Grafana_Incidents {
         update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
     }
 
-    /** Exports new blocked Wordfence incidents as JSON Lines for Loki or Alloy ingestion. */
+    /** Exports new blocked Wordfence incidents as plain-text log lines. */
     public static function export($options = null, $state = null, $persist_state = true) {
         global $wpdb;
 
@@ -1553,17 +1553,17 @@ final class Simula_Wordfence_Grafana_Incidents {
                 $max_seen_id = $row_id;
             }
 
-            $json = wp_json_encode(self::row_to_event($row, $table, $options, $schema), JSON_UNESCAPED_SLASHES);
-            if (!is_string($json) || $json === '') {
+            $line = self::row_to_log_line($row, $table, $options, $schema);
+            if (!is_string($line) || $line === '') {
                 return self::update_failure_state(
                     $state,
                     $options,
-                    __('Failed encoding a Wordfence incident row as JSON.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    __('Failed formatting a Wordfence incident log line.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
                     $persist_state
                 );
             }
 
-            $lines[] = $json . "\n";
+            $lines[] = $line . "\n";
         }
 
         $write = self::append_log($options['incident_log_file'], implode('', $lines));
@@ -1591,42 +1591,28 @@ final class Simula_Wordfence_Grafana_Incidents {
         ];
     }
 
-    /** Returns a sample incident event for operator-facing admin UI help text. */
-    public static function sample_json_line($options = null) {
+    /** Returns a sample incident log line for operator-facing admin UI help text. */
+    public static function sample_log_line($options = null) {
         $options = is_array($options) ? $options : Simula_Wordfence_Grafana_Settings::get_options();
 
-        $sample = [
-            'ts'             => '2026-05-23T12:34:56+00:00',
-            'level'          => 'warning',
-            'event'          => 'wordfence_blocked_request',
-            'source'         => 'wordfence',
-            'site'           => (string) ($options['site_label'] ?? parse_url(home_url('/'), PHP_URL_HOST)),
-            'wordpress_home' => home_url('/'),
-            'hostname'       => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
-            'blog_id'        => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
-            'wp_table'       => Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table(),
-            'wf_hit_id'      => 123,
-            'ip'             => '203.0.113.10',
-            'http_status'    => 403,
-            'action'         => 'blocked:waf',
-            'reason'         => 'SQL injection attempt',
-            'method'         => 'POST',
-            'url'            => '/wp-admin/admin-ajax.php',
-            'referer'        => 'https://example.com/',
-            'user_agent'     => 'curl/8.0',
-            'country'        => 'NO',
-        ];
-
-        $sample = array_filter(
-            $sample,
-            static function ($value) {
-                return $value !== null && $value !== '';
-            }
+        return self::format_log_line(
+            strtotime('2026-05-23T12:34:56+00:00'),
+            [
+                'site'        => (string) ($options['site_label'] ?? parse_url(home_url('/'), PHP_URL_HOST)),
+                'hostname'    => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
+                'blog_id'     => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
+                'hit_id'      => 123,
+                'ip'          => '203.0.113.10',
+                'status'      => 403,
+                'action'      => 'blocked:waf',
+                'reason'      => 'SQL injection attempt',
+                'method'      => 'POST',
+                'url'         => '/wp-admin/admin-ajax.php',
+                'referer'     => 'https://example.com/',
+                'user_agent'  => 'curl/8.0',
+                'country'     => 'NO',
+            ]
         );
-
-        $json = wp_json_encode($sample, JSON_UNESCAPED_SLASHES);
-
-        return is_string($json) ? $json : '';
     }
 
     /** Resolves the Wordfence hits schema columns used by the incident exporter. */
@@ -1649,41 +1635,61 @@ final class Simula_Wordfence_Grafana_Incidents {
         ];
     }
 
-    /** Maps a Wordfence hit row into a stable JSON event envelope. */
-    private static function row_to_event($row, $table, $options, $schema) {
+    /** Maps a Wordfence hit row into a plain-text incident log line. */
+    private static function row_to_log_line($row, $table, $options, $schema) {
         $event_time = self::column_value($row, $schema['time']);
         $event_ts   = is_numeric($event_time) && (int) $event_time > 0 ? (int) $event_time : time();
         $status     = self::column_value($row, $schema['status']);
         $ip         = self::normalize_ip(self::column_value($row, $schema['ip']));
-        $event      = [
-            'ts'             => gmdate('c', $event_ts),
-            'level'          => 'warning',
-            'event'          => 'wordfence_blocked_request',
-            'source'         => 'wordfence',
-            'site'           => (string) ($options['site_label'] ?? parse_url(home_url('/'), PHP_URL_HOST)),
-            'wordpress_home' => home_url('/'),
-            'hostname'       => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
-            'blog_id'        => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
-            'wp_table'       => $table,
-            'wf_hit_id'      => isset($schema['id'], $row[$schema['id']]) ? (int) $row[$schema['id']] : null,
-            'ip'             => $ip,
-            'http_status'    => is_numeric($status) ? (int) $status : self::clean_string($status),
-            'action'         => self::clean_string(self::column_value($row, $schema['action'])),
-            'reason'         => self::clean_string(self::column_value($row, $schema['reason'])),
-            'method'         => self::clean_string(self::column_value($row, $schema['method'])),
-            'url'            => self::clean_string(self::column_value($row, $schema['url'])),
-            'referer'        => self::clean_string(self::column_value($row, $schema['referer'])),
-            'user_agent'     => self::clean_string(self::column_value($row, $schema['user_agent'])),
-            'country'        => self::clean_string(self::column_value($row, $schema['country'])),
+        $context    = [
+            'site'       => (string) ($options['site_label'] ?? parse_url(home_url('/'), PHP_URL_HOST)),
+            'hostname'   => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
+            'blog_id'    => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
+            'hit_id'     => isset($schema['id'], $row[$schema['id']]) ? (int) $row[$schema['id']] : null,
+            'ip'         => $ip,
+            'status'     => is_numeric($status) ? (int) $status : self::clean_string($status),
+            'action'     => self::clean_string(self::column_value($row, $schema['action'])),
+            'reason'     => self::clean_string(self::column_value($row, $schema['reason'])),
+            'method'     => self::clean_string(self::column_value($row, $schema['method'])),
+            'url'        => self::clean_string(self::column_value($row, $schema['url'])),
+            'referer'    => self::clean_string(self::column_value($row, $schema['referer'])),
+            'user_agent' => self::clean_string(self::column_value($row, $schema['user_agent'])),
+            'country'    => self::clean_string(self::column_value($row, $schema['country'])),
+            'wf_table'   => self::clean_string($table),
         ];
 
-        foreach ($event as $key => $value) {
+        return self::format_log_line($event_ts, $context);
+    }
+
+    /** Formats one incident as a PHP-style log line with a UTC timestamp prefix. */
+    private static function format_log_line($event_ts, $context) {
+        $parts = [];
+
+        foreach ((array) $context as $key => $value) {
             if ($value === null || $value === '') {
-                unset($event[$key]);
+                continue;
             }
+
+            $parts[] = self::format_log_field($key, $value);
         }
 
-        return $event;
+        $message = 'Wordfence blocked request';
+        if (!empty($parts)) {
+            $message .= ': ' . implode(' ', $parts);
+        }
+
+        return sprintf('[%s UTC] %s', gmdate('d-M-Y H:i:s', (int) $event_ts), $message);
+    }
+
+    /** Formats one context field in key=value form while quoting free-text values. */
+    private static function format_log_field($key, $value) {
+        if (is_int($value) || is_float($value)) {
+            return sprintf('%s=%s', $key, $value);
+        }
+
+        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], (string) $value);
+
+        return sprintf('%s="%s"', $key, $escaped);
     }
 
     /** Returns a row value only when the resolved column is present. */
@@ -1775,7 +1781,7 @@ final class Simula_Wordfence_Grafana_Incidents {
         ];
     }
 
-    /** Normalizes a scalar value into a safe plain-text JSON string field. */
+    /** Normalizes a scalar value into a safe plain-text log field. */
     private static function clean_string($value) {
         if ($value === null) {
             return null;
@@ -2536,7 +2542,7 @@ final class Simula_Wordfence_Grafana_Admin {
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h1>
-            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a Loki-friendly JSON Lines log.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
 
             <?php settings_errors('wfne_metrics'); ?>
 
@@ -2660,7 +2666,7 @@ final class Simula_Wordfence_Grafana_Admin {
     /** Renders the incident log settings section. */
     private static function render_incident_settings_section($options) {
         ?>
-        <h2><?php echo esc_html__('Loki / incident log', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <h2><?php echo esc_html__('Incident log', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
         <table class="form-table" role="presentation">
             <tr>
                 <th scope="row"><?php echo esc_html__('Enable incident log export', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
@@ -2677,7 +2683,7 @@ final class Simula_Wordfence_Grafana_Admin {
                 </th>
                 <td>
                     <input id="wfne-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
-                    <p class="description"><?php echo esc_html__('Use an absolute .log or .jsonl path. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                    <p class="description"><?php echo esc_html__('Use an absolute log file path. A .log suffix is recommended; existing .jsonl paths are still accepted. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
                 </td>
             </tr>
             <tr>
@@ -2731,11 +2737,11 @@ final class Simula_Wordfence_Grafana_Admin {
         <?php
     }
 
-    /** Renders the sample incident JSON block. */
+    /** Renders the sample incident log block. */
     private static function render_sample_incident_section($options) {
         ?>
-        <h2><?php echo esc_html__('Sample incident JSON line', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
-        <pre style="max-width:900px; overflow:auto;"><?php echo esc_html(Simula_Wordfence_Grafana_Incidents::sample_json_line($options)); ?></pre>
+        <h2><?php echo esc_html__('Sample incident log line', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
+        <pre style="max-width:900px; overflow:auto;"><?php echo esc_html(Simula_Wordfence_Grafana_Incidents::sample_log_line($options)); ?></pre>
         <?php
     }
 
