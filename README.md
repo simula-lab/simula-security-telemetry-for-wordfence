@@ -8,8 +8,8 @@
 It is designed for WordPress sites that already run:
 
 - Wordfence
-- Prometheus
 - `node_exporter` with the textfile collector enabled
+- `alloy` with the a log
 
 The plugin writes local files on a schedule, so Prometheus and log-based tooling can ingest Wordfence activity without exposing a public metrics endpoint from WordPress.
 
@@ -255,7 +255,6 @@ Operational behavior:
 - Activation initializes the cursor at the current maximum hit ID to avoid an unexpected full historical backfill
 - `Reset incident cursor for backfill` sets the cursor to `0`, so the next run can replay retained incidents up to the configured row limit
 - `Max incidents per run` limits how much history can be appended in a single pass
-- Incident log writes use an exclusive file lock
 
 Example log line:
 
