@@ -58,7 +58,7 @@ final class Simula_Wordfence_Grafana_Config {
             ],
             'enabled' => [
                 'label'       => __('Exporter enabled state', self::TEXT_DOMAIN),
-                'description' => __('Reports whether scheduled exporting is currently enabled.', self::TEXT_DOMAIN),
+                'description' => __('Reports whether the exporter master switch is enabled. When off, both metrics and incident exports are disabled.', self::TEXT_DOMAIN),
             ],
             'last_export_timestamp_seconds' => [
                 'label'       => __('Last export timestamp', self::TEXT_DOMAIN),
@@ -389,11 +389,14 @@ final class Simula_Wordfence_Grafana_Settings {
 
 final class Simula_Wordfence_Grafana_Output {
     /** Writes a disabled-export metrics file and updates exporter state. */
-    public static function write_disabled_metrics($options, $state = []) {
+    public static function write_disabled_metrics($options, $state = [], $disabled_message = null) {
         $state = is_array($state) ? $state : [];
         $site  = self::escape_label($options['site_label']);
         $now   = time();
         $body  = [];
+        $disabled_message = is_string($disabled_message) && $disabled_message !== ''
+            ? $disabled_message
+            : __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
 
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'export_success')) {
             self::append_metric_family(
@@ -424,7 +427,7 @@ final class Simula_Wordfence_Grafana_Output {
                 $body,
                 $options['metric_prefix'] . '_enabled',
                 'gauge',
-                'Whether scheduled exporting is enabled.',
+                'Whether the exporter master switch is enabled.',
                 [
                     ['labels' => ['site' => $site], 'value' => 0],
                 ]
@@ -448,7 +451,7 @@ final class Simula_Wordfence_Grafana_Output {
         return self::write_metrics(
             $options['prom_file'],
             empty($body) ? '' : implode("\n", $body) . "\n",
-            __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            $disabled_message,
             $state
         );
     }
@@ -489,7 +492,7 @@ final class Simula_Wordfence_Grafana_Output {
                 $metrics,
                 $prefix . '_enabled',
                 'gauge',
-                'Whether scheduled exporting is enabled.',
+                'Whether the exporter master switch is enabled.',
                 [
                     ['labels' => ['site' => $site], 'value' => (int) $enabled],
                 ]
@@ -1442,6 +1445,13 @@ final class Simula_Wordfence_Grafana_Incidents {
         global $wpdb;
 
         $options = is_array($options) ? $options : Simula_Wordfence_Grafana_Settings::get_options();
+        if (empty($options['enabled'])) {
+            return [
+                'ok'      => false,
+                'message' => __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            ];
+        }
+
         if (empty($options['incident_log_enabled'])) {
             return [
                 'ok'      => true,
@@ -1832,8 +1842,12 @@ final class Simula_Wordfence_Grafana_Service {
         $options = Simula_Wordfence_Grafana_Settings::get_options();
         $state   = Simula_Wordfence_Grafana_Settings::get_state();
 
-        if (!$force && empty($options['enabled'])) {
-            return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state);
+        if (empty($options['enabled'])) {
+            $message = $force
+                ? __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+                : __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
+
+            return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state, $message);
         }
 
         $metric_result   = self::export_metrics($options, $state);
@@ -2116,7 +2130,7 @@ final class Simula_Wordfence_Grafana_Service {
                 $metrics,
                 $prefix . '_enabled',
                 'gauge',
-                'Whether scheduled exporting is enabled.',
+                'Whether the exporter master switch is enabled.',
                 [
                     ['labels' => ['site' => $site], 'value' => (int) !empty($options['enabled'])],
                 ]
@@ -2507,11 +2521,11 @@ final class Simula_Wordfence_Grafana_Admin {
                 <h2><?php echo esc_html__('Prometheus metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
                 <table class="form-table" role="presentation">
                     <tr>
-                        <th scope="row"><?php echo esc_html__('Enable scheduled exports', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
+                        <th scope="row"><?php echo esc_html__('Enable exporter', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
                         <td>
                             <label>
                                 <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled]" value="1" <?php checked($options['enabled'], 1); ?> />
-                                <?php echo esc_html__('Run the exporter on a recurring WP-Cron schedule.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
+                                <?php echo esc_html__('Master switch for the exporter. When disabled, both Prometheus metrics and incident log exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
                             </label>
                         </td>
                     </tr>
@@ -2527,7 +2541,7 @@ final class Simula_Wordfence_Grafana_Admin {
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <p class="description"><?php echo esc_html__('Controls how often scheduled exports run when enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
+                            <p class="description"><?php echo esc_html__('Controls how often WP-Cron runs exports while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -2582,7 +2596,7 @@ final class Simula_Wordfence_Grafana_Admin {
                         <td>
                             <label>
                                 <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_enabled]" value="1" <?php checked($options['incident_log_enabled'], 1); ?> />
-                                <?php echo esc_html__('Append blocked Wordfence hits to the incident log on each export run.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
+                                <?php echo esc_html__('Append blocked Wordfence hits to the incident log on each export run. This runs only while the exporter is enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
                             </label>
                         </td>
                     </tr>
@@ -2615,6 +2629,7 @@ final class Simula_Wordfence_Grafana_Admin {
                 <?php wp_nonce_field('wfne_export_now'); ?>
                 <?php submit_button(__('Export now', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'secondary', 'wfne_export_now'); ?>
             </form>
+            <p class="description"><?php echo esc_html__('Manual export uses the same master exporter toggle. If the exporter is disabled, the button writes disabled metrics and reports that exports are off.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
 
             <form method="post" style="display:inline-block;">
                 <?php wp_nonce_field('wfne_reset_incident_cursor'); ?>
