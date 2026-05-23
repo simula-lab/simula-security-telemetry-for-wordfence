@@ -35,6 +35,7 @@ By default, the plugin runs a fast collector every 15 minutes and a slow collect
 * Malware, file change, and vulnerable component findings
 * Top blocked attack sources by country and normalized IP range
 * Incident log export for newly observed blocked requests
+* Incident privacy controls for IPs, URLs, referers, user agents, and internal traffic
 * Manual export and incident cursor reset from the admin UI
 * Current exporter and incident state visibility in the admin UI
 * Optional JSON Lines incident output
@@ -60,6 +61,8 @@ The plugin includes an admin settings screen under Settings > Wordfence Metrics,
 * Set the incident log path
 * Choose text or JSON Lines incident output
 * Limit the number of incidents appended per run
+* Configure incident IP privacy and field-dropping filters
+* Add an optional retention note to emitted incident events
 * Trigger a manual export
 * Reset the incident cursor for backfill
 * Review current exporter and incident state
@@ -134,17 +137,19 @@ Each metric family can be enabled or disabled independently from the settings sc
 
 It appends newly observed blocked Wordfence hits to a local .log or .jsonl path. The default text format preserves the original plain-text log line. The JSON Lines format emits one structured JSON object per blocked event for Loki, ELK, OpenSearch, and similar tooling. The exporter tracks the last processed hit ID, and you can reset the incident cursor from the admin UI or WP-CLI to backfill retained history up to the configured per-run limit.
 
+Incident privacy controls can keep full IPs, truncate IPv4 to /24 and IPv6 to /64, hash IPs with the site salt, drop IP fields, drop query strings from URL and referer fields, drop referers, drop user agents, skip private/internal source IP ranges, and append an optional retention note to emitted events.
+
 = What WP-CLI commands are available? =
 
 If WP-CLI is available, the plugin registers:
 
-* wp wordfence-metrics export
-* wp wordfence-metrics export --metrics-only
-* wp wordfence-metrics export --metrics-only --scope=fast
-* wp wordfence-metrics export --metrics-only --scope=slow
-* wp wordfence-metrics export --incidents-only
-* wp wordfence-metrics reset-cursor
-* wp wordfence-metrics status
+* wp simula-wordfence-metrics export
+* wp simula-wordfence-metrics export --metrics-only
+* wp simula-wordfence-metrics export --metrics-only --scope=fast
+* wp simula-wordfence-metrics export --metrics-only --scope=slow
+* wp simula-wordfence-metrics export --incidents-only
+* wp simula-wordfence-metrics reset-cursor
+* wp simula-wordfence-metrics status
 
 = Does the plugin include Grafana and Prometheus assets? =
 
@@ -166,6 +171,7 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added a slow collector for scan, two-factor, WordPress posture, and Wordfence posture metrics.
 * Added WP-CLI export, status, and incident cursor commands.
 * Added optional JSON Lines incident output.
+* Added incident privacy controls for IPs, URL query strings, referers, user agents, private/internal IP ranges, and retention notes.
 * Added source freshness, Wordfence posture, and WordPress posture metrics.
 * Replaced unbounded error message labels with bounded error type labels.
 * Added a Grafana dashboard and sample Prometheus alert rules.

@@ -35,6 +35,7 @@ By default, it runs a fast collector every 15 minutes and a slow collector hourl
 - Malware, file change, and vulnerable component findings
 - Top blocked attack sources by country and normalized IP range
 - Incident log export for newly observed blocked requests
+- Incident privacy controls for IPs, URLs, referers, user agents, and internal traffic
 - Manual export from the admin screen
 - Incident cursor reset for controlled backfill
 - Current exporter and incident state visibility in the admin UI
@@ -95,6 +96,9 @@ Settings > Wordfence Metrics
 - `Incident log path`
 - `Incident log format`
 - `Max incidents per run`
+- `Incident IP privacy`
+- `Incident privacy filters`
+- `Retention note`
 
 ### Manual actions and state
 
@@ -115,6 +119,9 @@ Default values:
 - `Incident log path`: `/var/log/wordpress-wordfence-incidents.log`
 - `Incident log format`: `text`
 - `Max incidents per run`: `1000`
+- `Incident IP privacy`: `Log full IP address`
+- `Incident privacy filters`: disabled
+- `Retention note`: empty
 
 Path validation rules:
 
@@ -249,6 +256,15 @@ All metrics include a `site` label.
 
 When incident export is enabled, each fast or full export appends newly observed blocked Wordfence hits to the configured log file. The default `text` format preserves the v1 log line format. The `jsonl` format emits one JSON object per blocked event for Loki, ELK, OpenSearch, and similar pipelines.
 
+Incident privacy controls can:
+
+- Keep full IPs, truncate IPv4 to `/24` and IPv6 to `/64`, hash IPs with the site salt, or drop IP fields
+- Drop query strings from logged URL and referer fields
+- Drop referer fields
+- Drop user-agent fields
+- Skip incidents whose source IP is private, loopback, link-local, or otherwise reserved
+- Append an optional retention note to each text or JSON Lines incident event
+
 Operational behavior:
 
 - The exporter tracks the last processed Wordfence hit ID
@@ -289,20 +305,20 @@ Example JSON Lines event:
 If WP-CLI is available, the plugin registers:
 
 ```bash
-wp wordfence-metrics export
-wp wordfence-metrics export --metrics-only
-wp wordfence-metrics export --metrics-only --scope=fast
-wp wordfence-metrics export --metrics-only --scope=slow
-wp wordfence-metrics export --incidents-only
-wp wordfence-metrics reset-cursor
-wp wordfence-metrics status
+wp simula-wordfence-metrics export
+wp simula-wordfence-metrics export --metrics-only
+wp simula-wordfence-metrics export --metrics-only --scope=fast
+wp simula-wordfence-metrics export --metrics-only --scope=slow
+wp simula-wordfence-metrics export --incidents-only
+wp simula-wordfence-metrics reset-cursor
+wp simula-wordfence-metrics status
 ```
 
 For production scheduling, prefer system cron invoking WP-CLI over relying only on traffic-triggered WP-Cron:
 
 ```cron
-*/15 * * * * cd /path/to/wordpress && wp wordfence-metrics export --quiet
-0 * * * * cd /path/to/wordpress && wp wordfence-metrics export --metrics-only --scope=slow --quiet
+*/15 * * * * cd /path/to/wordpress && wp simula-wordfence-metrics export --quiet
+0 * * * * cd /path/to/wordpress && wp simula-wordfence-metrics export --metrics-only --scope=slow --quiet
 ```
 
 ## Grafana and Prometheus Assets
@@ -337,6 +353,7 @@ You should:
 - Restrict filesystem permissions appropriately
 - Ensure the web server or PHP user can write the target files
 - Ensure `node_exporter` can read the `.prom` file
+- Configure incident privacy controls when IP addresses, URLs, referers, or user agents are sensitive in your environment
 
 ## Development
 
