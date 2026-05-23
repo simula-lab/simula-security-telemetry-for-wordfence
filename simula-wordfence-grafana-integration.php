@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Simula Wordfence Grafana Integration
  * Plugin URI:  https://simula.no/
- * Description: Export Prometheus metrics from WordPress and Wordfence into a node_exporter textfile collector .prom file.
+ * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
  * Version:     2.0.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -197,6 +197,21 @@ final class Simula_Wordfence_Grafana_Config {
 }
 
 final class Simula_Wordfence_Grafana_Util {
+    /** Returns an initialized WordPress filesystem handler, or null when unavailable. */
+    public static function filesystem() {
+        global $wp_filesystem;
+
+        if (!function_exists('WP_Filesystem')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        if (!WP_Filesystem()) {
+            return null;
+        }
+
+        return $wp_filesystem;
+    }
+
     /** Escapes a single database identifier for use in dynamic SQL fragments. */
     public static function quote_identifier($identifier) {
         $identifier = (string) $identifier;
@@ -667,19 +682,22 @@ final class Simula_Wordfence_Grafana_Output {
     public static function write_metrics($file, $content, $error_message, $state, $persist_state = true) {
         $state      = is_array($state) ? $state : [];
         $directory  = dirname($file);
+        $filesystem = Simula_Wordfence_Grafana_Util::filesystem();
         $ok         = false;
         $message    = '';
         $result_ok  = false;
 
-        if (!preg_match('/\.prom$/', $file)) {
+        if ($filesystem === null) {
+            $message = __('Could not initialize the WordPress filesystem API.', 'simula-wordfence-grafana-integration');
+        } elseif (!preg_match('/\.prom$/', $file)) {
             $message = __('Output file must end with .prom.', 'simula-wordfence-grafana-integration');
-        } elseif (!is_dir($directory)) {
+        } elseif (!$filesystem->is_dir($directory)) {
             $message = sprintf(
                 /* translators: %s: Metrics output directory path. */
                 __('Output directory does not exist: %s', 'simula-wordfence-grafana-integration'),
                 $directory
             );
-        } elseif (!is_writable($directory)) {
+        } elseif (!$filesystem->is_writable($directory)) {
             $message = sprintf(
                 /* translators: %s: Metrics output directory path. */
                 __('Output directory is not writable by PHP: %s', 'simula-wordfence-grafana-integration'),
@@ -693,11 +711,11 @@ final class Simula_Wordfence_Grafana_Output {
                 wp_generate_password(12, false, false)
             );
 
-            $written = file_put_contents($tmp_name, $content, LOCK_EX);
-            if ($written === false) {
+            $written = $filesystem->put_contents($tmp_name, $content, FS_CHMOD_FILE);
+            if (!$written) {
                 $message = __('Failed writing the temporary metrics file.', 'simula-wordfence-grafana-integration');
-            } elseif (!rename($tmp_name, $file)) {
-                @wp_delete_file($tmp_name);
+            } elseif (!$filesystem->move($tmp_name, $file, true)) {
+                $filesystem->delete($tmp_name);
                 $message = __('Failed moving the temporary metrics file into place.', 'simula-wordfence-grafana-integration');
             } else {
                 $ok        = true;
@@ -2150,11 +2168,19 @@ final class Simula_Wordfence_Grafana_Incidents {
         return $row[$column];
     }
 
-    /** Appends content to the incident log using an exclusive file lock. */
+    /** Appends content to the incident log using the WordPress filesystem API. */
     private static function append_log($file, $content) {
-        $directory = dirname($file);
+        $directory  = dirname($file);
+        $filesystem = Simula_Wordfence_Grafana_Util::filesystem();
 
-        if (!is_dir($directory)) {
+        if ($filesystem === null) {
+            return [
+                'ok'      => false,
+                'message' => __('Could not initialize the WordPress filesystem API.', 'simula-wordfence-grafana-integration'),
+            ];
+        }
+
+        if (!$filesystem->is_dir($directory)) {
             return [
                 'ok'      => false,
                 'message' => sprintf(
@@ -2165,7 +2191,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             ];
         }
 
-        if (!is_writable($directory) && !(file_exists($file) && is_writable($file))) {
+        if (!$filesystem->is_writable($directory) && !($filesystem->exists($file) && $filesystem->is_writable($file))) {
             return [
                 'ok'      => false,
                 'message' => sprintf(
@@ -2176,30 +2202,19 @@ final class Simula_Wordfence_Grafana_Incidents {
             ];
         }
 
-        $handle = @fopen($file, 'ab');
-        if (!is_resource($handle)) {
+        $existing = $filesystem->exists($file) ? $filesystem->get_contents($file) : '';
+        if ($existing === false) {
             return [
                 'ok'      => false,
                 'message' => sprintf(
                     /* translators: %s: Incident log file path. */
-                    __('Could not open the incident log for append: %s', 'simula-wordfence-grafana-integration'),
+                    __('Could not read the incident log for append: %s', 'simula-wordfence-grafana-integration'),
                     $file
                 ),
             ];
         }
 
-        $ok = false;
-
-        if (flock($handle, LOCK_EX)) {
-            $written = fwrite($handle, $content);
-            fflush($handle);
-            flock($handle, LOCK_UN);
-            $ok = $written === strlen($content);
-        }
-
-        fclose($handle);
-
-        if (!$ok) {
+        if (!$filesystem->put_contents($file, $existing . $content, FS_CHMOD_FILE)) {
             return [
                 'ok'      => false,
                 'message' => sprintf(
@@ -3572,7 +3587,6 @@ final class Simula_Wordfence_Grafana_CLI {
 final class Simula_Wordfence_Grafana_Metrics {
     /** Hooks the plugin into WordPress actions, filters, and lifecycle events. */
     public static function init() {
-        add_action('plugins_loaded', [__CLASS__, 'load_textdomain']);
         add_action('admin_menu', ['Simula_Wordfence_Grafana_Admin', 'admin_menu']);
         add_action('admin_init', ['Simula_Wordfence_Grafana_Settings', 'register_settings']);
         add_action(Simula_Wordfence_Grafana_Config::CRON_HOOK, ['Simula_Wordfence_Grafana_Service', 'export_fast']);
@@ -3587,11 +3601,6 @@ final class Simula_Wordfence_Grafana_Metrics {
         register_activation_hook(__FILE__, [__CLASS__, 'activate']);
         register_deactivation_hook(__FILE__, [__CLASS__, 'deactivate']);
         register_uninstall_hook(__FILE__, [__CLASS__, 'uninstall']);
-    }
-
-    /** Loads the plugin translation files. */
-    public static function load_textdomain() {
-        load_plugin_textdomain('simula-wordfence-grafana-integration', false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
 
     /** Returns the selectable schedule labels for cron interval settings. */
