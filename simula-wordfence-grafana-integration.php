@@ -39,7 +39,7 @@ final class Simula_Wordfence_Grafana_Config {
             'slow_cron_interval'   => 'hourly',
             'prom_file'            => '/var/lib/node_exporter/textfile_collector/wordfence.prom',
             'metric_prefix'        => 'wordpress_wordfence',
-            'site_label'           => (string) parse_url(home_url('/'), PHP_URL_HOST),
+            'site_label'           => (string) wp_parse_url(home_url('/'), PHP_URL_HOST),
             'incident_log_enabled' => 1,
             'incident_log_file'    => '/var/log/wordpress-wordfence-incidents.log',
             'incident_log_format'  => 'text',
@@ -657,7 +657,7 @@ final class Simula_Wordfence_Grafana_Output {
             if ($written === false) {
                 $message = __('Failed writing the temporary metrics file.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
             } elseif (!rename($tmp_name, $file)) {
-                @unlink($tmp_name);
+                @wp_delete_file($tmp_name);
                 $message = __('Failed moving the temporary metrics file into place.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
             } else {
                 $ok        = true;
@@ -1962,7 +1962,7 @@ final class Simula_Wordfence_Grafana_Incidents {
 
         $event_ts = strtotime('2026-05-23T12:34:56+00:00');
         $context  = [
-            'site'        => (string) ($options['site_label'] ?? parse_url(home_url('/'), PHP_URL_HOST)),
+            'site'        => (string) ($options['site_label'] ?? wp_parse_url(home_url('/'), PHP_URL_HOST)),
             'hostname'    => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
             'blog_id'     => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
             'hit_id'      => 123,
@@ -2010,7 +2010,7 @@ final class Simula_Wordfence_Grafana_Incidents {
         $status     = self::column_value($row, $schema['status']);
         $ip         = self::normalize_ip(self::column_value($row, $schema['ip']));
         $context    = [
-            'site'       => (string) ($options['site_label'] ?? parse_url(home_url('/'), PHP_URL_HOST)),
+            'site'       => (string) ($options['site_label'] ?? wp_parse_url(home_url('/'), PHP_URL_HOST)),
             'hostname'   => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
             'blog_id'    => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
             'hit_id'     => isset($schema['id'], $row[$schema['id']]) ? (int) $row[$schema['id']] : null,
@@ -3604,7 +3604,7 @@ final class Simula_Wordfence_Grafana_Metrics {
         delete_option(Simula_Wordfence_Grafana_Config::STATE);
 
         if (!empty($options['prom_file']) && is_string($options['prom_file']) && preg_match('/\.prom$/', $options['prom_file'])) {
-            @unlink($options['prom_file']);
+            @wp_delete_file($options['prom_file']);
         }
     }
 }
