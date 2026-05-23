@@ -1399,13 +1399,13 @@ final class Simula_Wordfence_Grafana_Wordfence {
 }
 
 final class Simula_Wordfence_Grafana_Incidents {
-    /** Initializes the incident cursor from the current maximum Wordfence hit ID. */
-    public static function initialize_cursor_if_needed() {
+    /** Initializes the incident cursor from the current maximum Wordfence hit ID and returns the resulting state. */
+    public static function initialize_cursor_if_needed($state = null, $persist_state = true) {
         global $wpdb;
 
-        $state = Simula_Wordfence_Grafana_Settings::get_state();
+        $state = is_array($state) ? $state : Simula_Wordfence_Grafana_Settings::get_state();
         if (!empty($state['incident_cursor_initialized'])) {
-            return;
+            return $state;
         }
 
         $table      = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table();
@@ -1427,7 +1427,11 @@ final class Simula_Wordfence_Grafana_Incidents {
 
         $state['incident_cursor_initialized'] = 1;
         $state['last_incident_id']            = max(0, $last_id);
-        update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        if ($persist_state) {
+            update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        }
+
+        return $state;
     }
 
     /** Resets the incident cursor so the next run can backfill from the start of the hits table. */
@@ -1441,14 +1445,16 @@ final class Simula_Wordfence_Grafana_Incidents {
     }
 
     /** Exports new blocked Wordfence incidents as JSON Lines for Loki or Alloy ingestion. */
-    public static function export($options = null) {
+    public static function export($options = null, $state = null, $persist_state = true) {
         global $wpdb;
 
         $options = is_array($options) ? $options : Simula_Wordfence_Grafana_Settings::get_options();
+        $state   = is_array($state) ? $state : Simula_Wordfence_Grafana_Settings::get_state();
         if (empty($options['enabled'])) {
             return [
                 'ok'      => false,
                 'message' => __('Exporter is disabled. Enable the exporter to run both metrics and incident log exports.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                'state'   => $state,
             ];
         }
 
@@ -1456,11 +1462,11 @@ final class Simula_Wordfence_Grafana_Incidents {
             return [
                 'ok'      => true,
                 'message' => __('Incident log export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                'state'   => $state,
             ];
         }
 
         $table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_hits_table();
-        $state = Simula_Wordfence_Grafana_Settings::get_state();
 
         if (!Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($table)) {
             $message = sprintf(
@@ -1468,18 +1474,18 @@ final class Simula_Wordfence_Grafana_Incidents {
                 implode(', ', Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table_candidates('wfHits'))
             );
 
-            return self::update_failure_state($state, $options, $message);
+            return self::update_failure_state($state, $options, $message, $persist_state);
         }
 
-        self::initialize_cursor_if_needed();
-        $state  = Simula_Wordfence_Grafana_Settings::get_state();
+        $state  = self::initialize_cursor_if_needed($state, $persist_state);
         $schema = self::resolve_schema($table);
 
         if ($schema['id'] === null) {
             return self::update_failure_state(
                 $state,
                 $options,
-                __('Unsupported Wordfence hits schema: missing an incident ID column.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+                __('Unsupported Wordfence hits schema: missing an incident ID column.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                $persist_state
             );
         }
 
@@ -1487,7 +1493,8 @@ final class Simula_Wordfence_Grafana_Incidents {
             return self::update_failure_state(
                 $state,
                 $options,
-                __('Unsupported Wordfence hits schema: missing an incident timestamp column.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+                __('Unsupported Wordfence hits schema: missing an incident timestamp column.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                $persist_state
             );
         }
 
@@ -1496,7 +1503,8 @@ final class Simula_Wordfence_Grafana_Incidents {
             return self::update_failure_state(
                 $state,
                 $options,
-                __('Unsupported Wordfence hits schema: blocked incident filtering is unavailable.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+                __('Unsupported Wordfence hits schema: blocked incident filtering is unavailable.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                $persist_state
             );
         }
 
@@ -1517,7 +1525,7 @@ final class Simula_Wordfence_Grafana_Incidents {
         );
 
         if ($wpdb->last_error !== '') {
-            return self::update_failure_state($state, $options, $wpdb->last_error);
+            return self::update_failure_state($state, $options, $wpdb->last_error, $persist_state);
         }
 
         if (empty($rows)) {
@@ -1525,11 +1533,14 @@ final class Simula_Wordfence_Grafana_Incidents {
             $state['last_incident_exported_rows'] = 0;
             $state['last_incident_log_file']      = $options['incident_log_file'];
             $state['last_incident_error']         = '';
-            update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+            if ($persist_state) {
+                update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+            }
 
             return [
                 'ok'      => true,
                 'message' => __('No new Wordfence incidents to append.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                'state'   => $state,
             ];
         }
 
@@ -1547,7 +1558,8 @@ final class Simula_Wordfence_Grafana_Incidents {
                 return self::update_failure_state(
                     $state,
                     $options,
-                    __('Failed encoding a Wordfence incident row as JSON.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+                    __('Failed encoding a Wordfence incident row as JSON.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                    $persist_state
                 );
             }
 
@@ -1556,7 +1568,7 @@ final class Simula_Wordfence_Grafana_Incidents {
 
         $write = self::append_log($options['incident_log_file'], implode('', $lines));
         if (!$write['ok']) {
-            return self::update_failure_state($state, $options, $write['message']);
+            return self::update_failure_state($state, $options, $write['message'], $persist_state);
         }
 
         $state['last_incident_id']            = $max_seen_id;
@@ -1564,7 +1576,9 @@ final class Simula_Wordfence_Grafana_Incidents {
         $state['last_incident_exported_rows'] = count($rows);
         $state['last_incident_log_file']      = $options['incident_log_file'];
         $state['last_incident_error']         = '';
-        update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        if ($persist_state) {
+            update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        }
 
         return [
             'ok'      => true,
@@ -1573,6 +1587,7 @@ final class Simula_Wordfence_Grafana_Incidents {
                 count($rows),
                 $options['incident_log_file']
             ),
+            'state'   => $state,
         ];
     }
 
@@ -1743,17 +1758,20 @@ final class Simula_Wordfence_Grafana_Incidents {
     }
 
     /** Updates incident-specific failure state and returns a normalized error result. */
-    private static function update_failure_state($state, $options, $message) {
+    private static function update_failure_state($state, $options, $message, $persist_state = true) {
         $state                           = is_array($state) ? $state : [];
         $state['last_incident_export']   = time();
         $state['last_incident_exported_rows'] = 0;
         $state['last_incident_log_file'] = $options['incident_log_file'] ?? '';
         $state['last_incident_error']    = (string) $message;
-        update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        if ($persist_state) {
+            update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
+        }
 
         return [
             'ok'      => false,
             'message' => (string) $message,
+            'state'   => $state,
         ];
     }
 
@@ -1851,9 +1869,13 @@ final class Simula_Wordfence_Grafana_Service {
         }
 
         $metric_result   = self::export_metrics($options, $state);
-        $incident_result = Simula_Wordfence_Grafana_Incidents::export($options);
+        $incident_result = Simula_Wordfence_Grafana_Incidents::export(
+            $options,
+            self::result_state($metric_result, $state),
+            false
+        );
 
-        return self::merge_results($metric_result, $incident_result);
+        return self::merge_results($metric_result, $incident_result, $state);
     }
 
     /** Collects Wordfence data, builds metrics, and writes the Prometheus output file. */
@@ -1861,7 +1883,7 @@ final class Simula_Wordfence_Grafana_Service {
         $now = time();
         $data = self::collect_metric_export_data($options, $state, $now);
         if (empty($data['ok'])) {
-            return self::write_metric_failure($options, $state, $now, $data['message'] ?? '');
+            return self::write_metric_failure($options, $state, $now, $data['message'] ?? '', false);
         }
 
         $metrics = self::build_metric_output_lines($options, $now, $data);
@@ -2379,14 +2401,15 @@ final class Simula_Wordfence_Grafana_Service {
     }
 
     /** Writes failure metrics for an unsuccessful metrics export attempt. */
-    private static function write_metric_failure($options, $state, $now, $message) {
+    private static function write_metric_failure($options, $state, $now, $message, $persist_state = true) {
         $message = (string) $message;
 
         return Simula_Wordfence_Grafana_Output::write_metrics(
             $options['prom_file'],
             Simula_Wordfence_Grafana_Output::build_failure_metrics($options, $now, $message),
             $message,
-            $state
+            $state,
+            $persist_state
         );
     }
 
@@ -2400,12 +2423,13 @@ final class Simula_Wordfence_Grafana_Service {
             $options['prom_file'],
             empty($metrics) ? '' : implode("\n", $metrics) . "\n",
             '',
-            $state
+            $state,
+            false
         );
     }
 
     /** Persists and returns the combined result from the metrics and incident exporters. */
-    private static function merge_results($metric_result, $incident_result) {
+    private static function merge_results($metric_result, $incident_result, $state = []) {
         $metric_result   = is_array($metric_result) ? $metric_result : [];
         $incident_result = is_array($incident_result) ? $incident_result : [];
         $ok              = !empty($metric_result['ok']) && !empty($incident_result['ok']);
@@ -2420,7 +2444,10 @@ final class Simula_Wordfence_Grafana_Service {
             empty($metric_result['ok']) && !empty($metric_result['message']) ? (string) $metric_result['message'] : '',
             empty($incident_result['ok']) && !empty($incident_result['message']) ? (string) $incident_result['message'] : '',
         ]);
-        $state           = Simula_Wordfence_Grafana_Settings::get_state();
+        $state           = self::merge_state(
+            self::result_state($metric_result, $state),
+            self::result_state($incident_result)
+        );
 
         $state['last_result']    = $message;
         $state['last_result_ok'] = $ok ? 1 : 0;
@@ -2431,6 +2458,23 @@ final class Simula_Wordfence_Grafana_Service {
             'ok'      => $ok,
             'message' => $message,
         ];
+    }
+
+    /** Returns the state payload emitted by an export result, or a provided fallback state. */
+    private static function result_state($result, $fallback_state = []) {
+        if (isset($result['state']) && is_array($result['state'])) {
+            return $result['state'];
+        }
+
+        return is_array($fallback_state) ? $fallback_state : [];
+    }
+
+    /** Merges one state array onto another using later values as the source of truth. */
+    private static function merge_state($base_state, $updated_state) {
+        return array_merge(
+            is_array($base_state) ? $base_state : [],
+            is_array($updated_state) ? $updated_state : []
+        );
     }
 
     /** Returns the cutoff timestamps for each configured reporting window. */
