@@ -1,6 +1,6 @@
-# Simula Wordfence Node Exporter Integration
+# Simula Wordfence Grafana Integration
 
-`Simula Wordfence Node Exporter Integration` is a WordPress plugin that exports Wordfence activity as Prometheus metrics for the `node_exporter` textfile collector.
+`Simula Wordfence Grafana Integration` is a WordPress plugin that exports Wordfence activity as Prometheus metrics for the `node_exporter` textfile collector.
 
 It is designed for WordPress sites that already run:
 

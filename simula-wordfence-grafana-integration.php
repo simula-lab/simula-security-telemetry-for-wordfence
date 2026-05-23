@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Simula Wordfence Node Exporter Integration
+ * Plugin Name: Simula Wordfence Grafana Integration
  * Plugin URI:  https://simula.no/
  * Description: Export Prometheus metrics from WordPress and Wordfence into a node_exporter textfile collector .prom file.
  * Version:     1.0.0
@@ -8,19 +8,19 @@
  * Requires PHP: 7.4
  * Author:      Simula
  * Author URI:  https://simula.no/
- * License:     GPL-2.0-or-later
+ * License:     GPL v2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: simula-wordfence-node-exporter-integration
  * Domain Path: /languages
  *
- * @package Simula_Wordfence_Node_Exporter_Integration
+ * @package Simula_Wordfence_Grafana_Integration
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-final class Simula_Wordfence_Node_Exporter_Config {
+final class Simula_Wordfence_Grafana_Config {
     public const OPTION      = 'wfne_metrics_options';
     public const STATE       = 'wfne_metrics_state';
     public const CRON_HOOK   = 'wfne_metrics_export_event';
@@ -126,24 +126,24 @@ final class Simula_Wordfence_Node_Exporter_Config {
     }
 }
 
-final class Simula_Wordfence_Node_Exporter_Settings {
+final class Simula_Wordfence_Grafana_Settings {
     /** Registers the plugin settings and sanitization callback. */
     public static function register_settings() {
         register_setting(
             'wfne_metrics',
-            Simula_Wordfence_Node_Exporter_Config::OPTION,
+            Simula_Wordfence_Grafana_Config::OPTION,
             [
                 'type'              => 'array',
                 'sanitize_callback' => [__CLASS__, 'sanitize_options'],
-                'default'           => Simula_Wordfence_Node_Exporter_Config::defaults(),
+                'default'           => Simula_Wordfence_Grafana_Config::defaults(),
             ]
         );
     }
 
     /** Loads plugin options merged with defaults. */
     public static function get_options() {
-        $options = get_option(Simula_Wordfence_Node_Exporter_Config::OPTION, []);
-        $options = wp_parse_args(is_array($options) ? $options : [], Simula_Wordfence_Node_Exporter_Config::defaults());
+        $options = get_option(Simula_Wordfence_Grafana_Config::OPTION, []);
+        $options = wp_parse_args(is_array($options) ? $options : [], Simula_Wordfence_Grafana_Config::defaults());
         $options['enabled_metrics'] = self::normalize_enabled_metrics($options['enabled_metrics'] ?? []);
 
         return $options;
@@ -151,14 +151,14 @@ final class Simula_Wordfence_Node_Exporter_Settings {
 
     /** Loads the exporter runtime state from the database. */
     public static function get_state() {
-        $state = get_option(Simula_Wordfence_Node_Exporter_Config::STATE, []);
+        $state = get_option(Simula_Wordfence_Grafana_Config::STATE, []);
 
         return is_array($state) ? $state : [];
     }
 
     /** Sanitizes submitted settings, updates scheduling, and writes disabled metrics when needed. */
     public static function sanitize_options($input) {
-        $defaults = Simula_Wordfence_Node_Exporter_Config::defaults();
+        $defaults = Simula_Wordfence_Grafana_Config::defaults();
         $input    = is_array($input) ? $input : [];
         $output   = [];
 
@@ -176,7 +176,7 @@ final class Simula_Wordfence_Node_Exporter_Settings {
         self::sync_schedule($output);
 
         if (!$output['enabled']) {
-            Simula_Wordfence_Node_Exporter_Output::write_disabled_metrics($output);
+            Simula_Wordfence_Grafana_Output::write_disabled_metrics($output);
         }
 
         return $output;
@@ -191,26 +191,26 @@ final class Simula_Wordfence_Node_Exporter_Settings {
 
     /** Ensures the cron event is scheduled only while exporting is enabled. */
     public static function sync_schedule($options) {
-        $scheduled = wp_next_scheduled(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
-        $interval  = self::sanitize_cron_interval($options['cron_interval'] ?? Simula_Wordfence_Node_Exporter_Config::defaults()['cron_interval']);
+        $scheduled = wp_next_scheduled(Simula_Wordfence_Grafana_Config::CRON_HOOK);
+        $interval  = self::sanitize_cron_interval($options['cron_interval'] ?? Simula_Wordfence_Grafana_Config::defaults()['cron_interval']);
 
         if (!empty($options['enabled'])) {
-            $event = function_exists('wp_get_scheduled_event') ? wp_get_scheduled_event(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK) : false;
+            $event = function_exists('wp_get_scheduled_event') ? wp_get_scheduled_event(Simula_Wordfence_Grafana_Config::CRON_HOOK) : false;
 
             if ($event && $event->schedule !== $interval) {
-                wp_clear_scheduled_hook(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
+                wp_clear_scheduled_hook(Simula_Wordfence_Grafana_Config::CRON_HOOK);
                 $scheduled = false;
             }
 
             if (!$scheduled) {
-                wp_schedule_event(time() + 60, $interval, Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
+                wp_schedule_event(time() + 60, $interval, Simula_Wordfence_Grafana_Config::CRON_HOOK);
             }
 
             return;
         }
 
         if ($scheduled) {
-            wp_clear_scheduled_hook(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
+            wp_clear_scheduled_hook(Simula_Wordfence_Grafana_Config::CRON_HOOK);
         }
     }
 
@@ -219,7 +219,7 @@ final class Simula_Wordfence_Node_Exporter_Settings {
         $timestamp = (int) $timestamp;
 
         if ($timestamp <= 0) {
-            return __('Never', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN);
+            return __('Never', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
         }
 
         return gmdate('Y-m-d H:i:s', $timestamp) . ' UTC';
@@ -229,7 +229,7 @@ final class Simula_Wordfence_Node_Exporter_Settings {
     private static function sanitize_prom_file($value) {
         $value = trim(wp_unslash((string) $value));
         if ($value === '') {
-            $value = Simula_Wordfence_Node_Exporter_Config::defaults()['prom_file'];
+            $value = Simula_Wordfence_Grafana_Config::defaults()['prom_file'];
         }
 
         $value = wp_normalize_path($value);
@@ -238,22 +238,22 @@ final class Simula_Wordfence_Node_Exporter_Settings {
             add_settings_error(
                 'wfne_metrics',
                 'wfne-prom-file',
-                __('The Prometheus file path must be absolute. The default path has been restored.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+                __('The Prometheus file path must be absolute. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
                 'error'
             );
 
-            return Simula_Wordfence_Node_Exporter_Config::defaults()['prom_file'];
+            return Simula_Wordfence_Grafana_Config::defaults()['prom_file'];
         }
 
         if (!preg_match('/\.prom$/', $value)) {
             add_settings_error(
                 'wfne_metrics',
                 'wfne-prom-file-extension',
-                __('The Prometheus file path must end with .prom. The default path has been restored.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+                __('The Prometheus file path must end with .prom. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
                 'error'
             );
 
-            return Simula_Wordfence_Node_Exporter_Config::defaults()['prom_file'];
+            return Simula_Wordfence_Grafana_Config::defaults()['prom_file'];
         }
 
         return $value;
@@ -274,9 +274,9 @@ final class Simula_Wordfence_Node_Exporter_Settings {
     /** Validates the configured WP-Cron interval. */
     private static function sanitize_cron_interval($value) {
         $value     = sanitize_key(wp_unslash((string) $value));
-        $intervals = Simula_Wordfence_Node_Exporter_Metrics::cron_interval_labels();
+        $intervals = Simula_Wordfence_Grafana_Metrics::cron_interval_labels();
 
-        return isset($intervals[$value]) ? $value : Simula_Wordfence_Node_Exporter_Config::defaults()['cron_interval'];
+        return isset($intervals[$value]) ? $value : Simula_Wordfence_Grafana_Config::defaults()['cron_interval'];
     }
 
     /** Checks whether a filesystem path is absolute on Unix or Windows. */
@@ -286,7 +286,7 @@ final class Simula_Wordfence_Node_Exporter_Settings {
 
     /** Normalizes stored metric settings to include every known metric family. */
     private static function normalize_enabled_metrics($value) {
-        $defaults = Simula_Wordfence_Node_Exporter_Config::default_enabled_metrics();
+        $defaults = Simula_Wordfence_Grafana_Config::default_enabled_metrics();
         $value    = is_array($value) ? $value : [];
 
         foreach ($defaults as $metric_key => $default_value) {
@@ -298,7 +298,7 @@ final class Simula_Wordfence_Node_Exporter_Settings {
 
     /** Sanitizes submitted metric settings from the admin form. */
     private static function sanitize_enabled_metrics($value) {
-        $sanitized = Simula_Wordfence_Node_Exporter_Config::default_enabled_metrics();
+        $sanitized = Simula_Wordfence_Grafana_Config::default_enabled_metrics();
         $value     = is_array($value) ? $value : [];
 
         foreach ($sanitized as $metric_key => $default_value) {
@@ -309,7 +309,7 @@ final class Simula_Wordfence_Node_Exporter_Settings {
     }
 }
 
-final class Simula_Wordfence_Node_Exporter_Output {
+final class Simula_Wordfence_Grafana_Output {
     /** Writes a disabled-export metrics file and updates exporter state. */
     public static function write_disabled_metrics($options, $state = []) {
         $state = is_array($state) ? $state : [];
@@ -317,25 +317,25 @@ final class Simula_Wordfence_Node_Exporter_Output {
         $now   = time();
         $body  = [];
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'export_success')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'export_success')) {
             $body[] = '# HELP ' . $options['metric_prefix'] . '_export_success Whether the last Wordfence metrics export succeeded.';
             $body[] = '# TYPE ' . $options['metric_prefix'] . '_export_success gauge';
             $body[] = $options['metric_prefix'] . '_export_success{site="' . $site . '"} 0';
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'plugin_info')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'plugin_info')) {
             $body[] = '# HELP ' . $options['metric_prefix'] . '_plugin_info Plugin metadata for the exporter.';
             $body[] = '# TYPE ' . $options['metric_prefix'] . '_plugin_info gauge';
-            $body[] = $options['metric_prefix'] . '_plugin_info{site="' . $site . '",version="' . self::escape_label(Simula_Wordfence_Node_Exporter_Config::VERSION) . '"} 1';
+            $body[] = $options['metric_prefix'] . '_plugin_info{site="' . $site . '",version="' . self::escape_label(Simula_Wordfence_Grafana_Config::VERSION) . '"} 1';
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'enabled')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'enabled')) {
             $body[] = '# HELP ' . $options['metric_prefix'] . '_enabled Whether scheduled exporting is enabled.';
             $body[] = '# TYPE ' . $options['metric_prefix'] . '_enabled gauge';
             $body[] = $options['metric_prefix'] . '_enabled{site="' . $site . '"} 0';
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
             $body[] = '# HELP ' . $options['metric_prefix'] . '_last_export_timestamp_seconds Unix timestamp of the last export attempt.';
             $body[] = '# TYPE ' . $options['metric_prefix'] . '_last_export_timestamp_seconds gauge';
             $body[] = $options['metric_prefix'] . '_last_export_timestamp_seconds{site="' . $site . '"} ' . $now;
@@ -346,7 +346,7 @@ final class Simula_Wordfence_Node_Exporter_Output {
         return self::write_metrics(
             $options['prom_file'],
             empty($body) ? '' : implode("\n", $body) . "\n",
-            __('Export disabled.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            __('Export disabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
             $state
         );
     }
@@ -358,31 +358,31 @@ final class Simula_Wordfence_Node_Exporter_Output {
         $enabled = !empty($options['enabled']);
         $metrics   = [];
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'export_success')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'export_success')) {
             $metrics[] = '# HELP ' . $prefix . '_export_success Whether the last Wordfence metrics export succeeded.';
             $metrics[] = '# TYPE ' . $prefix . '_export_success gauge';
             $metrics[] = $prefix . '_export_success{site="' . $site . '"} 0';
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'plugin_info')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'plugin_info')) {
             $metrics[] = '# HELP ' . $prefix . '_plugin_info Plugin metadata for the exporter.';
             $metrics[] = '# TYPE ' . $prefix . '_plugin_info gauge';
-            $metrics[] = $prefix . '_plugin_info{site="' . $site . '",version="' . self::escape_label(Simula_Wordfence_Node_Exporter_Config::VERSION) . '"} 1';
+            $metrics[] = $prefix . '_plugin_info{site="' . $site . '",version="' . self::escape_label(Simula_Wordfence_Grafana_Config::VERSION) . '"} 1';
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'enabled')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'enabled')) {
             $metrics[] = '# HELP ' . $prefix . '_enabled Whether scheduled exporting is enabled.';
             $metrics[] = '# TYPE ' . $prefix . '_enabled gauge';
             $metrics[] = $prefix . '_enabled{site="' . $site . '"} ' . (int) $enabled;
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
             $metrics[] = '# HELP ' . $prefix . '_last_export_timestamp_seconds Unix timestamp of the last export attempt.';
             $metrics[] = '# TYPE ' . $prefix . '_last_export_timestamp_seconds gauge';
             $metrics[] = $prefix . '_last_export_timestamp_seconds{site="' . $site . '"} ' . $timestamp;
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'error_info')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'error_info')) {
             $metrics[] = '# HELP ' . $prefix . '_error_info Static error indicator for the latest export.';
             $metrics[] = '# TYPE ' . $prefix . '_error_info gauge';
             $metrics[] = $prefix . '_error_info{site="' . $site . '",message="' . self::escape_label((string) $message) . '"} 1';
@@ -400,15 +400,15 @@ final class Simula_Wordfence_Node_Exporter_Output {
         $result_ok  = false;
 
         if (!preg_match('/\.prom$/', $file)) {
-            $message = __('Output file must end with .prom.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN);
+            $message = __('Output file must end with .prom.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
         } elseif (!is_dir($directory)) {
             $message = sprintf(
-                __('Output directory does not exist: %s', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+                __('Output directory does not exist: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
                 $directory
             );
         } elseif (!is_writable($directory)) {
             $message = sprintf(
-                __('Output directory is not writable by PHP: %s', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+                __('Output directory is not writable by PHP: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
                 $directory
             );
         } else {
@@ -421,13 +421,13 @@ final class Simula_Wordfence_Node_Exporter_Output {
 
             $written = file_put_contents($tmp_name, $content, LOCK_EX);
             if ($written === false) {
-                $message = __('Failed writing the temporary metrics file.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN);
+                $message = __('Failed writing the temporary metrics file.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
             } elseif (!rename($tmp_name, $file)) {
                 @unlink($tmp_name);
-                $message = __('Failed moving the temporary metrics file into place.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN);
+                $message = __('Failed moving the temporary metrics file into place.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
             } else {
                 $ok        = true;
-                $message   = $error_message !== '' ? $error_message : sprintf(__('Metrics exported to %s', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN), $file);
+                $message   = $error_message !== '' ? $error_message : sprintf(__('Metrics exported to %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), $file);
                 $result_ok = $error_message === '';
             }
         }
@@ -439,7 +439,7 @@ final class Simula_Wordfence_Node_Exporter_Output {
         $state['last_result']    = $message;
         $state['last_result_ok'] = $result_ok ? 1 : 0;
         $state['last_error']     = $result_ok ? '' : $message;
-        update_option(Simula_Wordfence_Node_Exporter_Config::STATE, $state, false);
+        update_option(Simula_Wordfence_Grafana_Config::STATE, $state, false);
 
         return [
             'ok'      => $result_ok,
@@ -466,7 +466,7 @@ final class Simula_Wordfence_Node_Exporter_Output {
     }
 }
 
-final class Simula_Wordfence_Node_Exporter_Wordfence {
+final class Simula_Wordfence_Grafana_Wordfence {
     /** Returns the resolved Wordfence hits table name. */
     public static function wordfence_hits_table() {
         return self::wordfence_table('wfHits');
@@ -570,7 +570,7 @@ final class Simula_Wordfence_Node_Exporter_Wordfence {
     public static function build_window_count_select_sql($prefix, $condition_sql, $time_identifier, $windows) {
         $selects = [];
 
-        foreach (Simula_Wordfence_Node_Exporter_Config::WINDOWS as $window) {
+        foreach (Simula_Wordfence_Grafana_Config::WINDOWS as $window) {
             $selects[] = sprintf(
                 'SUM(CASE WHEN %1$s >= %2$d AND %3$s THEN 1 ELSE 0 END) AS %4$s_count_%5$s',
                 $time_identifier,
@@ -1131,44 +1131,44 @@ final class Simula_Wordfence_Node_Exporter_Wordfence {
     }
 }
 
-final class Simula_Wordfence_Node_Exporter_Service {
+final class Simula_Wordfence_Grafana_Service {
     /** Collects Wordfence data, builds metrics, and writes the Prometheus output file. */
     public static function export($force = false) {
         global $wpdb;
 
-        $options = Simula_Wordfence_Node_Exporter_Settings::get_options();
-        $state   = Simula_Wordfence_Node_Exporter_Settings::get_state();
+        $options = Simula_Wordfence_Grafana_Settings::get_options();
+        $state   = Simula_Wordfence_Grafana_Settings::get_state();
         $now     = time();
 
         if (!$force && empty($options['enabled'])) {
-            return Simula_Wordfence_Node_Exporter_Output::write_disabled_metrics($options, $state);
+            return Simula_Wordfence_Grafana_Output::write_disabled_metrics($options, $state);
         }
 
-        $table = Simula_Wordfence_Node_Exporter_Wordfence::wordfence_hits_table();
-        if (!Simula_Wordfence_Node_Exporter_Wordfence::table_exists($table)) {
+        $table = Simula_Wordfence_Grafana_Wordfence::wordfence_hits_table();
+        if (!Simula_Wordfence_Grafana_Wordfence::table_exists($table)) {
             $message = sprintf(
-                __('Wordfence table not found. Tried: %s', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
-                implode(', ', Simula_Wordfence_Node_Exporter_Wordfence::wordfence_table_candidates('wfHits'))
+                __('Wordfence table not found. Tried: %s', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+                implode(', ', Simula_Wordfence_Grafana_Wordfence::wordfence_table_candidates('wfHits'))
             );
 
-            return Simula_Wordfence_Node_Exporter_Output::write_metrics(
+            return Simula_Wordfence_Grafana_Output::write_metrics(
                 $options['prom_file'],
-                Simula_Wordfence_Node_Exporter_Output::build_failure_metrics($options, $now, $message),
+                Simula_Wordfence_Grafana_Output::build_failure_metrics($options, $now, $message),
                 $message,
                 $state
             );
         }
 
-        $id_column   = Simula_Wordfence_Node_Exporter_Wordfence::first_available_column($table, ['id']);
-        $time_column = Simula_Wordfence_Node_Exporter_Wordfence::first_available_column($table, ['attackLogTime', 'ctime', 'time']);
-        $where_sql   = Simula_Wordfence_Node_Exporter_Wordfence::blocked_where_sql($table);
+        $id_column   = Simula_Wordfence_Grafana_Wordfence::first_available_column($table, ['id']);
+        $time_column = Simula_Wordfence_Grafana_Wordfence::first_available_column($table, ['attackLogTime', 'ctime', 'time']);
+        $where_sql   = Simula_Wordfence_Grafana_Wordfence::blocked_where_sql($table);
 
         if ($id_column === null || $time_column === null || $where_sql === '0=1') {
-            $message = __('Unsupported Wordfence hits schema.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN);
+            $message = __('Unsupported Wordfence hits schema.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN);
 
-            return Simula_Wordfence_Node_Exporter_Output::write_metrics(
+            return Simula_Wordfence_Grafana_Output::write_metrics(
                 $options['prom_file'],
-                Simula_Wordfence_Node_Exporter_Output::build_failure_metrics($options, $now, $message),
+                Simula_Wordfence_Grafana_Output::build_failure_metrics($options, $now, $message),
                 $message,
                 $state
             );
@@ -1178,18 +1178,18 @@ final class Simula_Wordfence_Node_Exporter_Service {
         $last_id             = isset($state['last_id']) ? (int) $state['last_id'] : 0;
         $total               = isset($state['blocked_total']) ? (float) $state['blocked_total'] : 0.0;
         $windows             = self::window_timestamps($now);
-        $site                = Simula_Wordfence_Node_Exporter_Output::escape_label($options['site_label']);
+        $site                = Simula_Wordfence_Grafana_Output::escape_label($options['site_label']);
         $prefix              = $options['metric_prefix'];
-        $needs_blocked_total = Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'blocked_events_total');
+        $needs_blocked_total = Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_total');
         $needs_window_counts =
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'blocked_events_window') ||
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'failed_login_attempts_window') ||
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'rate_limited_events_window') ||
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'brute_force_events_window');
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_window') ||
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'failed_login_attempts_window') ||
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'rate_limited_events_window') ||
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'brute_force_events_window');
         $needs_scan_metrics  =
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'scan_issues_by_severity') ||
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'scan_findings_total') ||
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'vulnerability_findings_total');
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'scan_issues_by_severity') ||
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'scan_findings_total') ||
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'vulnerability_findings_total');
 
         $incremental = [];
         if ($needs_blocked_total) {
@@ -1208,38 +1208,38 @@ final class Simula_Wordfence_Node_Exporter_Service {
         if ($needs_window_counts) {
             $window_selects = [];
 
-            if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'blocked_events_window')) {
-                $window_selects[] = Simula_Wordfence_Node_Exporter_Wordfence::build_window_count_select_sql('blocked', $where_sql, $time_identifier, $windows);
+            if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_window')) {
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql('blocked', $where_sql, $time_identifier, $windows);
             }
 
-            if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'failed_login_attempts_window')) {
-                $window_selects[] = Simula_Wordfence_Node_Exporter_Wordfence::build_window_count_select_sql(
+            if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'failed_login_attempts_window')) {
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
                     'failed_login',
-                    Simula_Wordfence_Node_Exporter_Wordfence::failed_login_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence::failed_login_where_sql($table),
                     $time_identifier,
                     $windows
                 );
             }
 
-            if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'rate_limited_events_window')) {
-                $window_selects[] = Simula_Wordfence_Node_Exporter_Wordfence::build_window_count_select_sql(
+            if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'rate_limited_events_window')) {
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
                     'rate_limited',
-                    Simula_Wordfence_Node_Exporter_Wordfence::rate_limited_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence::rate_limited_where_sql($table),
                     $time_identifier,
                     $windows
                 );
             }
 
-            if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'brute_force_events_window')) {
-                $window_selects[] = Simula_Wordfence_Node_Exporter_Wordfence::build_window_count_select_sql(
+            if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'brute_force_events_window')) {
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
                     'brute_username',
-                    Simula_Wordfence_Node_Exporter_Wordfence::brute_force_username_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence::brute_force_username_where_sql($table),
                     $time_identifier,
                     $windows
                 );
-                $window_selects[] = Simula_Wordfence_Node_Exporter_Wordfence::build_window_count_select_sql(
+                $window_selects[] = Simula_Wordfence_Grafana_Wordfence::build_window_count_select_sql(
                     'brute_xmlrpc',
-                    Simula_Wordfence_Node_Exporter_Wordfence::brute_force_xmlrpc_where_sql($table),
+                    Simula_Wordfence_Grafana_Wordfence::brute_force_xmlrpc_where_sql($table),
                     $time_identifier,
                     $windows
                 );
@@ -1255,8 +1255,8 @@ final class Simula_Wordfence_Node_Exporter_Service {
         }
 
         $status_counts = [];
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'blocked_events_by_status_24h')) {
-            $status_column = Simula_Wordfence_Node_Exporter_Wordfence::first_available_column($table, ['statusCode', 'status']);
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_by_status_24h')) {
+            $status_column = Simula_Wordfence_Grafana_Wordfence::first_available_column($table, ['statusCode', 'status']);
             if ($status_column !== null) {
                 $status_identifier = '`' . str_replace('`', '``', (string) $status_column) . '`';
                 $status_counts     = $wpdb->get_results(
@@ -1271,32 +1271,32 @@ final class Simula_Wordfence_Node_Exporter_Service {
         }
 
         $top_attack_sources = [];
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'top_attack_sources_24h')) {
-            $top_attack_sources = Simula_Wordfence_Node_Exporter_Wordfence::collect_top_attack_sources($table, $time_identifier, $where_sql, $windows['24h']);
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'top_attack_sources_24h')) {
+            $top_attack_sources = Simula_Wordfence_Grafana_Wordfence::collect_top_attack_sources($table, $time_identifier, $where_sql, $windows['24h']);
         }
 
         $lockout_counts = [];
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'locked_out_total')) {
-            $lockout_counts = Simula_Wordfence_Node_Exporter_Wordfence::collect_lockout_counts($now);
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'locked_out_total')) {
+            $lockout_counts = Simula_Wordfence_Grafana_Wordfence::collect_lockout_counts($now);
         }
 
         $two_factor_metrics = [];
         if (
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'two_factor_enabled') ||
-            Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'two_factor_protected_users_total')
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'two_factor_enabled') ||
+            Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'two_factor_protected_users_total')
         ) {
-            $two_factor_metrics = Simula_Wordfence_Node_Exporter_Wordfence::collect_two_factor_metrics();
+            $two_factor_metrics = Simula_Wordfence_Grafana_Wordfence::collect_two_factor_metrics();
         }
 
         $scan_issue_metrics = [];
         if ($needs_scan_metrics) {
-            $scan_issue_metrics = Simula_Wordfence_Node_Exporter_Wordfence::collect_scan_issue_metrics();
+            $scan_issue_metrics = Simula_Wordfence_Grafana_Wordfence::collect_scan_issue_metrics();
         }
 
         if ($wpdb->last_error !== '') {
-            return Simula_Wordfence_Node_Exporter_Output::write_metrics(
+            return Simula_Wordfence_Grafana_Output::write_metrics(
                 $options['prom_file'],
-                Simula_Wordfence_Node_Exporter_Output::build_failure_metrics($options, $now, $wpdb->last_error),
+                Simula_Wordfence_Grafana_Output::build_failure_metrics($options, $now, $wpdb->last_error),
                 $wpdb->last_error,
                 $state
             );
@@ -1312,25 +1312,25 @@ final class Simula_Wordfence_Node_Exporter_Service {
 
         $metrics = [];
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'export_success')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'export_success')) {
             $metrics[] = '# HELP ' . $prefix . '_export_success Whether the last Wordfence metrics export succeeded.';
             $metrics[] = '# TYPE ' . $prefix . '_export_success gauge';
             $metrics[] = $prefix . '_export_success{site="' . $site . '"} 1';
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'plugin_info')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'plugin_info')) {
             $metrics[] = '# HELP ' . $prefix . '_plugin_info Plugin metadata for the exporter.';
             $metrics[] = '# TYPE ' . $prefix . '_plugin_info gauge';
-            $metrics[] = $prefix . '_plugin_info{site="' . $site . '",version="' . Simula_Wordfence_Node_Exporter_Output::escape_label(Simula_Wordfence_Node_Exporter_Config::VERSION) . '"} 1';
+            $metrics[] = $prefix . '_plugin_info{site="' . $site . '",version="' . Simula_Wordfence_Grafana_Output::escape_label(Simula_Wordfence_Grafana_Config::VERSION) . '"} 1';
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'last_export_timestamp_seconds')) {
             $metrics[] = '# HELP ' . $prefix . '_last_export_timestamp_seconds Unix timestamp of the last successful export.';
             $metrics[] = '# TYPE ' . $prefix . '_last_export_timestamp_seconds gauge';
             $metrics[] = $prefix . '_last_export_timestamp_seconds{site="' . $site . '"} ' . $now;
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'enabled')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'enabled')) {
             $metrics[] = '# HELP ' . $prefix . '_enabled Whether scheduled exporting is enabled.';
             $metrics[] = '# TYPE ' . $prefix . '_enabled gauge';
             $metrics[] = $prefix . '_enabled{site="' . $site . '"} ' . (int) !empty($options['enabled']);
@@ -1339,10 +1339,10 @@ final class Simula_Wordfence_Node_Exporter_Service {
         if ($needs_blocked_total) {
             $metrics[] = '# HELP ' . $prefix . '_blocked_events_total Cumulative count of newly observed blocked Wordfence hits.';
             $metrics[] = '# TYPE ' . $prefix . '_blocked_events_total counter';
-            $metrics[] = $prefix . '_blocked_events_total{site="' . $site . '"} ' . Simula_Wordfence_Node_Exporter_Output::format_number($total);
+            $metrics[] = $prefix . '_blocked_events_total{site="' . $site . '"} ' . Simula_Wordfence_Grafana_Output::format_number($total);
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'blocked_events_window')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_window')) {
             $metrics[] = '# HELP ' . $prefix . '_blocked_events_window Blocked Wordfence hits seen within recent windows.';
             $metrics[] = '# TYPE ' . $prefix . '_blocked_events_window gauge';
             $metrics[] = $prefix . '_blocked_events_window{site="' . $site . '",window="5m"} ' . self::window_metric_value($window_counts, 'blocked', '5m');
@@ -1351,18 +1351,18 @@ final class Simula_Wordfence_Node_Exporter_Service {
             $metrics[] = $prefix . '_blocked_events_window{site="' . $site . '",window="7d"} ' . self::window_metric_value($window_counts, 'blocked', '7d');
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'blocked_events_by_status_24h')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_by_status_24h')) {
             $metrics[] = '# HELP ' . $prefix . '_blocked_events_by_status_24h Blocked Wordfence hits in the last 24 hours grouped by HTTP status code.';
             $metrics[] = '# TYPE ' . $prefix . '_blocked_events_by_status_24h gauge';
 
             foreach ((array) $status_counts as $row) {
                 $status = isset($row['status_code']) && $row['status_code'] !== '' ? (string) $row['status_code'] : 'unknown';
                 $count  = isset($row['count_total']) ? (int) $row['count_total'] : 0;
-                $metrics[] = $prefix . '_blocked_events_by_status_24h{site="' . $site . '",status="' . Simula_Wordfence_Node_Exporter_Output::escape_label($status) . '"} ' . $count;
+                $metrics[] = $prefix . '_blocked_events_by_status_24h{site="' . $site . '",status="' . Simula_Wordfence_Grafana_Output::escape_label($status) . '"} ' . $count;
             }
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'failed_login_attempts_window')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'failed_login_attempts_window')) {
             $metrics[] = '# HELP ' . $prefix . '_failed_login_attempts_window Failed login attempts observed within recent windows.';
             $metrics[] = '# TYPE ' . $prefix . '_failed_login_attempts_window gauge';
             $metrics[] = $prefix . '_failed_login_attempts_window{site="' . $site . '",window="5m"} ' . self::window_metric_value($window_counts, 'failed_login', '5m');
@@ -1371,43 +1371,43 @@ final class Simula_Wordfence_Node_Exporter_Service {
             $metrics[] = $prefix . '_failed_login_attempts_window{site="' . $site . '",window="7d"} ' . self::window_metric_value($window_counts, 'failed_login', '7d');
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'locked_out_total')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'locked_out_total')) {
             $metrics[] = '# HELP ' . $prefix . '_locked_out_total Current Wordfence lockout totals by target type when available.';
             $metrics[] = '# TYPE ' . $prefix . '_locked_out_total gauge';
             $metrics[] = $prefix . '_locked_out_total{site="' . $site . '",target="ip"} ' . (int) ($lockout_counts['ip'] ?? 0);
             $metrics[] = $prefix . '_locked_out_total{site="' . $site . '",target="user"} ' . (int) ($lockout_counts['user'] ?? 0);
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'two_factor_enabled')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'two_factor_enabled')) {
             $metrics[] = '# HELP ' . $prefix . '_two_factor_enabled Whether Wordfence two-factor authentication appears to be configured.';
             $metrics[] = '# TYPE ' . $prefix . '_two_factor_enabled gauge';
             $metrics[] = $prefix . '_two_factor_enabled{site="' . $site . '"} ' . (int) ($two_factor_metrics['enabled'] ?? 0);
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'two_factor_protected_users_total')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'two_factor_protected_users_total')) {
             $metrics[] = '# HELP ' . $prefix . '_two_factor_protected_users_total Count of users with Wordfence two-factor secrets configured.';
             $metrics[] = '# TYPE ' . $prefix . '_two_factor_protected_users_total gauge';
             $metrics[] = $prefix . '_two_factor_protected_users_total{site="' . $site . '"} ' . (int) ($two_factor_metrics['protected_users'] ?? 0);
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'scan_issues_by_severity')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'scan_issues_by_severity')) {
             $metrics[] = '# HELP ' . $prefix . '_scan_issues_by_severity Current Wordfence scan issues grouped by severity.';
             $metrics[] = '# TYPE ' . $prefix . '_scan_issues_by_severity gauge';
             foreach ((array) ($scan_issue_metrics['severity'] ?? []) as $row) {
                 $severity = isset($row['severity']) && $row['severity'] !== '' ? strtolower((string) $row['severity']) : 'unknown';
                 $count    = isset($row['count_total']) ? (int) $row['count_total'] : 0;
-                $metrics[] = $prefix . '_scan_issues_by_severity{site="' . $site . '",severity="' . Simula_Wordfence_Node_Exporter_Output::escape_label($severity) . '"} ' . $count;
+                $metrics[] = $prefix . '_scan_issues_by_severity{site="' . $site . '",severity="' . Simula_Wordfence_Grafana_Output::escape_label($severity) . '"} ' . $count;
             }
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'scan_findings_total')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'scan_findings_total')) {
             $metrics[] = '# HELP ' . $prefix . '_scan_findings_total Current Wordfence scan findings for selected categories.';
             $metrics[] = '# TYPE ' . $prefix . '_scan_findings_total gauge';
             $metrics[] = $prefix . '_scan_findings_total{site="' . $site . '",category="malware"} ' . (int) ($scan_issue_metrics['malware'] ?? 0);
             $metrics[] = $prefix . '_scan_findings_total{site="' . $site . '",category="file_change"} ' . (int) ($scan_issue_metrics['file_change'] ?? 0);
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'rate_limited_events_window')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'rate_limited_events_window')) {
             $metrics[] = '# HELP ' . $prefix . '_rate_limited_events_window Rate-limited or throttled requests observed within recent windows.';
             $metrics[] = '# TYPE ' . $prefix . '_rate_limited_events_window gauge';
             $metrics[] = $prefix . '_rate_limited_events_window{site="' . $site . '",window="5m"} ' . self::window_metric_value($window_counts, 'rate_limited', '5m');
@@ -1416,27 +1416,27 @@ final class Simula_Wordfence_Node_Exporter_Service {
             $metrics[] = $prefix . '_rate_limited_events_window{site="' . $site . '",window="7d"} ' . self::window_metric_value($window_counts, 'rate_limited', '7d');
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'top_attack_sources_24h')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'top_attack_sources_24h')) {
             $metrics[] = '# HELP ' . $prefix . '_top_attack_sources_24h Top blocked attack sources over the last 24 hours.';
             $metrics[] = '# TYPE ' . $prefix . '_top_attack_sources_24h gauge';
             foreach ((array) $top_attack_sources as $row) {
                 $source_type = isset($row['source_type']) ? (string) $row['source_type'] : 'unknown';
                 $source_name = isset($row['source']) ? (string) $row['source'] : 'unknown';
                 $count       = isset($row['count_total']) ? (int) $row['count_total'] : 0;
-                $metrics[] = $prefix . '_top_attack_sources_24h{site="' . $site . '",source_type="' . Simula_Wordfence_Node_Exporter_Output::escape_label($source_type) . '",source="' . Simula_Wordfence_Node_Exporter_Output::escape_label($source_name) . '"} ' . $count;
+                $metrics[] = $prefix . '_top_attack_sources_24h{site="' . $site . '",source_type="' . Simula_Wordfence_Grafana_Output::escape_label($source_type) . '",source="' . Simula_Wordfence_Grafana_Output::escape_label($source_name) . '"} ' . $count;
             }
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'brute_force_events_window')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'brute_force_events_window')) {
             $metrics[] = '# HELP ' . $prefix . '_brute_force_events_window Brute-force activity observed within recent windows.';
             $metrics[] = '# TYPE ' . $prefix . '_brute_force_events_window gauge';
-            foreach (Simula_Wordfence_Node_Exporter_Config::WINDOWS as $window) {
+            foreach (Simula_Wordfence_Grafana_Config::WINDOWS as $window) {
                 $metrics[] = $prefix . '_brute_force_events_window{site="' . $site . '",vector="username",window="' . $window . '"} ' . self::window_metric_value($window_counts, 'brute_username', $window);
                 $metrics[] = $prefix . '_brute_force_events_window{site="' . $site . '",vector="xmlrpc",window="' . $window . '"} ' . self::window_metric_value($window_counts, 'brute_xmlrpc', $window);
             }
         }
 
-        if (Simula_Wordfence_Node_Exporter_Settings::is_metric_enabled($options, 'vulnerability_findings_total')) {
+        if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'vulnerability_findings_total')) {
             $metrics[] = '# HELP ' . $prefix . '_vulnerability_findings_total Current Wordfence scan findings indicating outdated or vulnerable components.';
             $metrics[] = '# TYPE ' . $prefix . '_vulnerability_findings_total gauge';
             $metrics[] = $prefix . '_vulnerability_findings_total{site="' . $site . '",component="core"} ' . (int) ($scan_issue_metrics['vulnerabilities']['core'] ?? 0);
@@ -1448,7 +1448,7 @@ final class Simula_Wordfence_Node_Exporter_Service {
         $state['last_export']   = $now;
         $state['last_id']       = $last_id;
 
-        return Simula_Wordfence_Node_Exporter_Output::write_metrics(
+        return Simula_Wordfence_Grafana_Output::write_metrics(
             $options['prom_file'],
             empty($metrics) ? '' : implode("\n", $metrics) . "\n",
             '',
@@ -1474,28 +1474,28 @@ final class Simula_Wordfence_Node_Exporter_Service {
     }
 }
 
-final class Simula_Wordfence_Node_Exporter_Admin {
+final class Simula_Wordfence_Grafana_Admin {
     /** Registers the plugin settings page under the WordPress Settings menu. */
     public static function admin_menu() {
         add_options_page(
-            __('Simula Wordfence Node Exporter Metrics', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
-            __('Wordfence Metrics', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
-            Simula_Wordfence_Node_Exporter_Config::CAPABILITY,
-            Simula_Wordfence_Node_Exporter_Config::SLUG,
+            __('Simula Wordfence Grafana Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            __('Wordfence Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            Simula_Wordfence_Grafana_Config::CAPABILITY,
+            Simula_Wordfence_Grafana_Config::SLUG,
             [__CLASS__, 'settings_page']
         );
     }
 
     /** Adds a Settings shortcut link on the plugins screen. */
     public static function plugin_action_links($links) {
-        $url = admin_url('options-general.php?page=' . Simula_Wordfence_Node_Exporter_Config::SLUG);
+        $url = admin_url('options-general.php?page=' . Simula_Wordfence_Grafana_Config::SLUG);
 
         array_unshift(
             $links,
             sprintf(
                 '<a href="%s">%s</a>',
                 esc_url($url),
-                esc_html__('Settings', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN)
+                esc_html__('Settings', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
             )
         );
 
@@ -1504,13 +1504,13 @@ final class Simula_Wordfence_Node_Exporter_Admin {
 
     /** Renders the settings page and handles manual export requests. */
     public static function settings_page() {
-        if (!current_user_can(Simula_Wordfence_Node_Exporter_Config::CAPABILITY)) {
+        if (!current_user_can(Simula_Wordfence_Grafana_Config::CAPABILITY)) {
             return;
         }
 
         if (isset($_POST['wfne_export_now'])) {
             check_admin_referer('wfne_export_now');
-            $result = Simula_Wordfence_Node_Exporter_Service::export(true);
+            $result = Simula_Wordfence_Grafana_Service::export(true);
             add_settings_error(
                 'wfne_metrics',
                 'wfne-export-now',
@@ -1519,12 +1519,12 @@ final class Simula_Wordfence_Node_Exporter_Admin {
             );
         }
 
-        $options = Simula_Wordfence_Node_Exporter_Settings::get_options();
-        $state   = Simula_Wordfence_Node_Exporter_Settings::get_state();
+        $options = Simula_Wordfence_Grafana_Settings::get_options();
+        $state   = Simula_Wordfence_Grafana_Settings::get_state();
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Simula Wordfence Node Exporter Metrics', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></h1>
-            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></p>
+            <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h1>
+            <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
 
             <?php settings_errors('wfne_metrics'); ?>
 
@@ -1532,63 +1532,63 @@ final class Simula_Wordfence_Node_Exporter_Admin {
                 <?php settings_fields('wfne_metrics'); ?>
                 <table class="form-table" role="presentation">
                     <tr>
-                        <th scope="row"><?php echo esc_html__('Enable scheduled exports', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></th>
+                        <th scope="row"><?php echo esc_html__('Enable scheduled exports', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
                         <td>
                             <label>
-                                <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[enabled]" value="1" <?php checked($options['enabled'], 1); ?> />
-                                <?php echo esc_html__('Run the exporter on a recurring WP-Cron schedule.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?>
+                                <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled]" value="1" <?php checked($options['enabled'], 1); ?> />
+                                <?php echo esc_html__('Run the exporter on a recurring WP-Cron schedule.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?>
                             </label>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></label>
+                            <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
                         </th>
                         <td>
-                            <select id="wfne-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[cron_interval]">
-                                <?php foreach (Simula_Wordfence_Node_Exporter_Metrics::cron_interval_labels() as $interval_key => $interval_label) : ?>
+                            <select id="wfne-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[cron_interval]">
+                                <?php foreach (Simula_Wordfence_Grafana_Metrics::cron_interval_labels() as $interval_key => $interval_label) : ?>
                                     <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['cron_interval'], $interval_key); ?>>
                                         <?php echo esc_html($interval_label); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <p class="description"><?php echo esc_html__('Controls how often scheduled exports run when enabled.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></p>
+                            <p class="description"><?php echo esc_html__('Controls how often scheduled exports run when enabled.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="wfne-prom-file"><?php echo esc_html__('Prometheus file path', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></label>
+                            <label for="wfne-prom-file"><?php echo esc_html__('Prometheus file path', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
                         </th>
                         <td>
-                            <input id="wfne-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
-                            <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></p>
+                            <input id="wfne-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
+                            <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="wfne-metric-prefix"><?php echo esc_html__('Metric prefix', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></label>
+                            <label for="wfne-metric-prefix"><?php echo esc_html__('Metric prefix', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
                         </th>
                         <td>
-                            <input id="wfne-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
-                            <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></p>
+                            <input id="wfne-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
+                            <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="wfne-site-label"><?php echo esc_html__('Site label', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></label>
+                            <label for="wfne-site-label"><?php echo esc_html__('Site label', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></label>
                         </th>
                         <td>
-                            <input id="wfne-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
-                            <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></p>
+                            <input id="wfne-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
+                            <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><?php echo esc_html__('Exported metrics', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></th>
+                        <th scope="row"><?php echo esc_html__('Exported metrics', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></th>
                         <td>
                             <fieldset>
-                                <?php foreach (Simula_Wordfence_Node_Exporter_Config::metric_definitions() as $metric_key => $metric_definition) : ?>
+                                <?php foreach (Simula_Wordfence_Grafana_Config::metric_definitions() as $metric_key => $metric_definition) : ?>
                                     <label style="display:block; margin-bottom:12px;">
-                                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Node_Exporter_Config::OPTION); ?>[enabled_metrics][<?php echo esc_attr($metric_key); ?>]" value="1" <?php checked(!empty($options['enabled_metrics'][$metric_key])); ?> />
+                                        <input type="checkbox" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[enabled_metrics][<?php echo esc_attr($metric_key); ?>]" value="1" <?php checked(!empty($options['enabled_metrics'][$metric_key])); ?> />
                                         <strong><code><?php echo esc_html($options['metric_prefix'] . '_' . $metric_key); ?></code></strong>
                                         <?php echo esc_html($metric_definition['label']); ?>
                                         <br />
@@ -1606,30 +1606,30 @@ final class Simula_Wordfence_Node_Exporter_Admin {
 
             <form method="post">
                 <?php wp_nonce_field('wfne_export_now'); ?>
-                <?php submit_button(__('Export now', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN), 'secondary', 'wfne_export_now'); ?>
+                <?php submit_button(__('Export now', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN), 'secondary', 'wfne_export_now'); ?>
             </form>
 
-            <h2><?php echo esc_html__('Current state', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></h2>
+            <h2><?php echo esc_html__('Current state', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></h2>
             <table class="widefat striped" style="max-width:900px">
                 <tbody>
                     <tr>
-                        <td><strong><?php echo esc_html__('Last export timestamp', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html(Simula_Wordfence_Node_Exporter_Settings::format_state_time($state['last_export'] ?? null)); ?></td>
+                        <td><strong><?php echo esc_html__('Last export timestamp', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
+                        <td><?php echo esc_html(Simula_Wordfence_Grafana_Settings::format_state_time($state['last_export'] ?? null)); ?></td>
                     </tr>
                     <tr>
-                        <td><strong><?php echo esc_html__('Observed blocked events', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></strong></td>
+                        <td><strong><?php echo esc_html__('Observed blocked events', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
                         <td><?php echo esc_html((string) ($state['blocked_total'] ?? 0)); ?></td>
                     </tr>
                     <tr>
-                        <td><strong><?php echo esc_html__('Last processed hit ID', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></strong></td>
+                        <td><strong><?php echo esc_html__('Last processed hit ID', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
                         <td><?php echo esc_html((string) ($state['last_id'] ?? 0)); ?></td>
                     </tr>
                     <tr>
-                        <td><strong><?php echo esc_html__('Last result', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></strong></td>
-                        <td><?php echo esc_html((string) ($state['last_result'] ?? __('No exports yet.', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN))); ?></td>
+                        <td><strong><?php echo esc_html__('Last result', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
+                        <td><?php echo esc_html((string) ($state['last_result'] ?? __('No exports yet.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN))); ?></td>
                     </tr>
                     <tr>
-                        <td><strong><?php echo esc_html__('Last error', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN); ?></strong></td>
+                        <td><strong><?php echo esc_html__('Last error', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN); ?></strong></td>
                         <td><?php echo esc_html((string) ($state['last_error'] ?? '')); ?></td>
                     </tr>
                 </tbody>
@@ -1639,15 +1639,15 @@ final class Simula_Wordfence_Node_Exporter_Admin {
     }
 }
 
-final class Simula_Wordfence_Node_Exporter_Metrics {
+final class Simula_Wordfence_Grafana_Metrics {
     /** Hooks the plugin into WordPress actions, filters, and lifecycle events. */
     public static function init() {
         add_action('plugins_loaded', [__CLASS__, 'load_textdomain']);
-        add_action('admin_menu', ['Simula_Wordfence_Node_Exporter_Admin', 'admin_menu']);
-        add_action('admin_init', ['Simula_Wordfence_Node_Exporter_Settings', 'register_settings']);
-        add_action(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK, ['Simula_Wordfence_Node_Exporter_Service', 'export']);
+        add_action('admin_menu', ['Simula_Wordfence_Grafana_Admin', 'admin_menu']);
+        add_action('admin_init', ['Simula_Wordfence_Grafana_Settings', 'register_settings']);
+        add_action(Simula_Wordfence_Grafana_Config::CRON_HOOK, ['Simula_Wordfence_Grafana_Service', 'export']);
         add_filter('cron_schedules', [__CLASS__, 'cron_schedules']);
-        add_filter('plugin_action_links_' . plugin_basename(__FILE__), ['Simula_Wordfence_Node_Exporter_Admin', 'plugin_action_links']);
+        add_filter('plugin_action_links_' . plugin_basename(__FILE__), ['Simula_Wordfence_Grafana_Admin', 'plugin_action_links']);
 
         register_activation_hook(__FILE__, [__CLASS__, 'activate']);
         register_deactivation_hook(__FILE__, [__CLASS__, 'deactivate']);
@@ -1656,16 +1656,16 @@ final class Simula_Wordfence_Node_Exporter_Metrics {
 
     /** Loads the plugin translation files. */
     public static function load_textdomain() {
-        load_plugin_textdomain(Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages');
+        load_plugin_textdomain(Simula_Wordfence_Grafana_Config::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
 
     /** Returns the selectable schedule labels for cron interval settings. */
     public static function cron_interval_labels() {
         return [
-            'wfne_five_minutes'    => __('Every five minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
-            'wfne_fifteen_minutes' => __('Every fifteen minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
-            'wfne_thirty_minutes'  => __('Every thirty minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
-            'hourly'               => __('Hourly', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            'wfne_five_minutes'    => __('Every five minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'wfne_fifteen_minutes' => __('Every fifteen minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'wfne_thirty_minutes'  => __('Every thirty minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'hourly'               => __('Hourly', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
         ];
     }
 
@@ -1673,15 +1673,15 @@ final class Simula_Wordfence_Node_Exporter_Metrics {
     public static function cron_schedules($schedules) {
         $schedules['wfne_five_minutes'] = [
             'interval' => 300,
-            'display'  => __('Every five minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            'display'  => __('Every five minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
         ];
         $schedules['wfne_fifteen_minutes'] = [
             'interval' => 900,
-            'display'  => __('Every fifteen minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            'display'  => __('Every fifteen minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
         ];
         $schedules['wfne_thirty_minutes'] = [
             'interval' => 1800,
-            'display'  => __('Every thirty minutes', Simula_Wordfence_Node_Exporter_Config::TEXT_DOMAIN),
+            'display'  => __('Every thirty minutes', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
         ];
 
         return $schedules;
@@ -1689,33 +1689,33 @@ final class Simula_Wordfence_Node_Exporter_Metrics {
 
     /** Initializes options, schedules exports, and writes the first metrics file on activation. */
     public static function activate() {
-        if (!get_option(Simula_Wordfence_Node_Exporter_Config::OPTION)) {
-            add_option(Simula_Wordfence_Node_Exporter_Config::OPTION, Simula_Wordfence_Node_Exporter_Config::defaults(), '', false);
+        if (!get_option(Simula_Wordfence_Grafana_Config::OPTION)) {
+            add_option(Simula_Wordfence_Grafana_Config::OPTION, Simula_Wordfence_Grafana_Config::defaults(), '', false);
         }
 
-        $options = Simula_Wordfence_Node_Exporter_Settings::get_options();
-        Simula_Wordfence_Node_Exporter_Settings::sync_schedule($options);
+        $options = Simula_Wordfence_Grafana_Settings::get_options();
+        Simula_Wordfence_Grafana_Settings::sync_schedule($options);
 
         if ($options['enabled']) {
-            Simula_Wordfence_Node_Exporter_Service::export();
+            Simula_Wordfence_Grafana_Service::export();
             return;
         }
 
-        Simula_Wordfence_Node_Exporter_Output::write_disabled_metrics($options);
+        Simula_Wordfence_Grafana_Output::write_disabled_metrics($options);
     }
 
     /** Unschedules the exporter cron job when the plugin is deactivated. */
     public static function deactivate() {
-        wp_clear_scheduled_hook(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
+        wp_clear_scheduled_hook(Simula_Wordfence_Grafana_Config::CRON_HOOK);
     }
 
     /** Removes plugin data and deletes the generated metrics file on uninstall. */
     public static function uninstall() {
-        $options = Simula_Wordfence_Node_Exporter_Settings::get_options();
+        $options = Simula_Wordfence_Grafana_Settings::get_options();
 
-        wp_clear_scheduled_hook(Simula_Wordfence_Node_Exporter_Config::CRON_HOOK);
-        delete_option(Simula_Wordfence_Node_Exporter_Config::OPTION);
-        delete_option(Simula_Wordfence_Node_Exporter_Config::STATE);
+        wp_clear_scheduled_hook(Simula_Wordfence_Grafana_Config::CRON_HOOK);
+        delete_option(Simula_Wordfence_Grafana_Config::OPTION);
+        delete_option(Simula_Wordfence_Grafana_Config::STATE);
 
         if (!empty($options['prom_file']) && is_string($options['prom_file']) && preg_match('/\.prom$/', $options['prom_file'])) {
             @unlink($options['prom_file']);
@@ -1723,4 +1723,4 @@ final class Simula_Wordfence_Node_Exporter_Metrics {
     }
 }
 
-Simula_Wordfence_Node_Exporter_Metrics::init();
+Simula_Wordfence_Grafana_Metrics::init();

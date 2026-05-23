@@ -1,4 +1,4 @@
-=== Simula Wordfence Node Exporter Integration ===
+=== Simula Wordfence Grafana Integration ===
 Contributors: simulalab
 Tags: wordfence, prometheus, monitoring, node-exporter, metrics, security
 Requires at least: 6.0
@@ -13,7 +13,7 @@ Export Prometheus metrics from Wordfence into a node_exporter textfile collector
 
 == Description ==
 
-Simula Wordfence Node Exporter Integration exports Wordfence activity as Prometheus metrics for the node_exporter textfile collector.
+Simula Wordfence Grafana Integration exports Wordfence activity as Prometheus metrics for the node_exporter textfile collector.
 
 This plugin is intended for WordPress sites that already use Wordfence and Prometheus-based infrastructure. Instead of exposing a public metrics endpoint from WordPress, the plugin writes a local .prom file that node_exporter can read and publish to Prometheus.
 
