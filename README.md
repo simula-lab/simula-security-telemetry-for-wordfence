@@ -8,8 +8,8 @@
 It is designed for WordPress sites that already run:
 
 - Wordfence
-- Prometheus
 - `node_exporter` with the textfile collector enabled
+- `alloy` with the a log
 
 The plugin writes local files on a schedule, so Prometheus and log-based tooling can ingest Wordfence activity without exposing a public metrics endpoint from WordPress.
 
