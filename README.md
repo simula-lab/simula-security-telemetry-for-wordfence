@@ -20,10 +20,11 @@ The plugin reads data from available Wordfence tables and can write:
 - A Prometheus `.prom` file such as `/var/lib/node_exporter/textfile_collector/wordfence.prom`
 - An append-only incident log such as `/var/log/wordpress-wordfence-incidents.log`
 
-By default, it runs every 5 minutes using WP-Cron and supports:
+By default, it runs a fast collector every 15 minutes and a slow collector hourly using WP-Cron. It supports:
 
 - Exporter health and plugin metadata metrics
 - Configurable cron interval
+- Separate fast and slow collector intervals
 - Per-metric-family enable or disable controls
 - Blocked event counters and recent activity windows
 - Blocked event counts by HTTP status code
@@ -37,6 +38,10 @@ By default, it runs every 5 minutes using WP-Cron and supports:
 - Manual export from the admin screen
 - Incident cursor reset for controlled backfill
 - Current exporter and incident state visibility in the admin UI
+- Optional JSON Lines incident output
+- WP-CLI exports for system cron
+- Source freshness and WordPress/Wordfence posture metrics
+- A ready-to-import Grafana dashboard and sample Prometheus alert rules
 
 Blocked events are currently identified as Wordfence hits where:
 
@@ -77,6 +82,7 @@ Settings > Wordfence Metrics
 
 - `Enable exporter`
 - `Cron interval`
+- `Slow collector interval`
 - `Prometheus file path`
 - `Metric prefix`
 - `Site label`
@@ -87,6 +93,7 @@ Settings > Wordfence Metrics
 
 - `Enable incident log export`
 - `Incident log path`
+- `Incident log format`
 - `Max incidents per run`
 
 ### Manual actions and state
@@ -100,11 +107,13 @@ The settings page also provides:
 
 Default values:
 
-- `Cron interval`: `Every five minutes`
+- `Cron interval`: `Every fifteen minutes`
+- `Slow collector interval`: `Hourly`
 - `Prometheus file path`: `/var/lib/node_exporter/textfile_collector/wordfence.prom`
 - `Metric prefix`: `wordpress_wordfence`
 - `Site label`: current site host name
 - `Incident log path`: `/var/log/wordpress-wordfence-incidents.log`
+- `Incident log format`: `text`
 - `Max incidents per run`: `1000`
 
 Path validation rules:
@@ -160,14 +169,14 @@ All metrics include a `site` label.
 
 - `wordpress_wordfence_export_success`
   Indicates whether the last export succeeded.
-- `wordpress_wordfence_plugin_info{version="1.0.0"}`
+- `wordpress_wordfence_plugin_info{version="2.0.0"}`
   Static plugin metadata metric.
 - `wordpress_wordfence_last_export_timestamp_seconds`
   Unix timestamp of the last export attempt or successful export.
 - `wordpress_wordfence_enabled`
   `1` when the exporter master switch is enabled, `0` otherwise.
-- `wordpress_wordfence_error_info{message="..."}`
-  Failure-state marker containing the latest export error.
+- `wordpress_wordfence_error_info{type="write_failed|schema_unsupported|wordfence_missing|incident_failed|unknown"}`
+  Failure-state marker with a bounded error type. The detailed error remains in the admin UI and WP-CLI status.
 
 ### Wordfence activity metrics
 
@@ -185,6 +194,14 @@ All metrics include a `site` label.
   Brute-force activity in recent windows.
 - `wordpress_wordfence_top_attack_sources_24h{source_type="country|ip_range",source="..."}`
   Top blocked attack sources over the last 24 hours.
+- `wordpress_wordfence_latest_hit_timestamp_seconds`
+  Latest observed Wordfence hit timestamp.
+- `wordpress_wordfence_latest_blocked_hit_timestamp_seconds`
+  Latest observed blocked Wordfence hit timestamp.
+- `wordpress_wordfence_latest_scan_timestamp_seconds`
+  Latest observed scan issue update timestamp when available.
+- `wordpress_wordfence_scan_age_seconds`
+  Age of the latest observed scan issue update.
 
 ### Access-control and scan metrics
 
@@ -201,9 +218,36 @@ All metrics include a `site` label.
 - `wordpress_wordfence_vulnerability_findings_total{component="core|plugin|theme"}`
   Current vulnerable or outdated core, plugin, and theme findings.
 
+### Posture metrics
+
+- `wordpress_wordfence_installed`
+  Whether Wordfence appears installed or present in the database.
+- `wordpress_wordfence_version_info{version="..."}`
+  Wordfence version metadata when available.
+- `wordpress_wordfence_firewall_enabled`
+  Whether the Wordfence firewall appears enabled.
+- `wordpress_wordfence_firewall_optimized`
+  Whether the Wordfence firewall appears optimized.
+- `wordpress_wordfence_live_traffic_enabled`
+  Whether Wordfence live traffic appears enabled.
+- `wordpress_wordfence_scan_enabled`
+  Whether Wordfence scanning appears enabled.
+- `wordpress_wordfence_license_type{type="free|premium|unknown"}`
+  Wordfence license type metadata.
+- `wordpress_wordfence_core_update_available`
+  Whether a WordPress core update is available.
+- `wordpress_wordfence_plugin_update_available_total`
+  Number of plugin updates available.
+- `wordpress_wordfence_theme_update_available_total`
+  Number of theme updates available.
+- `wordpress_wordfence_admin_users_total`
+  Number of administrator users.
+- `wordpress_wordfence_admin_users_without_2fa_total`
+  Number of administrator users without Wordfence two-factor secrets.
+
 ## Incident Log Export
 
-When incident export is enabled, each run appends newly observed blocked Wordfence hits to the configured log file as plain-text log lines. A `.jsonl` suffix is accepted for compatibility, but the output format is still plain text rather than JSON.
+When incident export is enabled, each fast or full export appends newly observed blocked Wordfence hits to the configured log file. The default `text` format preserves the v1 log line format. The `jsonl` format emits one JSON object per blocked event for Loki, ELK, OpenSearch, and similar pipelines.
 
 Operational behavior:
 
@@ -218,6 +262,55 @@ Example log line:
 ```text
 [23-May-2026 12:34:56 UTC] Wordfence blocked request: site="example.com" hostname="web-01" blog_id=1 hit_id=123 ip="203.0.113.10" status=403 action="blocked:waf" reason="SQL injection attempt" method="POST" url="/wp-admin/admin-ajax.php" referer="https://example.com/" user_agent="curl/8.0" country="NO"
 ```
+
+Example JSON Lines event:
+
+```json
+{
+  "timestamp": "2026-05-23T12:34:56+00:00",
+  "site": "example.com",
+  "hostname": "web-01",
+  "blog_id": 1,
+  "hit_id": 123,
+  "ip": "203.0.113.10",
+  "status": 403,
+  "action": "blocked:waf",
+  "reason": "SQL injection attempt",
+  "method": "POST",
+  "url": "/wp-admin/admin-ajax.php",
+  "referer": "https://example.com/",
+  "user_agent": "curl/8.0",
+  "country": "NO",
+  "wf_table": "wp_wfHits"
+}
+```
+
+## WP-CLI
+
+If WP-CLI is available, the plugin registers:
+
+```bash
+wp wordfence-metrics export
+wp wordfence-metrics export --metrics-only
+wp wordfence-metrics export --metrics-only --scope=fast
+wp wordfence-metrics export --metrics-only --scope=slow
+wp wordfence-metrics export --incidents-only
+wp wordfence-metrics reset-cursor
+wp wordfence-metrics status
+```
+
+For production scheduling, prefer system cron invoking WP-CLI over relying only on traffic-triggered WP-Cron:
+
+```cron
+*/15 * * * * cd /path/to/wordpress && wp wordfence-metrics export --quiet
+0 * * * * cd /path/to/wordpress && wp wordfence-metrics export --metrics-only --scope=slow --quiet
+```
+
+## Grafana and Prometheus Assets
+
+- Import `examples/grafana/grafana-dashboard-wordfence-security-overview.json` into Grafana and select your Prometheus datasource.
+- Load `examples/prometheus/wordfence-alerts.yml` into Prometheus or your rule management workflow.
+- Adjust alert thresholds to match site traffic. The defaults are intentionally conservative starting points for blocked request spikes, failed login bursts, stale exports, malware findings, vulnerabilities, and administrator 2FA coverage.
 
 ## Example Prometheus Scrape Flow
 
