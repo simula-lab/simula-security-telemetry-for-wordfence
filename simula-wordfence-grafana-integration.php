@@ -129,6 +129,76 @@ final class Simula_Wordfence_Grafana_Config {
     }
 }
 
+final class Simula_Wordfence_Grafana_Util {
+    /** Escapes a database identifier for use in dynamic SQL fragments. */
+    public static function quote_identifier($identifier) {
+        return '`' . str_replace('`', '``', (string) $identifier) . '`';
+    }
+
+    /** Returns the first matching candidate from a resolved column metadata map. */
+    public static function resolve_first_candidate($columns, $candidates) {
+        foreach ((array) $candidates as $candidate) {
+            if (isset($columns[$candidate])) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /** Filters candidate names down to the entries available in a resolved column metadata map. */
+    public static function resolve_available_candidates($columns, $candidates) {
+        $available = [];
+
+        foreach ((array) $candidates as $candidate) {
+            if (isset($columns[$candidate])) {
+                $available[] = $candidate;
+            }
+        }
+
+        return $available;
+    }
+
+    /** Validates and normalizes an absolute file path against an allowed extension pattern. */
+    public static function sanitize_file_setting_path($value, $default, $absolute_error_code, $absolute_error_message, $extension_error_code, $extension_pattern, $extension_error_message) {
+        $value = trim(wp_unslash((string) $value));
+        if ($value === '') {
+            $value = (string) $default;
+        }
+
+        $value = wp_normalize_path($value);
+
+        if (!self::is_absolute_path($value)) {
+            add_settings_error(
+                'wfne_metrics',
+                $absolute_error_code,
+                $absolute_error_message,
+                'error'
+            );
+
+            return (string) $default;
+        }
+
+        if (!preg_match($extension_pattern, $value)) {
+            add_settings_error(
+                'wfne_metrics',
+                $extension_error_code,
+                $extension_error_message,
+                'error'
+            );
+
+            return (string) $default;
+        }
+
+        return $value;
+    }
+
+    /** Checks whether a filesystem path is absolute on Unix or Windows. */
+    private static function is_absolute_path($path) {
+        return (bool) preg_match('#^(?:[A-Za-z]:[\\\\/]|/)#', $path);
+    }
+}
+
 final class Simula_Wordfence_Grafana_Settings {
     /** Registers the plugin settings and sanitization callback. */
     public static function register_settings() {
@@ -233,70 +303,32 @@ final class Simula_Wordfence_Grafana_Settings {
 
     /** Validates and normalizes the configured Prometheus output file path. */
     private static function sanitize_prom_file($value) {
-        $value = trim(wp_unslash((string) $value));
-        if ($value === '') {
-            $value = Simula_Wordfence_Grafana_Config::defaults()['prom_file'];
-        }
+        $default = Simula_Wordfence_Grafana_Config::defaults()['prom_file'];
 
-        $value = wp_normalize_path($value);
-
-        if (!self::is_absolute_path($value)) {
-            add_settings_error(
-                'wfne_metrics',
-                'wfne-prom-file',
-                __('The Prometheus file path must be absolute. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-                'error'
-            );
-
-            return Simula_Wordfence_Grafana_Config::defaults()['prom_file'];
-        }
-
-        if (!preg_match('/\.prom$/', $value)) {
-            add_settings_error(
-                'wfne_metrics',
-                'wfne-prom-file-extension',
-                __('The Prometheus file path must end with .prom. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-                'error'
-            );
-
-            return Simula_Wordfence_Grafana_Config::defaults()['prom_file'];
-        }
-
-        return $value;
+        return Simula_Wordfence_Grafana_Util::sanitize_file_setting_path(
+            $value,
+            $default,
+            'wfne-prom-file',
+            __('The Prometheus file path must be absolute. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'wfne-prom-file-extension',
+            '/\.prom$/',
+            __('The Prometheus file path must end with .prom. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+        );
     }
 
     /** Validates and normalizes the configured incident log output path. */
     private static function sanitize_incident_log_file($value) {
-        $value = trim(wp_unslash((string) $value));
-        if ($value === '') {
-            $value = Simula_Wordfence_Grafana_Config::defaults()['incident_log_file'];
-        }
+        $default = Simula_Wordfence_Grafana_Config::defaults()['incident_log_file'];
 
-        $value = wp_normalize_path($value);
-
-        if (!self::is_absolute_path($value)) {
-            add_settings_error(
-                'wfne_metrics',
-                'wfne-incident-log-file',
-                __('The incident log file path must be absolute. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-                'error'
-            );
-
-            return Simula_Wordfence_Grafana_Config::defaults()['incident_log_file'];
-        }
-
-        if (!preg_match('/\.(?:log|jsonl)$/', $value)) {
-            add_settings_error(
-                'wfne_metrics',
-                'wfne-incident-log-file-extension',
-                __('The incident log file path must end with .log or .jsonl. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
-                'error'
-            );
-
-            return Simula_Wordfence_Grafana_Config::defaults()['incident_log_file'];
-        }
-
-        return $value;
+        return Simula_Wordfence_Grafana_Util::sanitize_file_setting_path(
+            $value,
+            $default,
+            'wfne-incident-log-file',
+            __('The incident log file path must be absolute. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN),
+            'wfne-incident-log-file-extension',
+            '/\.(?:log|jsonl)$/',
+            __('The incident log file path must end with .log or .jsonl. The default path has been restored.', Simula_Wordfence_Grafana_Config::TEXT_DOMAIN)
+        );
     }
 
     /** Converts the configured metric prefix into a Prometheus-safe identifier. */
@@ -328,11 +360,6 @@ final class Simula_Wordfence_Grafana_Settings {
         }
 
         return min($value, 10000);
-    }
-
-    /** Checks whether a filesystem path is absolute on Unix or Windows. */
-    private static function is_absolute_path($path) {
-        return (bool) preg_match('#^(?:[A-Za-z]:[\\\\/]|/)#', $path);
     }
 
     /** Normalizes stored metric settings to include every known metric family. */
@@ -538,15 +565,7 @@ final class Simula_Wordfence_Grafana_Wordfence {
 
     /** Returns the first column name that exists from a list of candidates. */
     public static function first_available_column($table, $candidates) {
-        $columns = self::table_columns($table);
-
-        foreach ((array) $candidates as $candidate) {
-            if (isset($columns[$candidate])) {
-                return $candidate;
-            }
-        }
-
-        return null;
+        return Simula_Wordfence_Grafana_Util::resolve_first_candidate(self::table_columns($table), $candidates);
     }
 
     /** Builds the SQL condition used to identify blocked requests in a hits table. */
@@ -1036,21 +1055,7 @@ final class Simula_Wordfence_Grafana_Wordfence {
 
     /** Filters a list of candidate column names down to those present in a table. */
     private static function available_columns($table, $candidates) {
-        $columns   = self::table_columns($table);
-        $available = [];
-
-        foreach ((array) $candidates as $candidate) {
-            if (isset($columns[$candidate])) {
-                $available[] = $candidate;
-            }
-        }
-
-        return $available;
-    }
-
-    /** Escapes a database identifier for use in dynamic SQL fragments. */
-    private static function quote_identifier($identifier) {
-        return '`' . str_replace('`', '``', (string) $identifier) . '`';
+        return Simula_Wordfence_Grafana_Util::resolve_available_candidates(self::table_columns($table), $candidates);
     }
 
     /** Builds a text-search SQL condition across matching columns in a table. */
@@ -1074,6 +1079,11 @@ final class Simula_Wordfence_Grafana_Wordfence {
         }
 
         return self::combine_where_any($clauses);
+    }
+
+    /** Escapes a database identifier for use in dynamic SQL fragments. */
+    private static function quote_identifier($identifier) {
+        return Simula_Wordfence_Grafana_Util::quote_identifier($identifier);
     }
 
     /** Combines SQL clauses with OR and returns an always-false condition when empty. */
@@ -1222,7 +1232,7 @@ final class Simula_Wordfence_Grafana_Incidents {
         $id_column  = null;
 
         if (Simula_Wordfence_Grafana_Wordfence::table_exists($table)) {
-            $id_column = self::resolve_first_column(
+            $id_column = Simula_Wordfence_Grafana_Util::resolve_first_candidate(
                 Simula_Wordfence_Grafana_Wordfence::table_columns($table),
                 ['id']
             );
@@ -1422,29 +1432,18 @@ final class Simula_Wordfence_Grafana_Incidents {
 
         return [
             'columns'    => $columns,
-            'id'         => self::resolve_first_column($columns, ['id']),
-            'time'       => self::resolve_first_column($columns, ['attackLogTime', 'ctime', 'time']),
-            'status'     => self::resolve_first_column($columns, ['statusCode', 'status']),
-            'action'     => self::resolve_first_column($columns, ['action']),
-            'reason'     => self::resolve_first_column($columns, ['actionDescription', 'description', 'msg', 'message', 'reason']),
-            'method'     => self::resolve_first_column($columns, ['method', 'httpMethod', 'requestMethod']),
-            'url'        => self::resolve_first_column($columns, ['URL', 'url', 'uri', 'requestUri', 'request_uri', 'path']),
-            'referer'    => self::resolve_first_column($columns, ['referer', 'Referer', 'referrer']),
-            'user_agent' => self::resolve_first_column($columns, ['UA', 'user_agent', 'userAgent']),
-            'country'    => self::resolve_first_column($columns, ['ctry', 'countryCode', 'country']),
-            'ip'         => self::resolve_first_column($columns, ['IP', 'ip', 'ipaddress', 'ipAddress']),
+            'id'         => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['id']),
+            'time'       => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['attackLogTime', 'ctime', 'time']),
+            'status'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['statusCode', 'status']),
+            'action'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['action']),
+            'reason'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['actionDescription', 'description', 'msg', 'message', 'reason']),
+            'method'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['method', 'httpMethod', 'requestMethod']),
+            'url'        => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['URL', 'url', 'uri', 'requestUri', 'request_uri', 'path']),
+            'referer'    => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['referer', 'Referer', 'referrer']),
+            'user_agent' => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['UA', 'user_agent', 'userAgent']),
+            'country'    => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['ctry', 'countryCode', 'country']),
+            'ip'         => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['IP', 'ip', 'ipaddress', 'ipAddress']),
         ];
-    }
-
-    /** Selects the first available column name from a resolved column metadata map. */
-    private static function resolve_first_column($columns, $candidates) {
-        foreach ((array) $candidates as $candidate) {
-            if (isset($columns[$candidate])) {
-                return $candidate;
-            }
-        }
-
-        return null;
     }
 
     /** Maps a Wordfence hit row into a stable JSON event envelope. */
@@ -1645,7 +1644,7 @@ final class Simula_Wordfence_Grafana_Incidents {
 
     /** Escapes a database identifier for use in dynamic incident queries. */
     private static function quote_identifier($identifier) {
-        return '`' . str_replace('`', '``', (string) $identifier) . '`';
+        return Simula_Wordfence_Grafana_Util::quote_identifier($identifier);
     }
 }
 
@@ -1700,7 +1699,7 @@ final class Simula_Wordfence_Grafana_Service {
             );
         }
 
-        $time_identifier     = '`' . str_replace('`', '``', (string) $time_column) . '`';
+        $time_identifier     = Simula_Wordfence_Grafana_Util::quote_identifier($time_column);
         $last_id             = isset($state['last_id']) ? (int) $state['last_id'] : 0;
         $total               = isset($state['blocked_total']) ? (float) $state['blocked_total'] : 0.0;
         $windows             = self::window_timestamps($now);
@@ -1784,7 +1783,7 @@ final class Simula_Wordfence_Grafana_Service {
         if (Simula_Wordfence_Grafana_Settings::is_metric_enabled($options, 'blocked_events_by_status_24h')) {
             $status_column = Simula_Wordfence_Grafana_Wordfence::first_available_column($table, ['statusCode', 'status']);
             if ($status_column !== null) {
-                $status_identifier = '`' . str_replace('`', '``', (string) $status_column) . '`';
+                $status_identifier = Simula_Wordfence_Grafana_Util::quote_identifier($status_column);
                 $status_counts     = $wpdb->get_results(
                     "SELECT $status_identifier AS status_code, COUNT(*) AS count_total
                     FROM `$table`
