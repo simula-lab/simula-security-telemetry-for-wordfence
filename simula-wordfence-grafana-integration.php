@@ -197,9 +197,47 @@ final class Simula_Wordfence_Grafana_Config {
 }
 
 final class Simula_Wordfence_Grafana_Util {
-    /** Escapes a database identifier for use in dynamic SQL fragments. */
+    /** Escapes a single database identifier for use in dynamic SQL fragments. */
     public static function quote_identifier($identifier) {
-        return '`' . str_replace('`', '``', (string) $identifier) . '`';
+        $identifier = (string) $identifier;
+
+        if (!preg_match('/\A[A-Za-z0-9_]+\z/', $identifier)) {
+            return '``';
+        }
+
+        return '`' . esc_sql($identifier) . '`';
+    }
+
+    /** Executes internally assembled SQL after identifiers/fragments have been validated. */
+    public static function db_get_var($query) {
+        global $wpdb;
+
+        // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_var($query);
+    }
+
+    /** Executes internally assembled SQL after identifiers/fragments have been validated. */
+    public static function db_get_row($query, $output = OBJECT) {
+        global $wpdb;
+
+        // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_row($query, $output);
+    }
+
+    /** Executes internally assembled SQL after identifiers/fragments have been validated. */
+    public static function db_get_results($query, $output = OBJECT) {
+        global $wpdb;
+
+        // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_results($query, $output);
+    }
+
+    /** Executes internally assembled SQL after identifiers/fragments have been validated. */
+    public static function db_get_col($query) {
+        global $wpdb;
+
+        // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_col($query);
     }
 
     /** Returns the first matching candidate from a resolved column metadata map. */
@@ -859,8 +897,9 @@ final class Simula_Wordfence_Grafana_Wordfence_Schema {
             return $cache[$table];
         }
 
-        $rows    = $wpdb->get_results("SHOW COLUMNS FROM `$table`", ARRAY_A);
-        $columns = [];
+        $table_identifier = Simula_Wordfence_Grafana_Util::quote_identifier($table);
+        $rows             = Simula_Wordfence_Grafana_Util::db_get_results("SHOW COLUMNS FROM $table_identifier", ARRAY_A);
+        $columns          = [];
 
         foreach ((array) $rows as $row) {
             if (!isset($row['Field'])) {
@@ -936,7 +975,7 @@ final class Simula_Wordfence_Grafana_Wordfence_Schema {
             return $cache;
         }
 
-        $rows  = $wpdb->get_col('SHOW TABLES');
+        $rows  = Simula_Wordfence_Grafana_Util::db_get_col('SHOW TABLES');
         $cache = [];
 
         foreach ((array) $rows as $table) {
@@ -1075,13 +1114,14 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
         global $wpdb;
 
         $sources        = [];
+        $table_identifier = self::quote_identifier($table);
         $country_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['ctry', 'countryCode', 'country']);
 
         if ($country_column !== null) {
             $country_identifier = self::quote_identifier($country_column);
-            $country_rows       = $wpdb->get_results(
+            $country_rows       = Simula_Wordfence_Grafana_Util::db_get_results(
                 "SELECT $country_identifier AS source_name, COUNT(*) AS count_total
-                FROM `$table`
+                FROM $table_identifier
                 WHERE $time_identifier >= " . (int) $since_timestamp . " AND $blocked_where AND $country_identifier IS NOT NULL AND $country_identifier <> ''
                 GROUP BY $country_identifier
                 ORDER BY count_total DESC
@@ -1105,9 +1145,9 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
         $ip_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['IP', 'ip']);
         if ($ip_column !== null) {
             $ip_identifier = self::quote_identifier($ip_column);
-            $ip_rows       = $wpdb->get_results(
+            $ip_rows       = Simula_Wordfence_Grafana_Util::db_get_results(
                 "SELECT $ip_identifier AS source_ip, COUNT(*) AS count_total
-                FROM `$table`
+                FROM $table_identifier
                 WHERE $time_identifier >= " . (int) $since_timestamp . " AND $blocked_where AND $ip_identifier IS NOT NULL
                 GROUP BY $ip_identifier
                 ORDER BY count_total DESC
@@ -1151,30 +1191,31 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
         $blocked_ip_table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table('wfBlockedIPLog');
 
         if (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($blocked_ip_table)) {
+            $blocked_ip_table_identifier = self::quote_identifier($blocked_ip_table);
             $ip_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($blocked_ip_table, ['IP', 'ip']);
             if ($ip_column !== null) {
                 $ip_identifier = self::quote_identifier($ip_column);
                 $lockout_where = self::lockout_active_where_sql($blocked_ip_table, $now);
-                $query         = 'SELECT COUNT(DISTINCT ' . $ip_identifier . ") AS total FROM `$blocked_ip_table`";
+                $query         = 'SELECT COUNT(DISTINCT ' . $ip_identifier . ") AS total FROM $blocked_ip_table_identifier";
 
                 if ($lockout_where !== '') {
                     $query .= ' WHERE ' . $lockout_where;
                 }
 
-                $counts['ip'] = (int) $wpdb->get_var($query);
+                $counts['ip'] = (int) Simula_Wordfence_Grafana_Util::db_get_var($query);
             }
 
             $user_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($blocked_ip_table, ['username', 'userName', 'user_id', 'userID', 'userId']);
             if ($user_column !== null) {
                 $user_identifier = self::quote_identifier($user_column);
                 $lockout_where   = self::lockout_active_where_sql($blocked_ip_table, $now);
-                $query           = 'SELECT COUNT(DISTINCT ' . $user_identifier . ") AS total FROM `$blocked_ip_table` WHERE $user_identifier IS NOT NULL AND $user_identifier <> ''";
+                $query           = 'SELECT COUNT(DISTINCT ' . $user_identifier . ") AS total FROM $blocked_ip_table_identifier WHERE $user_identifier IS NOT NULL AND $user_identifier <> ''";
 
                 if ($lockout_where !== '') {
                     $query .= ' AND ' . $lockout_where;
                 }
 
-                $counts['user'] = (int) $wpdb->get_var($query);
+                $counts['user'] = (int) Simula_Wordfence_Grafana_Util::db_get_var($query);
             }
         }
 
@@ -1185,8 +1226,9 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
 
             if ($user_column !== null && $lockout_where !== '') {
                 $user_identifier = self::quote_identifier($user_column);
-                $counts['user']  = (int) $wpdb->get_var(
-                    'SELECT COUNT(DISTINCT ' . $user_identifier . ") AS total FROM `$login_table` WHERE $user_identifier IS NOT NULL AND $user_identifier <> '' AND " . $lockout_where
+                $login_table_identifier = self::quote_identifier($login_table);
+                $counts['user']  = (int) Simula_Wordfence_Grafana_Util::db_get_var(
+                    'SELECT COUNT(DISTINCT ' . $user_identifier . ") AS total FROM $login_table_identifier WHERE $user_identifier IS NOT NULL AND $user_identifier <> '' AND " . $lockout_where
                 );
             }
         }
@@ -1203,20 +1245,22 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
         $settings_table = Simula_Wordfence_Grafana_Wordfence_Schema::wordfence_table('wfls_settings');
 
         if (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($secrets_table)) {
+            $secrets_table_identifier = self::quote_identifier($secrets_table);
             $user_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($secrets_table, ['user_id', 'userID', 'userId', 'user']);
             if ($user_column !== null) {
-                $metrics['protected_users'] = (int) $wpdb->get_var(
-                    'SELECT COUNT(DISTINCT ' . self::quote_identifier($user_column) . ") FROM `$secrets_table`"
+                $metrics['protected_users'] = (int) Simula_Wordfence_Grafana_Util::db_get_var(
+                    'SELECT COUNT(DISTINCT ' . self::quote_identifier($user_column) . ") FROM $secrets_table_identifier"
                 );
             } else {
-                $metrics['protected_users'] = (int) $wpdb->get_var("SELECT COUNT(*) FROM `$secrets_table`");
+                $metrics['protected_users'] = (int) Simula_Wordfence_Grafana_Util::db_get_var("SELECT COUNT(*) FROM $secrets_table_identifier");
             }
         }
 
         if ($metrics['protected_users'] > 0) {
             $metrics['enabled'] = 1;
         } elseif (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($settings_table)) {
-            $metrics['enabled'] = (int) ($wpdb->get_var("SELECT COUNT(*) FROM `$settings_table`") > 0);
+            $settings_table_identifier = self::quote_identifier($settings_table);
+            $metrics['enabled'] = (int) (Simula_Wordfence_Grafana_Util::db_get_var("SELECT COUNT(*) FROM $settings_table_identifier") > 0);
         }
 
         return $metrics;
@@ -1242,12 +1286,13 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
             return $metrics;
         }
 
+        $table_identifier = self::quote_identifier($table);
         $severity_column = Simula_Wordfence_Grafana_Wordfence_Schema::first_available_column($table, ['severity', 'level', 'status']);
         if ($severity_column !== null) {
             $severity_identifier = self::quote_identifier($severity_column);
-            $metrics['severity'] = $wpdb->get_results(
+            $metrics['severity'] = Simula_Wordfence_Grafana_Util::db_get_results(
                 "SELECT $severity_identifier AS severity, COUNT(*) AS count_total
-                FROM `$table`
+                FROM $table_identifier
                 GROUP BY $severity_identifier
                 ORDER BY count_total DESC",
                 ARRAY_A
@@ -1274,14 +1319,14 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
             self::text_search_where_sql_from_columns($text_columns, ['theme']),
             $vuln_where,
         ]);
-        $row           = $wpdb->get_row(
+        $row           = Simula_Wordfence_Grafana_Util::db_get_row(
             "SELECT
                 SUM(CASE WHEN $malware_where THEN 1 ELSE 0 END) AS malware_total,
                 SUM(CASE WHEN $file_where THEN 1 ELSE 0 END) AS file_change_total,
                 SUM(CASE WHEN $core_where THEN 1 ELSE 0 END) AS core_total,
                 SUM(CASE WHEN $plugin_where THEN 1 ELSE 0 END) AS plugin_total,
                 SUM(CASE WHEN $theme_where THEN 1 ELSE 0 END) AS theme_total
-            FROM `$table`",
+            FROM $table_identifier",
             ARRAY_A
         );
 
@@ -1306,9 +1351,10 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
         ];
 
         if (Simula_Wordfence_Grafana_Wordfence_Schema::table_exists($hits_table)) {
-            $freshness['latest_hit'] = (int) $wpdb->get_var("SELECT COALESCE(MAX($time_identifier), 0) FROM `$hits_table`");
+            $hits_table_identifier = self::quote_identifier($hits_table);
+            $freshness['latest_hit'] = (int) Simula_Wordfence_Grafana_Util::db_get_var("SELECT COALESCE(MAX($time_identifier), 0) FROM $hits_table_identifier");
             if ($blocked_where !== '0=1') {
-                $freshness['latest_blocked_hit'] = (int) $wpdb->get_var("SELECT COALESCE(MAX($time_identifier), 0) FROM `$hits_table` WHERE $blocked_where");
+                $freshness['latest_blocked_hit'] = (int) Simula_Wordfence_Grafana_Util::db_get_var("SELECT COALESCE(MAX($time_identifier), 0) FROM $hits_table_identifier WHERE $blocked_where");
             }
         }
 
@@ -1383,7 +1429,8 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
             return 0;
         }
 
-        $value = $wpdb->get_var('SELECT COALESCE(MAX(' . self::quote_identifier($column) . "), 0) FROM `$table`");
+        $table_identifier = self::quote_identifier($table);
+        $value = Simula_Wordfence_Grafana_Util::db_get_var('SELECT COALESCE(MAX(' . self::quote_identifier($column) . "), 0) FROM $table_identifier");
 
         return self::normalize_timestamp_value($value);
     }
@@ -1497,7 +1544,9 @@ final class Simula_Wordfence_Grafana_Wordfence_Collector {
             return [];
         }
 
-        return array_map('intval', (array) $wpdb->get_col('SELECT DISTINCT ' . self::quote_identifier($user_column) . " FROM `$table`"));
+        $table_identifier = self::quote_identifier($table);
+
+        return array_map('intval', (array) Simula_Wordfence_Grafana_Util::db_get_col('SELECT DISTINCT ' . self::quote_identifier($user_column) . " FROM $table_identifier"));
     }
 
     /** Returns whether a WordPress core update is available. */
@@ -1791,8 +1840,9 @@ final class Simula_Wordfence_Grafana_Incidents {
         }
 
         if ($id_column !== null) {
-            $last_id = (int) $wpdb->get_var(
-                'SELECT COALESCE(MAX(' . self::quote_identifier($id_column) . "), 0) FROM `$table`"
+            $table_identifier = self::quote_identifier($table);
+            $last_id = (int) Simula_Wordfence_Grafana_Util::db_get_var(
+                'SELECT COALESCE(MAX(' . self::quote_identifier($id_column) . "), 0) FROM $table_identifier"
             );
         }
 
@@ -1884,15 +1934,12 @@ final class Simula_Wordfence_Grafana_Incidents {
         $max_rows      = isset($options['incident_max_rows']) ? (int) $options['incident_max_rows'] : Simula_Wordfence_Grafana_Config::defaults()['incident_max_rows'];
         $limit         = min(max($max_rows, 1), 10000);
         $id_identifier = self::quote_identifier($schema['id']);
-        $rows          = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM `$table`
-                WHERE $id_identifier > %d AND $where_sql
+        $table_identifier = self::quote_identifier($table);
+        $rows          = Simula_Wordfence_Grafana_Util::db_get_results(
+            "SELECT * FROM $table_identifier
+                WHERE $id_identifier > " . (int) $last_id . " AND $where_sql
                 ORDER BY $id_identifier ASC
-                LIMIT %d",
-                $last_id,
-                $limit
-            ),
+                LIMIT " . (int) $limit,
             ARRAY_A
         );
 
@@ -2419,13 +2466,12 @@ final class Simula_Wordfence_Grafana_Service {
         ];
 
         if ($flags['blocked_events_total']) {
-            $incremental = $wpdb->get_row(
-                $wpdb->prepare(
-                    "SELECT COALESCE(MAX(id), 0) AS max_id, COUNT(*) AS new_count
-                    FROM `$table`
-                    WHERE id > %d AND $where_sql",
-                    $data['last_id']
-                ),
+            $table_identifier = Simula_Wordfence_Grafana_Util::quote_identifier($table);
+            $id_identifier = Simula_Wordfence_Grafana_Util::quote_identifier($id_column);
+            $incremental = Simula_Wordfence_Grafana_Util::db_get_row(
+                "SELECT COALESCE(MAX($id_identifier), 0) AS max_id, COUNT(*) AS new_count
+                    FROM $table_identifier
+                    WHERE $id_identifier > " . (int) $data['last_id'] . " AND $where_sql",
                 ARRAY_A
             );
 
@@ -2544,6 +2590,7 @@ final class Simula_Wordfence_Grafana_Service {
         global $wpdb;
 
         $window_selects = [];
+        $table_identifier = Simula_Wordfence_Grafana_Util::quote_identifier($table);
 
         if (!empty($flags['blocked_events_window'])) {
             $window_selects[] = Simula_Wordfence_Grafana_Wordfence_Collector::build_window_count_select_sql('blocked', $where_sql, $time_identifier, $windows);
@@ -2582,10 +2629,10 @@ final class Simula_Wordfence_Grafana_Service {
             );
         }
 
-        return $wpdb->get_row(
+        return Simula_Wordfence_Grafana_Util::db_get_row(
             "SELECT
                 " . implode(",\n                    ", $window_selects) . "
-            FROM `$table`
+            FROM $table_identifier
             WHERE $time_identifier >= " . (int) $windows['7d'],
             ARRAY_A
         );
@@ -2601,10 +2648,11 @@ final class Simula_Wordfence_Grafana_Service {
         }
 
         $status_identifier = Simula_Wordfence_Grafana_Util::quote_identifier($status_column);
+        $table_identifier  = Simula_Wordfence_Grafana_Util::quote_identifier($table);
 
-        return $wpdb->get_results(
+        return Simula_Wordfence_Grafana_Util::db_get_results(
             "SELECT $status_identifier AS status_code, COUNT(*) AS count_total
-            FROM `$table`
+            FROM $table_identifier
             WHERE $time_identifier >= " . (int) $windows['24h'] . " AND $where_sql
             GROUP BY $status_identifier
             ORDER BY count_total DESC",
