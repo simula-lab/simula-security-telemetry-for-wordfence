@@ -520,7 +520,7 @@ final class Simula_Wordfence_Grafana_Output {
 final class Simula_Wordfence_Grafana_Wordfence {
     /** Returns the resolved Wordfence hits table name. */
     public static function wordfence_hits_table() {
-        return self::wordfence_table('wfHits');
+        return self::wordfence_table_aliases(['wfHits', 'wfhits']);
     }
 
     /** Checks whether a database table exists, using a local cache. */
@@ -907,6 +907,31 @@ final class Simula_Wordfence_Grafana_Wordfence {
         $cache[$suffix] = isset($candidates[0]) ? $candidates[0] : (string) $suffix;
 
         return $cache[$suffix];
+    }
+
+    /** Resolves a Wordfence table from multiple known suffix aliases. */
+    private static function wordfence_table_aliases($suffixes) {
+        static $cache = [];
+
+        $suffixes  = array_values(array_unique(array_filter(array_map('strval', (array) $suffixes))));
+        $cache_key = implode('|', $suffixes);
+
+        if (isset($cache[$cache_key])) {
+            return $cache[$cache_key];
+        }
+
+        foreach ($suffixes as $suffix) {
+            $resolved = self::wordfence_table($suffix);
+            if (self::table_exists($resolved)) {
+                $cache[$cache_key] = $resolved;
+                return $cache[$cache_key];
+            }
+        }
+
+        $fallback = isset($suffixes[0]) ? self::wordfence_table($suffixes[0]) : '';
+        $cache[$cache_key] = $fallback;
+
+        return $cache[$cache_key];
     }
 
     /** Returns the first existing table name that matches the provided candidates. */
