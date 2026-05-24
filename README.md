@@ -176,7 +176,7 @@ All metrics include a `site` label.
 
 - `wordpress_wordfence_export_success`
   Indicates whether the last export succeeded.
-- `wordpress_wordfence_plugin_info{version="2.1.0"}`
+- `wordpress_wordfence_plugin_info{version="2.2"}`
   Static plugin metadata metric.
 - `wordpress_wordfence_last_export_timestamp_seconds`
   Unix timestamp of the last export attempt or successful export.
@@ -268,14 +268,18 @@ Incident privacy controls can:
 Operational behavior:
 
 - The exporter tracks the last processed Wordfence hit ID
+- The emitted incident timestamp is taken from the Wordfence hit row, falling back across known timestamp columns before using export time
 - Activation initializes the cursor at the current maximum hit ID to avoid an unexpected full historical backfill
 - `Reset incident cursor for backfill` sets the cursor to `0`, so the next run can replay retained incidents up to the configured row limit
 - `Max incidents per run` limits how much history can be appended in a single pass
+- Incident events include a bounded log level: `INFO`, `WARN`, or `CRITICAL`
+
+For Loki, configure your log collector to parse the text prefix or the JSON Lines `timestamp` field if you want Grafana to display the original Wordfence event time instead of the collector ingestion time.
 
 Example log line:
 
 ```text
-[23-May-2026 12:34:56 UTC] Wordfence blocked request: site="example.com" hostname="web-01" blog_id=1 hit_id=123 ip="203.0.113.10" status=403 action="blocked:waf" reason="SQL injection attempt" method="POST" url="/wp-admin/admin-ajax.php" referer="https://example.com/" user_agent="curl/8.0" country="NO"
+[23-May-2026 12:34:56 UTC] CRITICAL Wordfence blocked request: site="example.com" hostname="web-01" blog_id=1 hit_id=123 ip="203.0.113.10" status=403 action="blocked:waf" reason="SQL injection attempt" method="POST" url="/wp-admin/admin-ajax.php" referer="https://example.com/" user_agent="curl/8.0" country="NO"
 ```
 
 Example JSON Lines event:
@@ -287,6 +291,7 @@ Example JSON Lines event:
   "hostname": "web-01",
   "blog_id": 1,
   "hit_id": 123,
+  "level": "CRITICAL",
   "ip": "203.0.113.10",
   "status": 403,
   "action": "blocked:waf",
