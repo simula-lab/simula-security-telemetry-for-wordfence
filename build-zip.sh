@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ZIP_EXCLUDES=(-x "*/.*" ".*")
+
 # Usage: ./build-zip.sh [--no-assets] [plugin-slug]
 # If you omit [plugin-slug], it will use the name of the current directory.
 # Pass --no-assets to skip including the assets/ folder.
@@ -55,13 +57,13 @@ zip -q "$ZIP_FILE" ./*.php
 [ -f "readme.txt" ] && zip -q "$ZIP_FILE" "readme.txt"
 
 # 4c) add languages (pot, po, mo)
-[ -d "languages" ] && zip -qr "$ZIP_FILE" "languages"
+[ -d "languages" ] && zip -qr "$ZIP_FILE" "languages" "${ZIP_EXCLUDES[@]}"
 
 # 4d) add assets (unless excluded)
 if [ "$NO_ASSETS" -eq 1 ]; then
   echo "Skipping assets directory as requested."
 else
-  [ -d "assets" ] && zip -qr "$ZIP_FILE" "assets"
+  [ -d "assets" ] && zip -qr "$ZIP_FILE" "assets" "${ZIP_EXCLUDES[@]}"
 fi
 
 echo "✅ $ZIP_FILE created successfully."
