@@ -3,7 +3,7 @@
  * Plugin Name: Simula Wordfence Grafana Integration
  * Plugin URI:  https://github.com/simula-lab/simula-wordfence-grafana-integration
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
- * Version:     2.1.0
+ * Version:     2.2.2
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author:      Simula
@@ -21,13 +21,13 @@ if (!defined('ABSPATH')) {
 }
 
 final class Simula_Wordfence_Grafana_Config {
-    public const OPTION      = 'wfne_metrics_options';
-    public const STATE       = 'wfne_metrics_state';
-    public const CRON_HOOK   = 'wfne_metrics_export_event';
-    public const SLOW_CRON_HOOK = 'wfne_metrics_slow_export_event';
-    public const SLUG        = 'wfne-metrics';
+    public const OPTION      = 'swfgi_metrics_options';
+    public const STATE       = 'swfgi_metrics_state';
+    public const CRON_HOOK   = 'swfgi_metrics_export_event';
+    public const SLOW_CRON_HOOK = 'swfgi_metrics_slow_export_event';
+    public const SLUG        = 'swfgi-metrics';
     public const CAPABILITY  = 'manage_options';
-    public const VERSION     = '2.1.0';
+    public const VERSION     = '2.2.2';
     public const TEXT_DOMAIN = 'simula-wordfence-grafana-integration';
     public const WINDOWS     = ['5m', '1h', '24h', '7d'];
 
@@ -35,7 +35,7 @@ final class Simula_Wordfence_Grafana_Config {
     public static function defaults() {
         return [
             'enabled'              => 1,
-            'cron_interval'        => 'wfne_fifteen_minutes',
+            'cron_interval'        => 'swfgi_fifteen_minutes',
             'slow_cron_interval'   => 'hourly',
             'prom_file'            => '/var/lib/node_exporter/textfile_collector/wordfence.prom',
             'metric_prefix'        => 'wordpress_wordfence',
@@ -296,7 +296,7 @@ final class Simula_Wordfence_Grafana_Util {
 
         if (!self::is_absolute_path($value)) {
             add_settings_error(
-                'wfne_metrics',
+                'swfgi_metrics',
                 $absolute_error_code,
                 $absolute_error_message,
                 'error'
@@ -307,7 +307,7 @@ final class Simula_Wordfence_Grafana_Util {
 
         if (!preg_match($extension_pattern, $value)) {
             add_settings_error(
-                'wfne_metrics',
+                'swfgi_metrics',
                 $extension_error_code,
                 $extension_error_message,
                 'error'
@@ -329,7 +329,7 @@ final class Simula_Wordfence_Grafana_Settings {
     /** Registers the plugin settings and sanitization callback. */
     public static function register_settings() {
         register_setting(
-            'wfne_metrics',
+            'swfgi_metrics',
             Simula_Wordfence_Grafana_Config::OPTION,
             [
                 'type'              => 'array',
@@ -455,9 +455,9 @@ final class Simula_Wordfence_Grafana_Settings {
         return Simula_Wordfence_Grafana_Util::sanitize_file_setting_path(
             $value,
             $default,
-            'wfne-prom-file',
+            'swfgi-prom-file',
             __('The Prometheus file path must be absolute. The default path has been restored.', 'simula-wordfence-grafana-integration'),
-            'wfne-prom-file-extension',
+            'swfgi-prom-file-extension',
             '/\.prom$/',
             __('The Prometheus file path must end with .prom. The default path has been restored.', 'simula-wordfence-grafana-integration')
         );
@@ -470,9 +470,9 @@ final class Simula_Wordfence_Grafana_Settings {
         return Simula_Wordfence_Grafana_Util::sanitize_file_setting_path(
             $value,
             $default,
-            'wfne-incident-log-file',
+            'swfgi-incident-log-file',
             __('The incident log file path must be absolute. The default path has been restored.', 'simula-wordfence-grafana-integration'),
-            'wfne-incident-log-file-extension',
+            'swfgi-incident-log-file-extension',
             '/\.(?:log|jsonl)$/',
             __('The incident log file path must end with .log or .jsonl. The default path has been restored.', 'simula-wordfence-grafana-integration')
         );
@@ -1961,7 +1961,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             );
         }
 
-        if ($schema['time'] === null) {
+        if ($schema['time'] === null && empty($schema['time_columns'])) {
             return self::update_failure_state(
                 $state,
                 $options,
@@ -2093,6 +2093,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             'hostname'    => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
             'blog_id'     => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
             'hit_id'      => 123,
+            'level'       => 'CRITICAL',
             'ip'          => '203.0.113.10',
             'status'      => 403,
             'action'      => 'blocked:waf',
@@ -2122,25 +2123,25 @@ final class Simula_Wordfence_Grafana_Incidents {
         $columns = Simula_Wordfence_Grafana_Wordfence_Schema::table_columns($table);
 
         return [
-            'columns'    => $columns,
-            'id'         => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['id']),
-            'time'       => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['attackLogTime', 'ctime', 'time']),
-            'status'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['statusCode', 'status']),
-            'action'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['action']),
-            'reason'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['actionDescription', 'description', 'msg', 'message', 'reason']),
-            'method'     => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['method', 'httpMethod', 'requestMethod']),
-            'url'        => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['URL', 'url', 'uri', 'requestUri', 'request_uri', 'path']),
-            'referer'    => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['referer', 'Referer', 'referrer']),
-            'user_agent' => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['UA', 'user_agent', 'userAgent']),
-            'country'    => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['ctry', 'countryCode', 'country']),
-            'ip'         => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['IP', 'ip', 'ipaddress', 'ipAddress']),
+            'columns'      => $columns,
+            'id'           => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['id']),
+            'time'         => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['attackLogTime', 'ctime', 'time']),
+            'time_columns' => Simula_Wordfence_Grafana_Util::resolve_available_candidates($columns, ['attackLogTime', 'ctime', 'time']),
+            'status'       => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['statusCode', 'status']),
+            'action'       => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['action']),
+            'reason'       => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['actionDescription', 'description', 'msg', 'message', 'reason']),
+            'method'       => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['method', 'httpMethod', 'requestMethod']),
+            'url'          => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['URL', 'url', 'uri', 'requestUri', 'request_uri', 'path']),
+            'referer'      => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['referer', 'Referer', 'referrer']),
+            'user_agent'   => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['UA', 'user_agent', 'userAgent']),
+            'country'      => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['ctry', 'countryCode', 'country']),
+            'ip'           => Simula_Wordfence_Grafana_Util::resolve_first_candidate($columns, ['IP', 'ip', 'ipaddress', 'ipAddress']),
         ];
     }
 
     /** Maps a Wordfence hit row into a text or JSON Lines incident log line. */
     private static function row_to_log_line($row, $table, $options, $schema) {
-        $event_time = self::column_value($row, $schema['time']);
-        $event_ts   = is_numeric($event_time) && (int) $event_time > 0 ? (int) $event_time : time();
+        $event_ts   = self::row_event_timestamp($row, $schema);
         $status     = self::column_value($row, $schema['status']);
         $raw_ip     = self::normalize_ip(self::column_value($row, $schema['ip']));
 
@@ -2152,15 +2153,18 @@ final class Simula_Wordfence_Grafana_Incidents {
         $referer        = empty($options['privacy_drop_referer']) ? self::apply_url_privacy(self::clean_string(self::column_value($row, $schema['referer'])), $options) : null;
         $user_agent     = empty($options['privacy_drop_user_agent']) ? self::clean_string(self::column_value($row, $schema['user_agent'])) : null;
         $retention_note = self::privacy_retention_note($options);
+        $action       = self::clean_string(self::column_value($row, $schema['action']));
+        $reason       = self::clean_string(self::column_value($row, $schema['reason']));
         $context    = [
             'site'       => (string) ($options['site_label'] ?? wp_parse_url(home_url('/'), PHP_URL_HOST)),
             'hostname'   => self::clean_string(function_exists('gethostname') ? gethostname() : ''),
             'blog_id'    => function_exists('get_current_blog_id') ? (int) get_current_blog_id() : 1,
             'hit_id'     => isset($schema['id'], $row[$schema['id']]) ? (int) $row[$schema['id']] : null,
+            'level'      => self::incident_log_level($status, $action, $reason, $url),
             'ip'         => self::apply_ip_privacy($raw_ip, $options),
             'status'     => is_numeric($status) ? (int) $status : self::clean_string($status),
-            'action'     => self::clean_string(self::column_value($row, $schema['action'])),
-            'reason'     => self::clean_string(self::column_value($row, $schema['reason'])),
+            'action'     => $action,
+            'reason'     => $reason,
             'method'     => self::clean_string(self::column_value($row, $schema['method'])),
             'url'        => $url,
             'referer'    => $referer,
@@ -2181,6 +2185,8 @@ final class Simula_Wordfence_Grafana_Incidents {
     /** Formats one incident as a PHP-style log line with a UTC timestamp prefix. */
     private static function format_log_line($event_ts, $context) {
         $parts = [];
+        $level = self::normalize_log_level($context['level'] ?? null);
+        unset($context['level']);
 
         foreach ((array) $context as $key => $value) {
             if ($value === null || $value === '') {
@@ -2195,7 +2201,7 @@ final class Simula_Wordfence_Grafana_Incidents {
             $message .= ': ' . implode(' ', $parts);
         }
 
-        return sprintf('[%s UTC] %s', gmdate('d-M-Y H:i:s', (int) $event_ts), $message);
+        return sprintf('[%s UTC] %s %s', gmdate('d-M-Y H:i:s', (int) $event_ts), $level, $message);
     }
 
     /** Formats one incident as a JSON Lines event. */
@@ -2220,6 +2226,78 @@ final class Simula_Wordfence_Grafana_Incidents {
         $format = isset($options['incident_log_format']) ? (string) $options['incident_log_format'] : 'text';
 
         return $format === 'jsonl' ? 'jsonl' : 'text';
+    }
+
+    /** Returns the best available source timestamp for a Wordfence hit row. */
+    private static function row_event_timestamp($row, $schema) {
+        $columns = !empty($schema['time_columns']) && is_array($schema['time_columns'])
+            ? $schema['time_columns']
+            : [$schema['time'] ?? null];
+
+        foreach ($columns as $column) {
+            $timestamp = self::normalize_event_timestamp(self::column_value($row, $column));
+            if ($timestamp > 0) {
+                return $timestamp;
+            }
+        }
+
+        return time();
+    }
+
+    /** Normalizes Wordfence timestamp column values into Unix seconds. */
+    private static function normalize_event_timestamp($value) {
+        if (!is_scalar($value)) {
+            return 0;
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0;
+        }
+
+        if (is_numeric($value)) {
+            $timestamp = (float) $value;
+            if ($timestamp <= 0) {
+                return 0;
+            }
+
+            while ($timestamp > 9999999999) {
+                $timestamp /= 1000;
+            }
+
+            return (int) $timestamp;
+        }
+
+        $timestamp = strtotime($value);
+
+        return $timestamp === false ? 0 : max(0, (int) $timestamp);
+    }
+
+    /** Assigns a bounded log level to a Wordfence incident. */
+    private static function incident_log_level($status, $action, $reason, $url) {
+        $haystack = strtolower(implode(' ', array_filter([
+            is_scalar($status) ? (string) $status : '',
+            is_scalar($action) ? (string) $action : '',
+            is_scalar($reason) ? (string) $reason : '',
+            is_scalar($url) ? (string) $url : '',
+        ], 'strlen')));
+
+        if (preg_match('/\b(sql|xss|rce|xxe|lfi|rfi)\b|injection|cross[- ]site|remote code|command execution|path traversal|directory traversal|file upload|web shell|shell upload|backdoor|malware|exploit/i', $haystack)) {
+            return 'CRITICAL';
+        }
+
+        if (preg_match('/loginfail|login failure|failed login|invalid username|incorrect password|throttle|throttled|rate[-_ ]?limit|xmlrpc|xml-rpc|brute force|brute-force|wp-login\.php/i', $haystack)) {
+            return 'INFO';
+        }
+
+        return 'WARN';
+    }
+
+    /** Returns one of the supported incident log levels. */
+    private static function normalize_log_level($level) {
+        $level = strtoupper((string) $level);
+
+        return in_array($level, ['INFO', 'WARN', 'CRITICAL'], true) ? $level : 'WARN';
     }
 
     /** Formats one context field in key=value form while quoting free-text values. */
@@ -3447,10 +3525,10 @@ final class Simula_Wordfence_Grafana_Admin {
             <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', 'simula-wordfence-grafana-integration'); ?></h1>
             <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', 'simula-wordfence-grafana-integration'); ?></p>
 
-            <?php settings_errors('wfne_metrics'); ?>
+            <?php settings_errors('swfgi_metrics'); ?>
 
             <form method="post" action="options.php">
-                <?php settings_fields('wfne_metrics'); ?>
+                <?php settings_fields('swfgi_metrics'); ?>
                 <?php self::render_metrics_settings_section($options); ?>
                 <?php self::render_incident_settings_section($options); ?>
                 <?php submit_button(); ?>
@@ -3467,23 +3545,23 @@ final class Simula_Wordfence_Grafana_Admin {
 
     /** Handles manual export and cursor reset actions from the settings page. */
     private static function handle_settings_page_actions() {
-        if (isset($_POST['wfne_export_now'])) {
-            check_admin_referer('wfne_export_now');
+        if (isset($_POST['swfgi_export_now'])) {
+            check_admin_referer('swfgi_export_now');
             $result = Simula_Wordfence_Grafana_Service::export(true);
             add_settings_error(
-                'wfne_metrics',
-                'wfne-export-now',
+                'swfgi_metrics',
+                'swfgi-export-now',
                 $result['message'],
                 $result['ok'] ? 'updated' : 'error'
             );
         }
 
-        if (isset($_POST['wfne_reset_incident_cursor'])) {
-            check_admin_referer('wfne_reset_incident_cursor');
+        if (isset($_POST['swfgi_reset_incident_cursor'])) {
+            check_admin_referer('swfgi_reset_incident_cursor');
             Simula_Wordfence_Grafana_Incidents::reset_cursor();
             add_settings_error(
-                'wfne_metrics',
-                'wfne-reset-incident-cursor',
+                'swfgi_metrics',
+                'swfgi-reset-incident-cursor',
                 __('Incident cursor reset to 0. The next export can backfill retained Wordfence incidents up to the configured row limit.', 'simula-wordfence-grafana-integration'),
                 'updated'
             );
@@ -3506,10 +3584,10 @@ final class Simula_Wordfence_Grafana_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-cron-interval"><?php echo esc_html__('Cron interval', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-cron-interval"><?php echo esc_html__('Cron interval', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <select id="wfne-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[cron_interval]">
+                    <select id="swfgi-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[cron_interval]">
                         <?php foreach (Simula_Wordfence_Grafana_Metrics::cron_interval_labels() as $interval_key => $interval_label) : ?>
                             <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['cron_interval'], $interval_key); ?>>
                                 <?php echo esc_html($interval_label); ?>
@@ -3521,10 +3599,10 @@ final class Simula_Wordfence_Grafana_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-slow-cron-interval"><?php echo esc_html__('Slow collector interval', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-slow-cron-interval"><?php echo esc_html__('Slow collector interval', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <select id="wfne-slow-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[slow_cron_interval]">
+                    <select id="swfgi-slow-cron-interval" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[slow_cron_interval]">
                         <?php foreach (Simula_Wordfence_Grafana_Metrics::slow_cron_interval_labels() as $interval_key => $interval_label) : ?>
                             <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['slow_cron_interval'], $interval_key); ?>>
                                 <?php echo esc_html($interval_label); ?>
@@ -3536,28 +3614,28 @@ final class Simula_Wordfence_Grafana_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-prom-file"><?php echo esc_html__('Prometheus file path', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-prom-file"><?php echo esc_html__('Prometheus file path', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <input id="wfne-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
+                    <input id="swfgi-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
                     <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-metric-prefix"><?php echo esc_html__('Metric prefix', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-metric-prefix"><?php echo esc_html__('Metric prefix', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <input id="wfne-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
+                    <input id="swfgi-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
                     <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-site-label"><?php echo esc_html__('Site label', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-site-label"><?php echo esc_html__('Site label', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <input id="wfne-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
+                    <input id="swfgi-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
                     <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
@@ -3597,19 +3675,19 @@ final class Simula_Wordfence_Grafana_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-incident-log-file"><?php echo esc_html__('Incident log path', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-incident-log-file"><?php echo esc_html__('Incident log path', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <input id="wfne-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
+                    <input id="swfgi-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
                     <p class="description"><?php echo esc_html__('Use an absolute log file path. A .log suffix is recommended; existing .jsonl paths are still accepted. The directory must already exist and be writable by PHP.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-incident-log-format"><?php echo esc_html__('Incident log format', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-incident-log-format"><?php echo esc_html__('Incident log format', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <select id="wfne-incident-log-format" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_format]">
+                    <select id="swfgi-incident-log-format" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_log_format]">
                         <option value="text" <?php selected($options['incident_log_format'], 'text'); ?>><?php echo esc_html__('Text', 'simula-wordfence-grafana-integration'); ?></option>
                         <option value="jsonl" <?php selected($options['incident_log_format'], 'jsonl'); ?>><?php echo esc_html__('JSON Lines', 'simula-wordfence-grafana-integration'); ?></option>
                     </select>
@@ -3618,19 +3696,19 @@ final class Simula_Wordfence_Grafana_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-incident-max-rows"><?php echo esc_html__('Max incidents per run', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-incident-max-rows"><?php echo esc_html__('Max incidents per run', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <input id="wfne-incident-max-rows" class="small-text" type="number" min="1" max="10000" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_max_rows]" value="<?php echo esc_attr((string) $options['incident_max_rows']); ?>" />
+                    <input id="swfgi-incident-max-rows" class="small-text" type="number" min="1" max="10000" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[incident_max_rows]" value="<?php echo esc_attr((string) $options['incident_max_rows']); ?>" />
                     <p class="description"><?php echo esc_html__('Caps each export pass so large retained Wordfence hit tables do not create long-running admin or cron requests.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-privacy-ip-mode"><?php echo esc_html__('Incident IP privacy', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-privacy-ip-mode"><?php echo esc_html__('Incident IP privacy', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <select id="wfne-privacy-ip-mode" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_ip_mode]">
+                    <select id="swfgi-privacy-ip-mode" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_ip_mode]">
                         <option value="full" <?php selected($options['privacy_ip_mode'], 'full'); ?>><?php echo esc_html__('Log full IP address', 'simula-wordfence-grafana-integration'); ?></option>
                         <option value="truncate" <?php selected($options['privacy_ip_mode'], 'truncate'); ?>><?php echo esc_html__('Truncate to IPv4 /24 or IPv6 /64', 'simula-wordfence-grafana-integration'); ?></option>
                         <option value="hash" <?php selected($options['privacy_ip_mode'], 'hash'); ?>><?php echo esc_html__('Hash with site salt', 'simula-wordfence-grafana-integration'); ?></option>
@@ -3662,10 +3740,10 @@ final class Simula_Wordfence_Grafana_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="wfne-privacy-retention-note"><?php echo esc_html__('Retention note', 'simula-wordfence-grafana-integration'); ?></label>
+                    <label for="swfgi-privacy-retention-note"><?php echo esc_html__('Retention note', 'simula-wordfence-grafana-integration'); ?></label>
                 </th>
                 <td>
-                    <textarea id="wfne-privacy-retention-note" class="large-text" rows="2" maxlength="200" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_retention_note]"><?php echo esc_textarea($options['privacy_retention_note']); ?></textarea>
+                    <textarea id="swfgi-privacy-retention-note" class="large-text" rows="2" maxlength="200" name="<?php echo esc_attr(Simula_Wordfence_Grafana_Config::OPTION); ?>[privacy_retention_note]"><?php echo esc_textarea($options['privacy_retention_note']); ?></textarea>
                     <p class="description"><?php echo esc_html__('Optional note appended to each incident event so downstream log users can see the local retention expectation. Keep operational retention enforcement in your log pipeline.', 'simula-wordfence-grafana-integration'); ?></p>
                 </td>
             </tr>
@@ -3677,14 +3755,14 @@ final class Simula_Wordfence_Grafana_Admin {
     private static function render_manual_actions_section() {
         ?>
         <form method="post" style="display:inline-block; margin-right: 12px;">
-            <?php wp_nonce_field('wfne_export_now'); ?>
-            <?php submit_button(__('Export now', 'simula-wordfence-grafana-integration'), 'secondary', 'wfne_export_now'); ?>
+            <?php wp_nonce_field('swfgi_export_now'); ?>
+            <?php submit_button(__('Export now', 'simula-wordfence-grafana-integration'), 'secondary', 'swfgi_export_now'); ?>
         </form>
         <p class="description"><?php echo esc_html__('Manual export uses the same master exporter toggle. If the exporter is disabled, the button writes disabled metrics and reports that exports are off.', 'simula-wordfence-grafana-integration'); ?></p>
 
         <form method="post" style="display:inline-block;">
-            <?php wp_nonce_field('wfne_reset_incident_cursor'); ?>
-            <?php submit_button(__('Reset incident cursor for backfill', 'simula-wordfence-grafana-integration'), 'delete', 'wfne_reset_incident_cursor'); ?>
+            <?php wp_nonce_field('swfgi_reset_incident_cursor'); ?>
+            <?php submit_button(__('Reset incident cursor for backfill', 'simula-wordfence-grafana-integration'), 'delete', 'swfgi_reset_incident_cursor'); ?>
         </form>
         <?php
     }
@@ -3816,9 +3894,9 @@ final class Simula_Wordfence_Grafana_Metrics {
     /** Returns the selectable schedule labels for cron interval settings. */
     public static function cron_interval_labels() {
         return [
-            'wfne_five_minutes'    => __('Every five minutes', 'simula-wordfence-grafana-integration'),
-            'wfne_fifteen_minutes' => __('Every fifteen minutes', 'simula-wordfence-grafana-integration'),
-            'wfne_thirty_minutes'  => __('Every thirty minutes', 'simula-wordfence-grafana-integration'),
+            'swfgi_five_minutes'    => __('Every five minutes', 'simula-wordfence-grafana-integration'),
+            'swfgi_fifteen_minutes' => __('Every fifteen minutes', 'simula-wordfence-grafana-integration'),
+            'swfgi_thirty_minutes'  => __('Every thirty minutes', 'simula-wordfence-grafana-integration'),
             'hourly'               => __('Hourly', 'simula-wordfence-grafana-integration'),
         ];
     }
@@ -3834,15 +3912,15 @@ final class Simula_Wordfence_Grafana_Metrics {
 
     /** Registers the custom cron schedules used by the exporter. */
     public static function cron_schedules($schedules) {
-        $schedules['wfne_five_minutes'] = [
+        $schedules['swfgi_five_minutes'] = [
             'interval' => 300,
             'display'  => __('Every five minutes', 'simula-wordfence-grafana-integration'),
         ];
-        $schedules['wfne_fifteen_minutes'] = [
+        $schedules['swfgi_fifteen_minutes'] = [
             'interval' => 900,
             'display'  => __('Every fifteen minutes', 'simula-wordfence-grafana-integration'),
         ];
-        $schedules['wfne_thirty_minutes'] = [
+        $schedules['swfgi_thirty_minutes'] = [
             'interval' => 1800,
             'display'  => __('Every thirty minutes', 'simula-wordfence-grafana-integration'),
         ];

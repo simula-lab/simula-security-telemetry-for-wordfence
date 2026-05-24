@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.2.2
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -135,7 +135,9 @@ Each metric family can be enabled or disabled independently from the settings sc
 
 = What does the incident log export do? =
 
-It appends newly observed blocked Wordfence hits to a local .log or .jsonl path. The default text format preserves the original plain-text log line. The JSON Lines format emits one structured JSON object per blocked event for Loki, ELK, OpenSearch, and similar tooling. The exporter tracks the last processed hit ID, and you can reset the incident cursor from the admin UI or WP-CLI to backfill retained history up to the configured per-run limit.
+It appends newly observed blocked Wordfence hits to a local .log or .jsonl path. The default text format preserves the original plain-text log line. The JSON Lines format emits one structured JSON object per blocked event for Loki, ELK, OpenSearch, and similar tooling. The exported incident timestamp is taken from the Wordfence hit row, falling back across known timestamp columns before using export time. The exporter tracks the last processed hit ID, and you can reset the incident cursor from the admin UI or WP-CLI to backfill retained history up to the configured per-run limit.
+
+For Loki, configure your log collector to parse the text prefix or the JSON Lines timestamp field if you want Grafana to display the original Wordfence event time instead of the collector ingestion time.
 
 Incident privacy controls can keep full IPs, truncate IPv4 to /24 and IPv6 to /64, hash IPs with the site salt, drop IP fields, drop query strings from URL and referer fields, drop referers, drop user agents, skip private/internal source IP ranges, and append an optional retention note to emitted events.
 
@@ -165,6 +167,12 @@ The directory that will contain the .prom file must already exist and be writabl
 
 == Changelog ==
 
+= 2.2.2 =
+
+* Fixed incident log timestamps to prefer the original Wordfence hit timestamp over the export run time.
+* Added bounded INFO, WARN, and CRITICAL levels to Wordfence incident log events.
+* Added dashboard filtering by instance_name across metrics and incident logs.
+
 = 2.1.0 =
 
 * Added incident privacy controls for IPs, URL and referer query strings, referers, user agents, private/internal IP ranges, and retention notes.
@@ -189,6 +197,11 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 2.2.2 =
+
+Fixes incident log event timestamps and adds incident log levels plus instance_name dashboard filtering.
+Changed the prefix of this plugin DB entries from `wfne` to `swfgi`
 
 = 2.1.0 =
 
