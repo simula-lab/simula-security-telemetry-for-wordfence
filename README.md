@@ -1,6 +1,6 @@
-# Simula Wordfence Grafana Integration
+# Simula Security Metrics Exporter for Wordfence
 
-`Simula Wordfence Grafana Integration` is a WordPress plugin that exports Wordfence security telemetry in two operator-friendly forms:
+`Simula Security Metrics Exporter for Wordfence` is a WordPress plugin that exports Wordfence security telemetry in two operator-friendly forms:
 
 - Prometheus metrics for the `node_exporter` textfile collector
 - A local incident log containing blocked Wordfence requests
@@ -64,7 +64,7 @@ Blocked events are currently identified as Wordfence hits where:
 2. Ensure the main plugin file is present:
 
 ```text
-simula-wordfence-grafana-integration.php
+simula-security-telemetry-for-wordfence.php
 ```
 
 3. Activate the plugin from the WordPress admin panel.
@@ -364,7 +364,7 @@ You should:
 
 Repository structure is intentionally minimal:
 
-- [simula-wordfence-grafana-integration.php](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-wordfence-grafana-integration/simula-wordfence-grafana-integration.php:1)
+- [simula-security-telemetry-for-wordfence.php](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/simula-security-telemetry-for-wordfence.php:1)
 
 The plugin is currently implemented as a single-file WordPress plugin for simple deployment and review.
 

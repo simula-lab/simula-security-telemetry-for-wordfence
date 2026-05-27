@@ -1,4 +1,4 @@
-=== Simula Wordfence Grafana Integration ===
+=== Simula Security Metrics Exporter for Wordfence ===
 Contributors: simulalab
 Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
@@ -9,14 +9,13 @@ License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
 
-Export Prometheus metrics from Wordfence into a node_exporter textfile collector .prom file and append blocked incidents to a local log file.
+Export Prometheus metrics from Wordfence into a node_exporter textfile collector .prom file and append incidents detected by wordfence to a local log file.
 
 == Description ==
+Simula Security Metrics Exporter for Wordfence exports Wordfence security telemetry in two forms:
 
-Simula Wordfence Grafana Integration exports Wordfence security telemetry in two forms:
-
-* Prometheus metrics for the node_exporter textfile collector
-* A local incident log containing blocked Wordfence requests
+* Prometheus metrics for the node_exporter textfile collector that can be scrapped by Prometheus
+* A local incident log containing blocked Wordfence requests that can be shipped with Grafana-Alloy
 
 This plugin is intended for WordPress sites that already use Wordfence and Prometheus-based infrastructure. Instead of exposing a public metrics endpoint from WordPress, the plugin writes local files that node_exporter and log-based tooling can consume.
 
