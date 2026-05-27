@@ -144,13 +144,13 @@ Incident privacy controls can keep full IPs, truncate IPv4 to /24 and IPv6 to /6
 
 If WP-CLI is available, the plugin registers:
 
-* wp simula-wordfence-metrics export
-* wp simula-wordfence-metrics export --metrics-only
-* wp simula-wordfence-metrics export --metrics-only --scope=fast
-* wp simula-wordfence-metrics export --metrics-only --scope=slow
-* wp simula-wordfence-metrics export --incidents-only
-* wp simula-wordfence-metrics reset-cursor
-* wp simula-wordfence-metrics status
+* wp simula-security-telemtry export
+* wp simula-security-telemtry export --metrics-only
+* wp simula-security-telemtry export --metrics-only --scope=fast
+* wp simula-security-telemtry export --metrics-only --scope=slow
+* wp simula-security-telemtry export --incidents-only
+* wp simula-security-telemtry reset-cursor
+* wp simula-security-telemtry status
 
 = Does the plugin include Grafana and Prometheus assets? =
 
@@ -200,7 +200,7 @@ The directory that will contain the .prom file must already exist and be writabl
 = 2.2.2 =
 
 Fixes incident log event timestamps and adds incident log levels plus instance_name dashboard filtering.
-Changed the prefix of this plugin DB entries from `wfne` to `swfgi`
+Changed the prefix of this plugin DB entries from `wfne` to `sstfw`
 
 = 2.1.0 =
 

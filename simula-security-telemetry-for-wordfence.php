@@ -22,11 +22,11 @@ if (!defined('ABSPATH')) {
 }
 
 final class Simula_Security_Telemetry_Config {
-    public const OPTION      = 'swfgi_metrics_options';
-    public const STATE       = 'swfgi_metrics_state';
-    public const CRON_HOOK   = 'swfgi_metrics_export_event';
-    public const SLOW_CRON_HOOK = 'swfgi_metrics_slow_export_event';
-    public const SLUG        = 'swfgi-metrics';
+    public const OPTION      = 'sstfw_metrics_options';
+    public const STATE       = 'sstfw_metrics_state';
+    public const CRON_HOOK   = 'sstfw_metrics_export_event';
+    public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
+    public const SLUG        = 'sstfw-metrics';
     public const CAPABILITY  = 'manage_options';
     public const VERSION     = '2.2.2';
     public const TEXT_DOMAIN = 'simula-security-telemetry-for-wordfence';
@@ -36,7 +36,7 @@ final class Simula_Security_Telemetry_Config {
     public static function defaults() {
         return [
             'enabled'              => 1,
-            'cron_interval'        => 'swfgi_fifteen_minutes',
+            'cron_interval'        => 'sstfw_fifteen_minutes',
             'slow_cron_interval'   => 'hourly',
             'prom_file'            => '/var/lib/node_exporter/textfile_collector/wordfence.prom',
             'metric_prefix'        => 'wordpress_wordfence',
@@ -297,7 +297,7 @@ final class Simula_Security_Telemetry_Util {
 
         if (!self::is_absolute_path($value)) {
             add_settings_error(
-                'swfgi_metrics',
+                'sstfw_metrics',
                 $absolute_error_code,
                 $absolute_error_message,
                 'error'
@@ -308,7 +308,7 @@ final class Simula_Security_Telemetry_Util {
 
         if (!preg_match($extension_pattern, $value)) {
             add_settings_error(
-                'swfgi_metrics',
+                'sstfw_metrics',
                 $extension_error_code,
                 $extension_error_message,
                 'error'
@@ -330,7 +330,7 @@ final class Simula_Security_Telemetry_Settings {
     /** Registers the plugin settings and sanitization callback. */
     public static function register_settings() {
         register_setting(
-            'swfgi_metrics',
+            'sstfw_metrics',
             Simula_Security_Telemetry_Config::OPTION,
             [
                 'type'              => 'array',
@@ -456,9 +456,9 @@ final class Simula_Security_Telemetry_Settings {
         return Simula_Security_Telemetry_Util::sanitize_file_setting_path(
             $value,
             $default,
-            'swfgi-prom-file',
+            'sstfw-prom-file',
             __('The Prometheus file path must be absolute. The default path has been restored.', 'simula-security-telemetry-for-wordfence'),
-            'swfgi-prom-file-extension',
+            'sstfw-prom-file-extension',
             '/\.prom$/',
             __('The Prometheus file path must end with .prom. The default path has been restored.', 'simula-security-telemetry-for-wordfence')
         );
@@ -471,9 +471,9 @@ final class Simula_Security_Telemetry_Settings {
         return Simula_Security_Telemetry_Util::sanitize_file_setting_path(
             $value,
             $default,
-            'swfgi-incident-log-file',
+            'sstfw-incident-log-file',
             __('The incident log file path must be absolute. The default path has been restored.', 'simula-security-telemetry-for-wordfence'),
-            'swfgi-incident-log-file-extension',
+            'sstfw-incident-log-file-extension',
             '/\.(?:log|jsonl)$/',
             __('The incident log file path must end with .log or .jsonl. The default path has been restored.', 'simula-security-telemetry-for-wordfence')
         );
@@ -3526,10 +3526,10 @@ final class Simula_Security_Telemetry_Admin {
             <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', 'simula-security-telemetry-for-wordfence'); ?></h1>
             <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', 'simula-security-telemetry-for-wordfence'); ?></p>
 
-            <?php settings_errors('swfgi_metrics'); ?>
+            <?php settings_errors('sstfw_metrics'); ?>
 
             <form method="post" action="options.php">
-                <?php settings_fields('swfgi_metrics'); ?>
+                <?php settings_fields('sstfw_metrics'); ?>
                 <?php self::render_metrics_settings_section($options); ?>
                 <?php self::render_incident_settings_section($options); ?>
                 <?php submit_button(); ?>
@@ -3546,23 +3546,23 @@ final class Simula_Security_Telemetry_Admin {
 
     /** Handles manual export and cursor reset actions from the settings page. */
     private static function handle_settings_page_actions() {
-        if (isset($_POST['swfgi_export_now'])) {
-            check_admin_referer('swfgi_export_now');
+        if (isset($_POST['sstfw_export_now'])) {
+            check_admin_referer('sstfw_export_now');
             $result = Simula_Security_Telemetry_Service::export(true);
             add_settings_error(
-                'swfgi_metrics',
-                'swfgi-export-now',
+                'sstfw_metrics',
+                'sstfw-export-now',
                 $result['message'],
                 $result['ok'] ? 'updated' : 'error'
             );
         }
 
-        if (isset($_POST['swfgi_reset_incident_cursor'])) {
-            check_admin_referer('swfgi_reset_incident_cursor');
+        if (isset($_POST['sstfw_reset_incident_cursor'])) {
+            check_admin_referer('sstfw_reset_incident_cursor');
             Simula_Security_Telemetry_Incidents::reset_cursor();
             add_settings_error(
-                'swfgi_metrics',
-                'swfgi-reset-incident-cursor',
+                'sstfw_metrics',
+                'sstfw-reset-incident-cursor',
                 __('Incident cursor reset to 0. The next export can backfill retained Wordfence incidents up to the configured row limit.', 'simula-security-telemetry-for-wordfence'),
                 'updated'
             );
@@ -3585,10 +3585,10 @@ final class Simula_Security_Telemetry_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-cron-interval"><?php echo esc_html__('Cron interval', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-cron-interval"><?php echo esc_html__('Cron interval', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <select id="swfgi-cron-interval" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[cron_interval]">
+                    <select id="sstfw-cron-interval" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[cron_interval]">
                         <?php foreach (Simula_Security_Telemetry_Metrics::cron_interval_labels() as $interval_key => $interval_label) : ?>
                             <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['cron_interval'], $interval_key); ?>>
                                 <?php echo esc_html($interval_label); ?>
@@ -3600,10 +3600,10 @@ final class Simula_Security_Telemetry_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-slow-cron-interval"><?php echo esc_html__('Slow collector interval', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-slow-cron-interval"><?php echo esc_html__('Slow collector interval', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <select id="swfgi-slow-cron-interval" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[slow_cron_interval]">
+                    <select id="sstfw-slow-cron-interval" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[slow_cron_interval]">
                         <?php foreach (Simula_Security_Telemetry_Metrics::slow_cron_interval_labels() as $interval_key => $interval_label) : ?>
                             <option value="<?php echo esc_attr($interval_key); ?>" <?php selected($options['slow_cron_interval'], $interval_key); ?>>
                                 <?php echo esc_html($interval_label); ?>
@@ -3615,28 +3615,28 @@ final class Simula_Security_Telemetry_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-prom-file"><?php echo esc_html__('Prometheus file path', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-prom-file"><?php echo esc_html__('Prometheus file path', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <input id="swfgi-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
+                    <input id="sstfw-prom-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[prom_file]" value="<?php echo esc_attr($options['prom_file']); ?>" />
                     <p class="description"><?php echo esc_html__('Example: /var/lib/node_exporter/textfile_collector/wordfence.prom. The directory must already exist and be writable by PHP.', 'simula-security-telemetry-for-wordfence'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-metric-prefix"><?php echo esc_html__('Metric prefix', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-metric-prefix"><?php echo esc_html__('Metric prefix', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <input id="swfgi-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
+                    <input id="sstfw-metric-prefix" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[metric_prefix]" value="<?php echo esc_attr($options['metric_prefix']); ?>" />
                     <p class="description"><?php echo esc_html__('Prometheus metric prefix. Invalid characters are replaced automatically.', 'simula-security-telemetry-for-wordfence'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-site-label"><?php echo esc_html__('Site label', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-site-label"><?php echo esc_html__('Site label', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <input id="swfgi-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
+                    <input id="sstfw-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
                     <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', 'simula-security-telemetry-for-wordfence'); ?></p>
                 </td>
             </tr>
@@ -3676,19 +3676,19 @@ final class Simula_Security_Telemetry_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-incident-log-file"><?php echo esc_html__('Incident log path', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-incident-log-file"><?php echo esc_html__('Incident log path', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <input id="swfgi-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
+                    <input id="sstfw-incident-log-file" class="regular-text code" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[incident_log_file]" value="<?php echo esc_attr($options['incident_log_file']); ?>" />
                     <p class="description"><?php echo esc_html__('Use an absolute log file path. A .log suffix is recommended; existing .jsonl paths are still accepted. The directory must already exist and be writable by PHP.', 'simula-security-telemetry-for-wordfence'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-incident-log-format"><?php echo esc_html__('Incident log format', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-incident-log-format"><?php echo esc_html__('Incident log format', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <select id="swfgi-incident-log-format" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[incident_log_format]">
+                    <select id="sstfw-incident-log-format" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[incident_log_format]">
                         <option value="text" <?php selected($options['incident_log_format'], 'text'); ?>><?php echo esc_html__('Text', 'simula-security-telemetry-for-wordfence'); ?></option>
                         <option value="jsonl" <?php selected($options['incident_log_format'], 'jsonl'); ?>><?php echo esc_html__('JSON Lines', 'simula-security-telemetry-for-wordfence'); ?></option>
                     </select>
@@ -3697,19 +3697,19 @@ final class Simula_Security_Telemetry_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-incident-max-rows"><?php echo esc_html__('Max incidents per run', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-incident-max-rows"><?php echo esc_html__('Max incidents per run', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <input id="swfgi-incident-max-rows" class="small-text" type="number" min="1" max="10000" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[incident_max_rows]" value="<?php echo esc_attr((string) $options['incident_max_rows']); ?>" />
+                    <input id="sstfw-incident-max-rows" class="small-text" type="number" min="1" max="10000" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[incident_max_rows]" value="<?php echo esc_attr((string) $options['incident_max_rows']); ?>" />
                     <p class="description"><?php echo esc_html__('Caps each export pass so large retained Wordfence hit tables do not create long-running admin or cron requests.', 'simula-security-telemetry-for-wordfence'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-privacy-ip-mode"><?php echo esc_html__('Incident IP privacy', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-privacy-ip-mode"><?php echo esc_html__('Incident IP privacy', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <select id="swfgi-privacy-ip-mode" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[privacy_ip_mode]">
+                    <select id="sstfw-privacy-ip-mode" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[privacy_ip_mode]">
                         <option value="full" <?php selected($options['privacy_ip_mode'], 'full'); ?>><?php echo esc_html__('Log full IP address', 'simula-security-telemetry-for-wordfence'); ?></option>
                         <option value="truncate" <?php selected($options['privacy_ip_mode'], 'truncate'); ?>><?php echo esc_html__('Truncate to IPv4 /24 or IPv6 /64', 'simula-security-telemetry-for-wordfence'); ?></option>
                         <option value="hash" <?php selected($options['privacy_ip_mode'], 'hash'); ?>><?php echo esc_html__('Hash with site salt', 'simula-security-telemetry-for-wordfence'); ?></option>
@@ -3741,10 +3741,10 @@ final class Simula_Security_Telemetry_Admin {
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="swfgi-privacy-retention-note"><?php echo esc_html__('Retention note', 'simula-security-telemetry-for-wordfence'); ?></label>
+                    <label for="sstfw-privacy-retention-note"><?php echo esc_html__('Retention note', 'simula-security-telemetry-for-wordfence'); ?></label>
                 </th>
                 <td>
-                    <textarea id="swfgi-privacy-retention-note" class="large-text" rows="2" maxlength="200" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[privacy_retention_note]"><?php echo esc_textarea($options['privacy_retention_note']); ?></textarea>
+                    <textarea id="sstfw-privacy-retention-note" class="large-text" rows="2" maxlength="200" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[privacy_retention_note]"><?php echo esc_textarea($options['privacy_retention_note']); ?></textarea>
                     <p class="description"><?php echo esc_html__('Optional note appended to each incident event so downstream log users can see the local retention expectation. Keep operational retention enforcement in your log pipeline.', 'simula-security-telemetry-for-wordfence'); ?></p>
                 </td>
             </tr>
@@ -3756,14 +3756,14 @@ final class Simula_Security_Telemetry_Admin {
     private static function render_manual_actions_section() {
         ?>
         <form method="post" style="display:inline-block; margin-right: 12px;">
-            <?php wp_nonce_field('swfgi_export_now'); ?>
-            <?php submit_button(__('Export now', 'simula-security-telemetry-for-wordfence'), 'secondary', 'swfgi_export_now'); ?>
+            <?php wp_nonce_field('sstfw_export_now'); ?>
+            <?php submit_button(__('Export now', 'simula-security-telemetry-for-wordfence'), 'secondary', 'sstfw_export_now'); ?>
         </form>
         <p class="description"><?php echo esc_html__('Manual export uses the same master exporter toggle. If the exporter is disabled, the button writes disabled metrics and reports that exports are off.', 'simula-security-telemetry-for-wordfence'); ?></p>
 
         <form method="post" style="display:inline-block;">
-            <?php wp_nonce_field('swfgi_reset_incident_cursor'); ?>
-            <?php submit_button(__('Reset incident cursor for backfill', 'simula-security-telemetry-for-wordfence'), 'delete', 'swfgi_reset_incident_cursor'); ?>
+            <?php wp_nonce_field('sstfw_reset_incident_cursor'); ?>
+            <?php submit_button(__('Reset incident cursor for backfill', 'simula-security-telemetry-for-wordfence'), 'delete', 'sstfw_reset_incident_cursor'); ?>
         </form>
         <?php
     }
@@ -3884,7 +3884,7 @@ final class Simula_Security_Telemetry_Metrics {
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), ['Simula_Security_Telemetry_Admin', 'plugin_action_links']);
 
         if (defined('WP_CLI') && WP_CLI) {
-            WP_CLI::add_command('simula-wordfence-metrics', 'Simula_Security_Telemetry_CLI');
+            WP_CLI::add_command('simula-security-telemtry', 'Simula_Security_Telemetry_CLI');
         }
 
         register_activation_hook(__FILE__, [__CLASS__, 'activate']);
@@ -3895,9 +3895,9 @@ final class Simula_Security_Telemetry_Metrics {
     /** Returns the selectable schedule labels for cron interval settings. */
     public static function cron_interval_labels() {
         return [
-            'swfgi_five_minutes'    => __('Every five minutes', 'simula-security-telemetry-for-wordfence'),
-            'swfgi_fifteen_minutes' => __('Every fifteen minutes', 'simula-security-telemetry-for-wordfence'),
-            'swfgi_thirty_minutes'  => __('Every thirty minutes', 'simula-security-telemetry-for-wordfence'),
+            'sstfw_five_minutes'    => __('Every five minutes', 'simula-security-telemetry-for-wordfence'),
+            'sstfw_fifteen_minutes' => __('Every fifteen minutes', 'simula-security-telemetry-for-wordfence'),
+            'sstfw_thirty_minutes'  => __('Every thirty minutes', 'simula-security-telemetry-for-wordfence'),
             'hourly'               => __('Hourly', 'simula-security-telemetry-for-wordfence'),
         ];
     }
@@ -3913,15 +3913,15 @@ final class Simula_Security_Telemetry_Metrics {
 
     /** Registers the custom cron schedules used by the exporter. */
     public static function cron_schedules($schedules) {
-        $schedules['swfgi_five_minutes'] = [
+        $schedules['sstfw_five_minutes'] = [
             'interval' => 300,
             'display'  => __('Every five minutes', 'simula-security-telemetry-for-wordfence'),
         ];
-        $schedules['swfgi_fifteen_minutes'] = [
+        $schedules['sstfw_fifteen_minutes'] = [
             'interval' => 900,
             'display'  => __('Every fifteen minutes', 'simula-security-telemetry-for-wordfence'),
         ];
-        $schedules['swfgi_thirty_minutes'] = [
+        $schedules['sstfw_thirty_minutes'] = [
             'interval' => 1800,
             'display'  => __('Every thirty minutes', 'simula-security-telemetry-for-wordfence'),
         ];

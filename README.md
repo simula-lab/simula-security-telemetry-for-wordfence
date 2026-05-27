@@ -310,20 +310,20 @@ Example JSON Lines event:
 If WP-CLI is available, the plugin registers:
 
 ```bash
-wp simula-wordfence-metrics export
-wp simula-wordfence-metrics export --metrics-only
-wp simula-wordfence-metrics export --metrics-only --scope=fast
-wp simula-wordfence-metrics export --metrics-only --scope=slow
-wp simula-wordfence-metrics export --incidents-only
-wp simula-wordfence-metrics reset-cursor
-wp simula-wordfence-metrics status
+wp simula-security-telemtry export
+wp simula-security-telemtry export --metrics-only
+wp simula-security-telemtry export --metrics-only --scope=fast
+wp simula-security-telemtry export --metrics-only --scope=slow
+wp simula-security-telemtry export --incidents-only
+wp simula-security-telemtry reset-cursor
+wp simula-security-telemtry status
 ```
 
 For production scheduling, prefer system cron invoking WP-CLI over relying only on traffic-triggered WP-Cron:
 
 ```cron
-*/15 * * * * cd /path/to/wordpress && wp simula-wordfence-metrics export --quiet
-0 * * * * cd /path/to/wordpress && wp simula-wordfence-metrics export --metrics-only --scope=slow --quiet
+*/15 * * * * cd /path/to/wordpress && wp simula-security-telemtry export --quiet
+0 * * * * cd /path/to/wordpress && wp simula-security-telemtry export --metrics-only --scope=slow --quiet
 ```
 
 ## Grafana and Prometheus Assets
