@@ -1,6 +1,6 @@
-# Simula Security Metrics Exporter for Wordfence
+# Simula Security Telemetry for Wordfence
 
-`Simula Security Metrics Exporter for Wordfence` is a WordPress plugin that exports Wordfence security telemetry in two operator-friendly forms:
+`Simula Security Telemetry for Wordfence` is a WordPress plugin that exports Wordfence security telemetry in two operator-friendly forms:
 
 - Prometheus metrics for the `node_exporter` textfile collector
 - A local incident log containing blocked Wordfence requests
@@ -9,7 +9,7 @@ It is designed for WordPress sites that already run:
 
 - Wordfence
 - `node_exporter` with the textfile collector enabled
-- `alloy` with the a log
+- `alloy` with a log collection pipeline
 
 The plugin writes local files on a schedule, so Prometheus and log-based tooling can ingest Wordfence activity without exposing a public metrics endpoint from WordPress.
 
@@ -76,7 +76,7 @@ simula-security-telemetry-for-wordfence.php
 After activation, go to:
 
 ```text
-Settings > Wordfence Metrics
+Settings > Security Telemetry
 ```
 
 ### Prometheus metrics settings
@@ -176,7 +176,7 @@ All metrics include a `site` label.
 
 - `wordpress_wordfence_export_success`
   Indicates whether the last export succeeded.
-- `wordpress_wordfence_plugin_info{version="2.2"}`
+- `wordpress_wordfence_plugin_info{version="2.2.2"}`
   Static plugin metadata metric.
 - `wordpress_wordfence_last_export_timestamp_seconds`
   Unix timestamp of the last export attempt or successful export.
@@ -310,20 +310,20 @@ Example JSON Lines event:
 If WP-CLI is available, the plugin registers:
 
 ```bash
-wp simula-security-telemtry export
-wp simula-security-telemtry export --metrics-only
-wp simula-security-telemtry export --metrics-only --scope=fast
-wp simula-security-telemtry export --metrics-only --scope=slow
-wp simula-security-telemtry export --incidents-only
-wp simula-security-telemtry reset-cursor
-wp simula-security-telemtry status
+wp simula-security-telemetry export
+wp simula-security-telemetry export --metrics-only
+wp simula-security-telemetry export --metrics-only --scope=fast
+wp simula-security-telemetry export --metrics-only --scope=slow
+wp simula-security-telemetry export --incidents-only
+wp simula-security-telemetry reset-cursor
+wp simula-security-telemetry status
 ```
 
 For production scheduling, prefer system cron invoking WP-CLI over relying only on traffic-triggered WP-Cron:
 
 ```cron
-*/15 * * * * cd /path/to/wordpress && wp simula-security-telemtry export --quiet
-0 * * * * cd /path/to/wordpress && wp simula-security-telemtry export --metrics-only --scope=slow --quiet
+*/15 * * * * cd /path/to/wordpress && wp simula-security-telemetry export --quiet
+0 * * * * cd /path/to/wordpress && wp simula-security-telemetry export --metrics-only --scope=slow --quiet
 ```
 
 ## Grafana and Prometheus Assets

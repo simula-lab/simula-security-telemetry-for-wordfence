@@ -1,4 +1,4 @@
-=== Simula Security Metrics Exporter for Wordfence ===
+=== Simula Security Telemetry for Wordfence ===
 Contributors: simulalab
 Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
@@ -12,9 +12,9 @@ Donate link: https://simulalab.org
 Export Prometheus metrics from Wordfence into a node_exporter textfile collector .prom file and append incidents detected by wordfence to a local log file.
 
 == Description ==
-Simula Security Metrics Exporter for Wordfence exports Wordfence security telemetry in two forms:
+Simula Security Telemetry for Wordfence exports Wordfence security telemetry in two forms:
 
-* Prometheus metrics for the node_exporter textfile collector that can be scrapped by Prometheus
+* Prometheus metrics for the node_exporter textfile collector that can be scraped by Prometheus
 * A local incident log containing blocked Wordfence requests that can be shipped with Grafana-Alloy
 
 This plugin is intended for WordPress sites that already use Wordfence and Prometheus-based infrastructure. Instead of exposing a public metrics endpoint from WordPress, the plugin writes local files that node_exporter and log-based tooling can consume.
@@ -47,7 +47,7 @@ Blocked events are currently identified from the Wordfence hits table where:
 * action matches blocked:*
 * or the HTTP status code is 403 or 503
 
-The plugin includes an admin settings screen under Settings > Wordfence Metrics, where you can:
+The plugin includes an admin settings screen under Settings > Security Telemetry, where you can:
 
 * Enable or disable the exporter master switch
 * Choose the export cron interval
@@ -70,7 +70,7 @@ The plugin includes an admin settings screen under Settings > Wordfence Metrics,
 
 1. Upload the plugin folder to the /wp-content/plugins/ directory, or install it using your preferred deployment process.
 2. Activate the plugin through the Plugins screen in WordPress.
-3. Go to Settings > Wordfence Metrics.
+3. Go to Settings > Security Telemetry.
 4. Set the Prometheus output file path. The default is /var/lib/node_exporter/textfile_collector/wordfence.prom.
 5. Ensure the target directory already exists and is writable by the PHP process.
 6. If incident export is enabled, set the incident log path. The default is /var/log/wordpress-wordfence-incidents.log.
@@ -144,13 +144,13 @@ Incident privacy controls can keep full IPs, truncate IPv4 to /24 and IPv6 to /6
 
 If WP-CLI is available, the plugin registers:
 
-* wp simula-security-telemtry export
-* wp simula-security-telemtry export --metrics-only
-* wp simula-security-telemtry export --metrics-only --scope=fast
-* wp simula-security-telemtry export --metrics-only --scope=slow
-* wp simula-security-telemtry export --incidents-only
-* wp simula-security-telemtry reset-cursor
-* wp simula-security-telemtry status
+* wp simula-security-telemetry export
+* wp simula-security-telemetry export --metrics-only
+* wp simula-security-telemetry export --metrics-only --scope=fast
+* wp simula-security-telemetry export --metrics-only --scope=slow
+* wp simula-security-telemetry export --incidents-only
+* wp simula-security-telemetry reset-cursor
+* wp simula-security-telemetry status
 
 = Does the plugin include Grafana and Prometheus assets? =
 
@@ -171,6 +171,7 @@ The directory that will contain the .prom file must already exist and be writabl
 * Fixed incident log timestamps to prefer the original Wordfence hit timestamp over the export run time.
 * Added bounded INFO, WARN, and CRITICAL levels to Wordfence incident log events.
 * Added dashboard filtering by instance_name across metrics and incident logs.
+* Renamed the plugin, admin page slug, option keys, cron hooks, and WP-CLI command to the Simula Security Telemetry naming.
 
 = 2.1.0 =
 
@@ -199,8 +200,7 @@ The directory that will contain the .prom file must already exist and be writabl
 
 = 2.2.2 =
 
-Fixes incident log event timestamps and adds incident log levels plus instance_name dashboard filtering.
-Changed the prefix of this plugin DB entries from `wfne` to `sstfw`
+Fixes incident log event timestamps, adds incident log levels and instance_name dashboard filtering, and renames the plugin storage prefix from `wfne` to `sstfw`. The WP-CLI command is now `wp simula-security-telemetry`.
 
 = 2.1.0 =
 

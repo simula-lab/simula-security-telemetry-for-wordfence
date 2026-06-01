@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Simula Security Metrics Exporter for Wordfence
+ * Plugin Name: Simula Security Telemetry for Wordfence
  * Plugin URI:  https://github.com/simula-lab/simula-security-telemetry-for-wordfence
  * 
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
@@ -22,15 +22,20 @@ if (!defined('ABSPATH')) {
 }
 
 final class Simula_Security_Telemetry_Config {
-    public const OPTION      = 'sstfw_metrics_options';
-    public const STATE       = 'sstfw_metrics_state';
-    public const CRON_HOOK   = 'sstfw_metrics_export_event';
+    public const OPTION         = 'sstfw_metrics_options';
+    public const STATE          = 'sstfw_metrics_state';
+    public const CRON_HOOK      = 'sstfw_metrics_export_event';
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
-    public const SLUG        = 'sstfw-metrics';
-    public const CAPABILITY  = 'manage_options';
-    public const VERSION     = '2.2.2';
-    public const TEXT_DOMAIN = 'simula-security-telemetry-for-wordfence';
-    public const WINDOWS     = ['5m', '1h', '24h', '7d'];
+    public const SLUG           = 'simula-security-telemetry-for-wordfence';
+    public const CAPABILITY     = 'manage_options';
+    public const VERSION        = '2.2.2';
+    public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
+    public const CLI_COMMAND    = 'simula-security-telemetry';
+    // public const LEGACY_OPTION         = 'wfne_metrics_options';
+    // public const LEGACY_STATE          = 'wfne_metrics_state';
+    // public const LEGACY_CRON_HOOK      = 'wfne_metrics_export_event';
+    // public const LEGACY_SLOW_CRON_HOOK = 'wfne_metrics_slow_export_event';
+    public const WINDOWS        = ['5m', '1h', '24h', '7d'];
 
     /** Returns the default plugin option values. */
     public static function defaults() {
@@ -356,6 +361,44 @@ final class Simula_Security_Telemetry_Settings {
         return is_array($state) ? $state : [];
     }
 
+    // /** Migrates plugin-owned storage from the previous wfne prefix to the sstfw prefix. */
+    // public static function migrate_legacy_storage() {
+    //     $legacy_options = get_option(Simula_Security_Telemetry_Config::LEGACY_OPTION, false);
+    //     $current_options = get_option(Simula_Security_Telemetry_Config::OPTION, false);
+
+    //     if (is_array($legacy_options)) {
+    //         $legacy_options = self::normalize_legacy_options($legacy_options);
+
+    //         if ($current_options === false) {
+    //             add_option(Simula_Security_Telemetry_Config::OPTION, $legacy_options, '', false);
+    //         } elseif (is_array($current_options)) {
+    //             $defaults              = Simula_Security_Telemetry_Config::defaults();
+    //             $current_with_defaults = wp_parse_args($current_options, $defaults);
+    //             $merged_options        = $current_with_defaults == $defaults
+    //                 ? wp_parse_args($legacy_options, $defaults)
+    //                 : wp_parse_args($current_options, $legacy_options);
+    //             update_option(Simula_Security_Telemetry_Config::OPTION, $merged_options, false);
+    //         }
+
+    //         delete_option(Simula_Security_Telemetry_Config::LEGACY_OPTION);
+    //     }
+
+    //     $legacy_state  = get_option(Simula_Security_Telemetry_Config::LEGACY_STATE, false);
+    //     $current_state = get_option(Simula_Security_Telemetry_Config::STATE, false);
+
+    //     if (is_array($legacy_state)) {
+    //         if ($current_state === false) {
+    //             add_option(Simula_Security_Telemetry_Config::STATE, $legacy_state, '', false);
+    //         } elseif (is_array($current_state)) {
+    //             update_option(Simula_Security_Telemetry_Config::STATE, array_merge($legacy_state, $current_state), false);
+    //         }
+    //         delete_option(Simula_Security_Telemetry_Config::LEGACY_STATE);
+    //     }
+
+    //     wp_clear_scheduled_hook(Simula_Security_Telemetry_Config::LEGACY_CRON_HOOK);
+    //     wp_clear_scheduled_hook(Simula_Security_Telemetry_Config::LEGACY_SLOW_CRON_HOOK);
+    // }
+
     /** Sanitizes submitted settings, updates scheduling, and writes disabled metrics when needed. */
     public static function sanitize_options($input) {
         $defaults = Simula_Security_Telemetry_Config::defaults();
@@ -570,6 +613,24 @@ final class Simula_Security_Telemetry_Settings {
 
         return $sanitized;
     }
+
+    /** Converts legacy wfne-prefixed schedule values to their sstfw-prefixed equivalents. */
+    // private static function normalize_legacy_options($options) {
+    //     $options = is_array($options) ? $options : [];
+    //     $schedule_map = [
+    //         'wfne_five_minutes'    => 'sstfw_five_minutes',
+    //         'wfne_fifteen_minutes' => 'sstfw_fifteen_minutes',
+    //         'wfne_thirty_minutes'  => 'sstfw_thirty_minutes',
+    //     ];
+
+    //     foreach (['cron_interval', 'slow_cron_interval'] as $key) {
+    //         if (isset($options[$key], $schedule_map[$options[$key]])) {
+    //             $options[$key] = $schedule_map[$options[$key]];
+    //         }
+    //     }
+
+    //     return $options;
+    // }
 }
 
 final class Simula_Security_Telemetry_Output {
@@ -3487,8 +3548,8 @@ final class Simula_Security_Telemetry_Admin {
     /** Registers the plugin settings page under the WordPress Settings menu. */
     public static function admin_menu() {
         add_options_page(
-            __('Simula Wordfence Grafana Metrics', 'simula-security-telemetry-for-wordfence'),
-            __('Wordfence Metrics', 'simula-security-telemetry-for-wordfence'),
+            __('Simula Security Telemetry for Wordfence', 'simula-security-telemetry-for-wordfence'),
+            __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
             Simula_Security_Telemetry_Config::CAPABILITY,
             Simula_Security_Telemetry_Config::SLUG,
             [__CLASS__, 'settings_page']
@@ -3523,7 +3584,7 @@ final class Simula_Security_Telemetry_Admin {
         $state   = Simula_Security_Telemetry_Settings::get_state();
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Simula Wordfence Grafana Metrics', 'simula-security-telemetry-for-wordfence'); ?></h1>
+            <h1><?php echo esc_html__('Simula Security Telemetry for Wordfence', 'simula-security-telemetry-for-wordfence'); ?></h1>
             <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', 'simula-security-telemetry-for-wordfence'); ?></p>
 
             <?php settings_errors('sstfw_metrics'); ?>
@@ -3876,6 +3937,8 @@ final class Simula_Security_Telemetry_CLI {
 final class Simula_Security_Telemetry_Metrics {
     /** Hooks the plugin into WordPress actions, filters, and lifecycle events. */
     public static function init() {
+        // Simula_Security_Telemetry_Settings::migrate_legacy_storage();
+
         add_action('admin_menu', ['Simula_Security_Telemetry_Admin', 'admin_menu']);
         add_action('admin_init', ['Simula_Security_Telemetry_Settings', 'register_settings']);
         add_action(Simula_Security_Telemetry_Config::CRON_HOOK, ['Simula_Security_Telemetry_Service', 'export_fast']);
@@ -3884,7 +3947,7 @@ final class Simula_Security_Telemetry_Metrics {
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), ['Simula_Security_Telemetry_Admin', 'plugin_action_links']);
 
         if (defined('WP_CLI') && WP_CLI) {
-            WP_CLI::add_command('simula-security-telemtry', 'Simula_Security_Telemetry_CLI');
+            WP_CLI::add_command(Simula_Security_Telemetry_Config::CLI_COMMAND, 'Simula_Security_Telemetry_CLI');
         }
 
         register_activation_hook(__FILE__, [__CLASS__, 'activate']);
