@@ -1,8 +1,7 @@
 <?php
 /**
  * Plugin Name: Simula Security Telemetry for Wordfence
- * Plugin URI:  https://github.com/simula-lab/simula-security-telemetry-for-wordfence
- * 
+ * Plugin URI:  https://wordpress.org/plugins/simula-security-telemetry-for-wordfence
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
  * Version:     2.2.2
  * Requires at least: 6.0
