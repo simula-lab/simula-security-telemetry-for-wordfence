@@ -3,7 +3,7 @@
  * Plugin Name: Simula Security Telemetry for Wordfence
  * Plugin URI:  https://wordpress.org/plugins/simula-security-telemetry-for-wordfence
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
- * Version:     2.2.2
+ * Version:     2.3.3
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author:      Simula
@@ -27,7 +27,7 @@ final class Simula_Security_Telemetry_Config {
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '2.2.2';
+    public const VERSION        = '2.3.3';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
@@ -78,6 +78,14 @@ final class Simula_Security_Telemetry_Config {
                 'label'       => __('Last export timestamp', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Exports the Unix timestamp of the most recent export attempt.', 'simula-security-telemetry-for-wordfence'),
             ],
+            'next_export_timestamp_seconds' => [
+                'label'       => __('Next fast export timestamp', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Exports the Unix timestamp of the next scheduled fast exporter run when WP-Cron has one queued.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'next_slow_export_timestamp_seconds' => [
+                'label'       => __('Next slow export timestamp', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Exports the Unix timestamp of the next scheduled slow collector run when WP-Cron has one queued.', 'simula-security-telemetry-for-wordfence'),
+            ],
             'error_info' => [
                 'label'       => __('Error info', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Exports a bounded error type for the latest export failure.', 'simula-security-telemetry-for-wordfence'),
@@ -116,7 +124,7 @@ final class Simula_Security_Telemetry_Config {
             ],
             'scan_findings_total' => [
                 'label'       => __('Scan findings total', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Current Wordfence scan findings for malware and file changes.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Current Wordfence scan findings for malware issue types and file changes.', 'simula-security-telemetry-for-wordfence'),
             ],
             'rate_limited_events_window' => [
                 'label'       => __('Rate-limited events by window', 'simula-security-telemetry-for-wordfence'),
@@ -491,6 +499,124 @@ final class Simula_Security_Telemetry_Settings {
         return gmdate('Y-m-d H:i:s', $timestamp) . ' UTC';
     }
 
+    /** Formats a duration in seconds for operator-facing status output. */
+    public static function format_state_duration($seconds) {
+        $seconds = max(0, (int) $seconds);
+
+        if ($seconds <= 0) {
+            return __('0 seconds', 'simula-security-telemetry-for-wordfence');
+        }
+
+        $units = [
+            'day'    => 86400,
+            'hour'   => 3600,
+            'minute' => 60,
+            'second' => 1,
+        ];
+        $parts = [];
+
+        foreach ($units as $label => $size) {
+            if ($seconds < $size && $parts === []) {
+                continue;
+            }
+
+            $count = intdiv($seconds, $size);
+            if ($count <= 0) {
+                continue;
+            }
+
+            $parts[] = sprintf(
+                /* translators: 1: count, 2: unit label */
+                _n('%1$d %2$s', '%1$d %2$ss', $count, 'simula-security-telemetry-for-wordfence'),
+                $count,
+                $label
+            );
+            $seconds %= $size;
+
+            if (count($parts) >= 2) {
+                break;
+            }
+        }
+
+        return implode(' ', $parts);
+    }
+
+    /** Resolves a configured cron schedule name to its interval in seconds when possible. */
+    public static function schedule_interval_seconds($schedule) {
+        $schedule = (string) $schedule;
+        if ($schedule === '') {
+            return 0;
+        }
+
+        $schedules = function_exists('wp_get_schedules') ? wp_get_schedules() : [];
+        if (isset($schedules[$schedule]['interval'])) {
+            return max(0, (int) $schedules[$schedule]['interval']);
+        }
+
+        $fallbacks = [
+            'sstfw_five_minutes'    => 300,
+            'sstfw_fifteen_minutes' => 900,
+            'sstfw_thirty_minutes'  => 1800,
+            'hourly'                => HOUR_IN_SECONDS,
+            'twicedaily'            => 12 * HOUR_IN_SECONDS,
+            'daily'                 => DAY_IN_SECONDS,
+        ];
+
+        return isset($fallbacks[$schedule]) ? (int) $fallbacks[$schedule] : 0;
+    }
+
+    /** Returns the next scheduled timestamp for a cron hook, or 0 when none is queued. */
+    public static function next_scheduled_timestamp($hook) {
+        return max(0, (int) wp_next_scheduled($hook));
+    }
+
+    /** Returns a human-readable exporter freshness summary relative to a configured interval. */
+    public static function freshness_summary($last_timestamp, $interval_seconds, $enabled, $subject_label, $now = null) {
+        $now             = $now === null ? time() : (int) $now;
+        $last_timestamp  = (int) $last_timestamp;
+        $interval_seconds = max(0, (int) $interval_seconds);
+        $subject_label   = (string) $subject_label;
+
+        if (!$enabled) {
+            return __('Exporter disabled.', 'simula-security-telemetry-for-wordfence');
+        }
+
+        if ($last_timestamp <= 0) {
+            return sprintf(
+                /* translators: %s: subject label like "Fast export" */
+                __('No %s has completed yet.', 'simula-security-telemetry-for-wordfence'),
+                strtolower($subject_label)
+            );
+        }
+
+        if ($interval_seconds <= 0) {
+            return sprintf(
+                /* translators: %s: subject label like "Fast export" */
+                __('No interval is configured for %s freshness checks.', 'simula-security-telemetry-for-wordfence'),
+                strtolower($subject_label)
+            );
+        }
+
+        $age = max(0, $now - $last_timestamp);
+        if ($age > $interval_seconds) {
+            return sprintf(
+                /* translators: 1: subject label, 2: overdue duration, 3: configured interval duration */
+                __('%1$s is overdue by %2$s relative to the configured %3$s interval.', 'simula-security-telemetry-for-wordfence'),
+                $subject_label,
+                self::format_state_duration($age - $interval_seconds),
+                self::format_state_duration($interval_seconds)
+            );
+        }
+
+        return sprintf(
+            /* translators: 1: subject label, 2: current age, 3: configured interval duration */
+            __('%1$s is within the configured interval at %2$s old out of %3$s.', 'simula-security-telemetry-for-wordfence'),
+            $subject_label,
+            self::format_state_duration($age),
+            self::format_state_duration($interval_seconds)
+        );
+    }
+
     /** Validates and normalizes the configured Prometheus output file path. */
     private static function sanitize_prom_file($value) {
         $default = Simula_Security_Telemetry_Config::defaults()['prom_file'];
@@ -691,6 +817,30 @@ final class Simula_Security_Telemetry_Output {
             );
         }
 
+        if (Simula_Security_Telemetry_Settings::is_metric_enabled($options, 'next_export_timestamp_seconds')) {
+            self::append_metric_family(
+                $body,
+                $options['metric_prefix'] . '_next_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the next scheduled fast exporter run.',
+                [
+                    ['labels' => ['site' => $site], 'value' => 0],
+                ]
+            );
+        }
+
+        if (Simula_Security_Telemetry_Settings::is_metric_enabled($options, 'next_slow_export_timestamp_seconds')) {
+            self::append_metric_family(
+                $body,
+                $options['metric_prefix'] . '_next_slow_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the next scheduled slow collector run.',
+                [
+                    ['labels' => ['site' => $site], 'value' => 0],
+                ]
+            );
+        }
+
         $state['last_export'] = $now;
 
         return self::write_metrics(
@@ -752,6 +902,30 @@ final class Simula_Security_Telemetry_Output {
                 'Unix timestamp of the last export attempt.',
                 [
                     ['labels' => ['site' => $site], 'value' => $timestamp],
+                ]
+            );
+        }
+
+        if (Simula_Security_Telemetry_Settings::is_metric_enabled($options, 'next_export_timestamp_seconds')) {
+            self::append_metric_family(
+                $metrics,
+                $prefix . '_next_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the next scheduled fast exporter run.',
+                [
+                    ['labels' => ['site' => $site], 'value' => Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::CRON_HOOK)],
+                ]
+            );
+        }
+
+        if (Simula_Security_Telemetry_Settings::is_metric_enabled($options, 'next_slow_export_timestamp_seconds')) {
+            self::append_metric_family(
+                $metrics,
+                $prefix . '_next_slow_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the next scheduled slow collector run.',
+                [
+                    ['labels' => ['site' => $site], 'value' => Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::SLOW_CRON_HOOK)],
                 ]
             );
         }
@@ -1027,6 +1201,7 @@ final class Simula_Security_Telemetry_Wordfence_Schema {
 
     /** Returns the Wordfence scan issue table currently available in the database. */
     public static function scan_issue_table() {
+        #TODO: account for the situation where wf table names has no capital letters
         foreach (['wfIssues', 'wfPendingIssues'] as $suffix) {
             $table = self::wordfence_table($suffix);
             if (self::table_exists($table)) {
@@ -1415,7 +1590,10 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
             return $metrics;
         }
 
-        $malware_where = self::text_search_where_sql_from_columns($text_columns, ['malware', 'malicious', 'backdoor', 'trojan', 'phishing']);
+        // Prefer the structured issue type for malware classification. Broad text matching
+        // caused non-malware issues like skipped scan paths and unknown files to be counted
+        // as malware when their human-readable descriptions mentioned malware scans.
+        $malware_where = self::scan_issue_type_where_sql($table, ['malware', 'malicious', 'backdoor', 'trojan', 'phishing', 'virus', 'webshell']);
         $file_where    = self::text_search_where_sql_from_columns($text_columns, ['file changed', 'changed file', 'modified file', 'unknown file', 'file contents changed']);
         $vuln_where    = self::text_search_where_sql_from_columns($text_columns, ['vulnerab', 'outdated', 'security update', 'update available']);
         $core_where    = self::combine_where_all([
@@ -1693,6 +1871,20 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
     /** Builds a text-search SQL condition across matching columns in a table. */
     private static function text_search_where_sql($table, $candidate_columns, $terms) {
         return self::text_search_where_sql_from_columns(self::available_columns($table, $candidate_columns), $terms);
+    }
+
+    /** Builds a type-based scan issue SQL condition using structured Wordfence issue types when present. */
+    private static function scan_issue_type_where_sql($table, $terms) {
+        $type_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['type']);
+        if ($type_column === null) {
+            return self::text_search_where_sql(
+                $table,
+                ['shortMsg', 'longMsg', 'data'],
+                $terms
+            );
+        }
+
+        return self::text_search_where_sql_from_columns([$type_column], $terms);
     }
 
     /** Builds a text-search SQL condition from a specific list of columns and terms. */
@@ -3033,6 +3225,30 @@ final class Simula_Security_Telemetry_Service {
             );
         }
 
+        if (!empty($flags['next_export_timestamp_seconds'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_next_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the next scheduled fast exporter run.',
+                [
+                    ['labels' => ['site' => $site], 'value' => Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::CRON_HOOK)],
+                ]
+            );
+        }
+
+        if (!empty($flags['next_slow_export_timestamp_seconds'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_next_slow_export_timestamp_seconds',
+                'gauge',
+                'Unix timestamp of the next scheduled slow collector run.',
+                [
+                    ['labels' => ['site' => $site], 'value' => Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::SLOW_CRON_HOOK)],
+                ]
+            );
+        }
+
         if (!empty($flags['enabled'])) {
             Simula_Security_Telemetry_Output::append_metric_family(
                 $metrics,
@@ -3830,11 +4046,22 @@ final class Simula_Security_Telemetry_Admin {
 
     /** Renders the current exporter state table. */
     private static function render_current_state_section($options, $state) {
+        $now                  = time();
+        $last_export          = isset($state['last_export']) ? (int) $state['last_export'] : 0;
+        $last_slow_refresh    = isset($state['slow_metric_cache_at']) ? (int) $state['slow_metric_cache_at'] : 0;
+        $fast_interval_seconds = Simula_Security_Telemetry_Settings::schedule_interval_seconds($options['cron_interval'] ?? '');
+        $slow_interval_seconds = Simula_Security_Telemetry_Settings::schedule_interval_seconds($options['slow_cron_interval'] ?? '');
+        $next_fast_export     = Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::CRON_HOOK);
+        $next_slow_export     = Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::SLOW_CRON_HOOK);
         ?>
         <h2><?php echo esc_html__('Current state', 'simula-security-telemetry-for-wordfence'); ?></h2>
         <table class="widefat striped" style="max-width:900px">
             <tbody>
-                <?php self::render_state_row(__('Last export timestamp', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::format_state_time($state['last_export'] ?? null)); ?>
+                <?php self::render_state_row(__('Last export timestamp', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::format_state_time($last_export)); ?>
+                <?php self::render_state_row(__('Last export age', 'simula-security-telemetry-for-wordfence'), $last_export > 0 ? Simula_Security_Telemetry_Settings::format_state_duration(max(0, $now - $last_export)) : __('Never', 'simula-security-telemetry-for-wordfence')); ?>
+                <?php self::render_state_row(__('Fast export interval', 'simula-security-telemetry-for-wordfence'), $fast_interval_seconds > 0 ? Simula_Security_Telemetry_Settings::format_state_duration($fast_interval_seconds) : __('Unknown', 'simula-security-telemetry-for-wordfence')); ?>
+                <?php self::render_state_row(__('Fast export status', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::freshness_summary($last_export, $fast_interval_seconds, !empty($options['enabled']), __('Fast export', 'simula-security-telemetry-for-wordfence'), $now)); ?>
+                <?php self::render_state_row(__('Next fast export', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::format_state_time($next_fast_export)); ?>
                 <?php self::render_state_row(__('Observed blocked events', 'simula-security-telemetry-for-wordfence'), (string) ($state['blocked_total'] ?? 0)); ?>
                 <?php self::render_state_row(__('Last processed hit ID', 'simula-security-telemetry-for-wordfence'), (string) ($state['last_id'] ?? 0)); ?>
                 <?php self::render_state_row(__('Last result', 'simula-security-telemetry-for-wordfence'), (string) ($state['last_result'] ?? __('No exports yet.', 'simula-security-telemetry-for-wordfence'))); ?>
@@ -3845,7 +4072,11 @@ final class Simula_Security_Telemetry_Admin {
                 <?php self::render_state_row(__('Last incident row count', 'simula-security-telemetry-for-wordfence'), (string) ($state['last_incident_exported_rows'] ?? 0)); ?>
                 <?php self::render_state_row(__('Last incident log file', 'simula-security-telemetry-for-wordfence'), (string) ($state['last_incident_log_file'] ?? $options['incident_log_file'])); ?>
                 <?php self::render_state_row(__('Last incident error', 'simula-security-telemetry-for-wordfence'), (string) ($state['last_incident_error'] ?? '')); ?>
-                <?php self::render_state_row(__('Last slow collector refresh', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::format_state_time($state['slow_metric_cache_at'] ?? null)); ?>
+                <?php self::render_state_row(__('Last slow collector refresh', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::format_state_time($last_slow_refresh)); ?>
+                <?php self::render_state_row(__('Slow collector age', 'simula-security-telemetry-for-wordfence'), $last_slow_refresh > 0 ? Simula_Security_Telemetry_Settings::format_state_duration(max(0, $now - $last_slow_refresh)) : __('Never', 'simula-security-telemetry-for-wordfence')); ?>
+                <?php self::render_state_row(__('Slow collector interval', 'simula-security-telemetry-for-wordfence'), $slow_interval_seconds > 0 ? Simula_Security_Telemetry_Settings::format_state_duration($slow_interval_seconds) : __('Unknown', 'simula-security-telemetry-for-wordfence')); ?>
+                <?php self::render_state_row(__('Slow collector status', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::freshness_summary($last_slow_refresh, $slow_interval_seconds, !empty($options['enabled']), __('Slow collector', 'simula-security-telemetry-for-wordfence'), $now)); ?>
+                <?php self::render_state_row(__('Next slow collector run', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::format_state_time($next_slow_export)); ?>
             </tbody>
         </table>
         <?php
@@ -3896,6 +4127,11 @@ final class Simula_Security_Telemetry_CLI {
     public function status() {
         $options = Simula_Security_Telemetry_Settings::get_options();
         $state   = Simula_Security_Telemetry_Settings::get_state();
+        $now     = time();
+        $last_export = isset($state['last_export']) ? (int) $state['last_export'] : 0;
+        $last_slow_refresh = isset($state['slow_metric_cache_at']) ? (int) $state['slow_metric_cache_at'] : 0;
+        $fast_interval_seconds = Simula_Security_Telemetry_Settings::schedule_interval_seconds($options['cron_interval'] ?? '');
+        $slow_interval_seconds = Simula_Security_Telemetry_Settings::schedule_interval_seconds($options['slow_cron_interval'] ?? '');
         $rows    = [
             ['field' => 'enabled', 'value' => empty($options['enabled']) ? 'no' : 'yes'],
             ['field' => 'fast_interval', 'value' => (string) ($options['cron_interval'] ?? '')],
@@ -3908,12 +4144,18 @@ final class Simula_Security_Telemetry_CLI {
             ['field' => 'privacy_drop_referer', 'value' => empty($options['privacy_drop_referer']) ? 'no' : 'yes'],
             ['field' => 'privacy_drop_user_agent', 'value' => empty($options['privacy_drop_user_agent']) ? 'no' : 'yes'],
             ['field' => 'privacy_exclude_private_ips', 'value' => empty($options['privacy_exclude_private_ips']) ? 'no' : 'yes'],
-            ['field' => 'last_export', 'value' => Simula_Security_Telemetry_Settings::format_state_time($state['last_export'] ?? null)],
+            ['field' => 'last_export', 'value' => Simula_Security_Telemetry_Settings::format_state_time($last_export)],
+            ['field' => 'last_export_age', 'value' => $last_export > 0 ? Simula_Security_Telemetry_Settings::format_state_duration(max(0, $now - $last_export)) : 'never'],
+            ['field' => 'fast_export_status', 'value' => Simula_Security_Telemetry_Settings::freshness_summary($last_export, $fast_interval_seconds, !empty($options['enabled']), __('Fast export', 'simula-security-telemetry-for-wordfence'), $now)],
+            ['field' => 'next_fast_export', 'value' => Simula_Security_Telemetry_Settings::format_state_time(Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::CRON_HOOK))],
             ['field' => 'last_result_ok', 'value' => empty($state['last_result_ok']) ? 'no' : 'yes'],
             ['field' => 'last_result', 'value' => (string) ($state['last_result'] ?? '')],
             ['field' => 'last_error', 'value' => (string) ($state['last_error'] ?? '')],
             ['field' => 'last_incident_id', 'value' => (string) ($state['last_incident_id'] ?? 0)],
-            ['field' => 'last_slow_refresh', 'value' => Simula_Security_Telemetry_Settings::format_state_time($state['slow_metric_cache_at'] ?? null)],
+            ['field' => 'last_slow_refresh', 'value' => Simula_Security_Telemetry_Settings::format_state_time($last_slow_refresh)],
+            ['field' => 'last_slow_refresh_age', 'value' => $last_slow_refresh > 0 ? Simula_Security_Telemetry_Settings::format_state_duration(max(0, $now - $last_slow_refresh)) : 'never'],
+            ['field' => 'slow_collector_status', 'value' => Simula_Security_Telemetry_Settings::freshness_summary($last_slow_refresh, $slow_interval_seconds, !empty($options['enabled']), __('Slow collector', 'simula-security-telemetry-for-wordfence'), $now)],
+            ['field' => 'next_slow_export', 'value' => Simula_Security_Telemetry_Settings::format_state_time(Simula_Security_Telemetry_Settings::next_scheduled_timestamp(Simula_Security_Telemetry_Config::SLOW_CRON_HOOK))],
         ];
 
         WP_CLI\Utils\format_items('table', $rows, ['field', 'value']);

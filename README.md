@@ -176,10 +176,14 @@ All metrics include a `site` label.
 
 - `wordpress_wordfence_export_success`
   Indicates whether the last export succeeded.
-- `wordpress_wordfence_plugin_info{version="2.2.2"}`
+- `wordpress_wordfence_plugin_info{version="2.3.3"}`
   Static plugin metadata metric.
 - `wordpress_wordfence_last_export_timestamp_seconds`
   Unix timestamp of the last export attempt or successful export.
+- `wordpress_wordfence_next_export_timestamp_seconds`
+  Unix timestamp of the next scheduled fast exporter run when WP-Cron has one queued.
+- `wordpress_wordfence_next_slow_export_timestamp_seconds`
+  Unix timestamp of the next scheduled slow collector run when WP-Cron has one queued.
 - `wordpress_wordfence_enabled`
   `1` when the exporter master switch is enabled, `0` otherwise.
 - `wordpress_wordfence_error_info{type="write_failed|schema_unsupported|wordfence_missing|incident_failed|unknown"}`
@@ -221,7 +225,7 @@ All metrics include a `site` label.
 - `wordpress_wordfence_scan_issues_by_severity{severity="..."}`
   Current Wordfence scan issues grouped by severity.
 - `wordpress_wordfence_scan_findings_total{category="malware|file_change"}`
-  Current malware-like and file-change findings.
+  Current Wordfence malware issue-type and file-change findings.
 - `wordpress_wordfence_vulnerability_findings_total{component="core|plugin|theme"}`
   Current vulnerable or outdated core, plugin, and theme findings.
 
