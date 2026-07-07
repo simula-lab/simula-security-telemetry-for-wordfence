@@ -3799,7 +3799,10 @@ final class Simula_Security_Telemetry_Admin {
         $state   = Simula_Security_Telemetry_Settings::get_state();
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Simula Security Telemetry for Wordfence', 'simula-security-telemetry-for-wordfence'); ?></h1>
+            <h1>
+                <?php echo esc_html__('Simula Security Telemetry for Wordfence', 'simula-security-telemetry-for-wordfence'); ?>
+                <span style="font-size:14px; font-weight:400; color:#50575e; margin-left:8px;">v<?php echo esc_html(Simula_Security_Telemetry_Config::VERSION); ?></span>
+            </h1>
             <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', 'simula-security-telemetry-for-wordfence'); ?></p>
 
             <?php settings_errors('sstfw_metrics'); ?>
