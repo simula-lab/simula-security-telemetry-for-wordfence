@@ -4,12 +4,12 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.2.2
+Stable tag: 2.3.3
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
 
-Export Prometheus metrics from Wordfence into a node_exporter textfile collector .prom file and append incidents detected by wordfence to a local log file.
+Export metrics from Wordfence into a node_exporter textfile collector .prom file and append incidents detected by wordfence to a local log file.
 
 == Description ==
 Simula Security Telemetry for Wordfence exports Wordfence security telemetry in two forms:
@@ -98,6 +98,8 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_export_success
 * wordpress_wordfence_plugin_info
 * wordpress_wordfence_last_export_timestamp_seconds
+* wordpress_wordfence_next_export_timestamp_seconds
+* wordpress_wordfence_next_slow_export_timestamp_seconds
 * wordpress_wordfence_enabled
 * wordpress_wordfence_error_info
 * wordpress_wordfence_blocked_events_total
@@ -166,6 +168,12 @@ The directory that will contain the .prom file must already exist and be writabl
 
 == Changelog ==
 
+= 2.3.3 =
+
+* Added clearer stale-export diagnostics through next scheduled fast and slow export timestamps plus richer admin and WP-CLI freshness status output.
+* Fixed scan finding classification so malware counts prefer structured Wordfence issue types instead of broad message text matches.
+* Reduced false malware positives for non-malware scan issues such as skipped scan paths and unknown files.
+
 = 2.2.2 =
 
 * Fixed incident log timestamps to prefer the original Wordfence hit timestamp over the export run time.
@@ -197,6 +205,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 2.3.3 =
+
+Improves scan finding classification so malware counts follow Wordfence issue types more closely, avoids false positives from descriptive text, and makes stale exports easier to diagnose.
 
 = 2.2.2 =
 
