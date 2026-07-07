@@ -170,9 +170,9 @@ The directory that will contain the .prom file must already exist and be writabl
 
 = 2.3.3 =
 
+* Added clearer stale-export diagnostics through next scheduled fast and slow export timestamps plus richer admin and WP-CLI freshness status output.
 * Fixed scan finding classification so malware counts prefer structured Wordfence issue types instead of broad message text matches.
 * Reduced false malware positives for non-malware scan issues such as skipped scan paths and unknown files.
-* Added clearer stale-export diagnostics through next scheduled fast and slow export timestamps plus richer admin and WP-CLI freshness status output.
 
 = 2.2.2 =
 
