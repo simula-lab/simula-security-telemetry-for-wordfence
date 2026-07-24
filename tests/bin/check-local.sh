@@ -11,3 +11,4 @@ for script in build-zip.sh tests/bin/*.sh; do
 done
 
 php tests/bootstrap-smoke.php
+php tests/bin/run-unit.php

@@ -378,6 +378,14 @@ Run local syntax and bootstrap checks with:
 tests/bin/check-local.sh
 ```
 
+Run unit-test line coverage with Xdebug or PCOV enabled:
+
+```bash
+php tests/bin/coverage.php
+```
+
+Use `php tests/bin/coverage.php --min=80` when you want the v3.0 coverage target enforced.
+
 Run the disposable WordPress fixture harness with:
 
 ```bash

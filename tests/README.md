@@ -11,6 +11,21 @@ tests/bin/check-local.sh
 ```
 
 This runs PHP syntax checks, shell syntax checks, and `tests/bootstrap-smoke.php`.
+It also runs dependency-free unit tests with `tests/bin/run-unit.php`.
+
+## Coverage
+
+Run line coverage for unit tests with:
+
+```bash
+php tests/bin/coverage.php
+```
+
+Coverage requires Xdebug or PCOV. The command writes `tests/runtime/coverage/coverage-summary.json`. To enforce the v3.0 target of 80% line coverage for `includes/`, run:
+
+```bash
+php tests/bin/coverage.php --min=80
+```
 
 ## Fixture-Based WordPress Smoke Test
 
