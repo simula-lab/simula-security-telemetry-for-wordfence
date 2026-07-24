@@ -53,13 +53,16 @@ echo "Creating $ZIP_FILE …"
 # 4a) add root PHP files
 zip -q "$ZIP_FILE" ./*.php
 
-# 4b) add readme
+# 4b) add include files
+[ -d "includes" ] && zip -qr "$ZIP_FILE" "includes" "${ZIP_EXCLUDES[@]}"
+
+# 4c) add readme
 [ -f "readme.txt" ] && zip -q "$ZIP_FILE" "readme.txt"
 
-# 4c) add languages (pot, po, mo)
+# 4d) add languages (pot, po, mo)
 [ -d "languages" ] && zip -qr "$ZIP_FILE" "languages" "${ZIP_EXCLUDES[@]}"
 
-# 4d) add assets (unless excluded)
+# 4e) add assets (unless excluded)
 if [ "$NO_ASSETS" -eq 1 ]; then
   echo "Skipping assets directory as requested."
 else

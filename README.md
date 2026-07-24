@@ -366,11 +366,11 @@ You should:
 
 ## Development
 
-Repository structure is intentionally minimal:
+The plugin entrypoint now stays intentionally small:
 
 - [simula-security-telemetry-for-wordfence.php](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/simula-security-telemetry-for-wordfence.php:1)
 
-The plugin is currently implemented as a single-file WordPress plugin for simple deployment and review.
+Implementation classes live under `includes/` and are loaded explicitly for WordPress.org-compatible packaging. See [docs/file-layout.md](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/docs/file-layout.md:1) for the current class map and bootstrap smoke check.
 
 ## License
 
