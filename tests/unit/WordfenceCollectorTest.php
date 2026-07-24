@@ -29,4 +29,35 @@ return [
         $wp_version = '';
         sstfw_assert_same('unknown', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'wordpress_version'));
     },
+    'collect_plugin_inventory returns exclusive states and update availability' => function () {
+        $updates = new stdClass();
+        $updates->response = [
+            'inactive/inactive.php' => (object) ['new_version' => '2.0.0'],
+        ];
+
+        $GLOBALS['sstfw_test_plugins'] = [
+            'active/active.php' => ['Name' => 'Active Plugin', 'Version' => '1.0.0'],
+            'network/network.php' => ['Name' => 'Network Plugin', 'Version' => '1.1.0'],
+            'inactive/inactive.php' => ['Name' => 'Inactive Plugin', 'Version' => '1.2.0'],
+        ];
+        $GLOBALS['sstfw_test_active_plugins'] = ['active/active.php'];
+        $GLOBALS['sstfw_test_network_active_plugins'] = ['network/network.php'];
+        $GLOBALS['sstfw_test_site_transients']['update_plugins'] = $updates;
+
+        $inventory = sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_plugin_inventory');
+
+        sstfw_assert_same(3, $inventory['installed_total']);
+        sstfw_assert_same(1, $inventory['active_total']);
+        sstfw_assert_same(1, $inventory['network_active_total']);
+        sstfw_assert_same(1, $inventory['inactive_total']);
+        sstfw_assert_same('active', $inventory['plugins'][0]['state']);
+        sstfw_assert_same('network_active', $inventory['plugins'][1]['state']);
+        sstfw_assert_same('inactive', $inventory['plugins'][2]['state']);
+        sstfw_assert_same(1, $inventory['plugins'][2]['update_available']);
+    },
+    'bounded_plugin_label strips tags controls and caps length' => function () {
+        sstfw_assert_same('unknown', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'bounded_plugin_label', ["\n\t", 10]));
+        sstfw_assert_same('Plugin Name', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'bounded_plugin_label', ['<b>Plugin</b> Name', 20]));
+        sstfw_assert_same('abcdef', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'bounded_plugin_label', ['abcdefghi', 6]));
+    },
 ];

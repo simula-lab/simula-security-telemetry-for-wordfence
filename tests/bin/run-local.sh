@@ -46,6 +46,10 @@ wait_for_wordpress_files() {
   return 1
 }
 
+prepare_wordpress_install_dirs() {
+  compose run --rm --user root --entrypoint sh wpcli -c 'mkdir -p wp-content/plugins wp-content/upgrade wp-content/uploads && chown www-data:www-data wp-content wp-content/plugins wp-content/upgrade wp-content/uploads'
+}
+
 install_wordpress_if_needed() {
   if wp core is-installed >/dev/null 2>&1; then
     return 0
@@ -61,6 +65,7 @@ install_wordpress_if_needed() {
 }
 
 run_wpcli_smoke() {
+  wp plugin install wordfence --activate --force
   wp plugin activate simula-security-telemetry-for-wordfence
   wp eval-file /tests/wp-cli/configure-test-options.php
   wp eval-file /tests/wp-cli/seed-wordfence-fixtures.php
@@ -74,11 +79,24 @@ run_wpcli_smoke() {
 
 compose up -d db wordpress
 wait_for_wordpress_files
+prepare_wordpress_install_dirs
 install_wordpress_if_needed
 run_wpcli_smoke
-
 php tests/bin/assert-prom.php \
   tests/runtime/output/wordfence.prom \
   tests/golden/local-fixture.required-metrics.txt
+php tests/bin/assert-prom-samples.php \
+  tests/runtime/output/wordfence.prom \
+  tests/golden/local-fixture.required-samples.txt
+
+wp eval-file /tests/wp-cli/enable-plugin-inventory.php
+wp simula-security-telemetry export --metrics-only --scope=slow
+
+php tests/bin/assert-prom.php \
+  tests/runtime/output/wordfence.prom \
+  tests/golden/local-fixture.opt-in-required-metrics.txt
+php tests/bin/assert-prom-patterns.php \
+  tests/runtime/output/wordfence.prom \
+  tests/golden/local-fixture.opt-in-required-patterns.txt
 
 echo "Local WordPress fixture smoke test passed."

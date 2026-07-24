@@ -1,0 +1,4 @@
+wordpress_wordfence_plugins_installed_total{site="sstfw-test.local"} 4
+wordpress_wordfence_plugins_active_total{site="sstfw-test.local"} 2
+wordpress_wordfence_plugins_inactive_total{site="sstfw-test.local"} 2
+wordpress_wordfence_plugins_network_active_total{site="sstfw-test.local"} 0

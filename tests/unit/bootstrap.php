@@ -15,6 +15,10 @@ define('FS_CHMOD_FILE', 0644);
 $GLOBALS['sstfw_settings_errors'] = [];
 $GLOBALS['sstfw_options'] = [];
 $GLOBALS['sstfw_scheduled'] = [];
+$GLOBALS['sstfw_test_plugins'] = [];
+$GLOBALS['sstfw_test_active_plugins'] = [];
+$GLOBALS['sstfw_test_network_active_plugins'] = [];
+$GLOBALS['sstfw_test_site_transients'] = [];
 
 if (!function_exists('__')) {
     function __($text, $domain = 'default') {
@@ -112,6 +116,36 @@ if (!function_exists('sanitize_text_field')) {
 if (!function_exists('wp_strip_all_tags')) {
     function wp_strip_all_tags($value) {
         return strip_tags((string) $value);
+    }
+}
+
+if (!function_exists('get_plugins')) {
+    function get_plugins() {
+        return $GLOBALS['sstfw_test_plugins'];
+    }
+}
+
+if (!function_exists('is_plugin_active')) {
+    function is_plugin_active($plugin_file) {
+        return in_array((string) $plugin_file, $GLOBALS['sstfw_test_active_plugins'], true);
+    }
+}
+
+if (!function_exists('is_plugin_active_for_network')) {
+    function is_plugin_active_for_network($plugin_file) {
+        return in_array((string) $plugin_file, $GLOBALS['sstfw_test_network_active_plugins'], true);
+    }
+}
+
+if (!function_exists('get_site_transient')) {
+    function get_site_transient($transient) {
+        return $GLOBALS['sstfw_test_site_transients'][$transient] ?? false;
+    }
+}
+
+if (!function_exists('get_users')) {
+    function get_users($args = []) {
+        return [];
     }
 }
 

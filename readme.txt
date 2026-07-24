@@ -129,11 +129,16 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_wordpress_version_info
 * wordpress_wordfence_core_update_available
 * wordpress_wordfence_plugin_update_available_total
+* wordpress_wordfence_plugins_installed_total
+* wordpress_wordfence_plugins_active_total
+* wordpress_wordfence_plugins_inactive_total
+* wordpress_wordfence_plugins_network_active_total
+* wordpress_wordfence_plugin_inventory_info
 * wordpress_wordfence_theme_update_available_total
 * wordpress_wordfence_admin_users_total
 * wordpress_wordfence_admin_users_without_2fa_total
 
-Each metric family can be enabled or disabled independently from the settings screen.
+Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory is disabled by default because plugin names, versions, and active state can expose sensitive operational details.
 
 = What does the incident log export do? =
 

@@ -51,6 +51,10 @@ wait_for_wordpress_files() {
   return 1
 }
 
+prepare_wordpress_install_dirs() {
+  compose run --rm --user root --entrypoint sh wpcli -c 'mkdir -p wp-content/plugins wp-content/upgrade wp-content/uploads && chown www-data:www-data wp-content wp-content/plugins wp-content/upgrade wp-content/uploads'
+}
+
 install_wordpress_if_needed() {
   if wp core is-installed >/dev/null 2>&1; then
     return 0
@@ -67,6 +71,7 @@ install_wordpress_if_needed() {
 
 compose up -d db wordpress
 wait_for_wordpress_files
+prepare_wordpress_install_dirs
 install_wordpress_if_needed
 
 wp plugin deactivate "$PLUGIN_SLUG" || true

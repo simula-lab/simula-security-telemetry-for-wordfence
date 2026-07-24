@@ -224,7 +224,7 @@ final class Simula_Security_Telemetry_Service {
             }
 
             if ($flags['needs_wordpress_posture']) {
-                $data['wordpress_posture'] = Simula_Security_Telemetry_Wordfence_Collector::collect_wordpress_posture();
+                $data['wordpress_posture'] = Simula_Security_Telemetry_Wordfence_Collector::collect_wordpress_posture(!empty($flags['needs_plugin_inventory']));
             }
         }
 
@@ -275,9 +275,20 @@ final class Simula_Security_Telemetry_Service {
             $flags['wordpress_version_info'] ||
             $flags['core_update_available'] ||
             $flags['plugin_update_available_total'] ||
+            $flags['plugins_installed_total'] ||
+            $flags['plugins_active_total'] ||
+            $flags['plugins_inactive_total'] ||
+            $flags['plugins_network_active_total'] ||
+            $flags['plugin_inventory_info'] ||
             $flags['theme_update_available_total'] ||
             $flags['admin_users_total'] ||
             $flags['admin_users_without_2fa_total'];
+        $flags['needs_plugin_inventory'] =
+            $flags['plugins_installed_total'] ||
+            $flags['plugins_active_total'] ||
+            $flags['plugins_inactive_total'] ||
+            $flags['plugins_network_active_total'] ||
+            $flags['plugin_inventory_info'];
 
         return $flags;
     }
@@ -787,6 +798,41 @@ final class Simula_Security_Telemetry_Service {
 
         if (!empty($flags['plugin_update_available_total'])) {
             Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_plugin_update_available_total', 'gauge', 'Number of plugin updates available.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['plugin_update_available_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['plugins_installed_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_plugins_installed_total', 'gauge', 'Number of installed WordPress plugins.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['plugins_installed_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['plugins_active_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_plugins_active_total', 'gauge', 'Number of site-active WordPress plugins.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['plugins_active_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['plugins_inactive_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_plugins_inactive_total', 'gauge', 'Number of inactive WordPress plugins.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['plugins_inactive_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['plugins_network_active_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_plugins_network_active_total', 'gauge', 'Number of network-active WordPress plugins.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['plugins_network_active_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['plugin_inventory_info'])) {
+            $samples = [];
+            foreach ((array) ($wordpress_posture['plugin_inventory'] ?? []) as $plugin) {
+                $samples[] = [
+                    'labels' => [
+                        'site'             => $site,
+                        'plugin_file'      => Simula_Security_Telemetry_Output::escape_label((string) ($plugin['plugin_file'] ?? 'unknown')),
+                        'name'             => Simula_Security_Telemetry_Output::escape_label((string) ($plugin['name'] ?? 'unknown')),
+                        'version'          => Simula_Security_Telemetry_Output::escape_label((string) ($plugin['version'] ?? 'unknown')),
+                        'state'            => Simula_Security_Telemetry_Output::escape_label((string) ($plugin['state'] ?? 'inactive')),
+                        'update_available' => empty($plugin['update_available']) ? '0' : '1',
+                    ],
+                    'value' => 1,
+                ];
+            }
+
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_plugin_inventory_info', 'gauge', 'Installed WordPress plugin inventory metadata.', $samples);
         }
 
         if (!empty($flags['theme_update_available_total'])) {

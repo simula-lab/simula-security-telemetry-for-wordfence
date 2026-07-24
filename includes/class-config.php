@@ -187,6 +187,26 @@ final class Simula_Security_Telemetry_Config {
                 'label'       => __('Plugin updates available', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Number of plugin updates available.', 'simula-security-telemetry-for-wordfence'),
             ],
+            'plugins_installed_total' => [
+                'label'       => __('Plugins installed total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of installed WordPress plugins.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugins_active_total' => [
+                'label'       => __('Plugins active total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of site-active WordPress plugins.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugins_inactive_total' => [
+                'label'       => __('Plugins inactive total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of inactive WordPress plugins.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugins_network_active_total' => [
+                'label'       => __('Plugins network-active total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of network-active WordPress plugins.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugin_inventory_info' => [
+                'label'       => __('Plugin inventory info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Opt-in installed plugin inventory with plugin file, name, version, active state, and update availability labels. This can expose sensitive operational details.', 'simula-security-telemetry-for-wordfence'),
+            ],
             'theme_update_available_total' => [
                 'label'       => __('Theme updates available', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Number of theme updates available.', 'simula-security-telemetry-for-wordfence'),
@@ -204,6 +224,9 @@ final class Simula_Security_Telemetry_Config {
 
     /** Returns the default enabled state for every exportable metric family. */
     public static function default_enabled_metrics() {
-        return array_fill_keys(array_keys(self::metric_definitions()), 1);
+        $defaults = array_fill_keys(array_keys(self::metric_definitions()), 1);
+        $defaults['plugin_inventory_info'] = 0;
+
+        return $defaults;
     }
 }

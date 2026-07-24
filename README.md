@@ -251,6 +251,16 @@ All metrics include a `site` label.
   Whether a WordPress core update is available.
 - `wordpress_wordfence_plugin_update_available_total`
   Number of plugin updates available.
+- `wordpress_wordfence_plugins_installed_total`
+  Number of installed WordPress plugins.
+- `wordpress_wordfence_plugins_active_total`
+  Number of site-active WordPress plugins.
+- `wordpress_wordfence_plugins_inactive_total`
+  Number of inactive WordPress plugins.
+- `wordpress_wordfence_plugins_network_active_total`
+  Number of network-active WordPress plugins.
+- `wordpress_wordfence_plugin_inventory_info{plugin_file="...",name="...",version="...",state="active|inactive|network_active",update_available="0|1"}`
+  Opt-in installed plugin inventory metadata. Disabled by default because it can expose sensitive operational details.
 - `wordpress_wordfence_theme_update_available_total`
   Number of theme updates available.
 - `wordpress_wordfence_admin_users_total`
