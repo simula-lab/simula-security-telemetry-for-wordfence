@@ -372,6 +372,20 @@ The plugin entrypoint now stays intentionally small:
 
 Implementation classes live under `includes/` and are loaded explicitly for WordPress.org-compatible packaging. See [docs/file-layout.md](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/docs/file-layout.md:1) for the current class map and bootstrap smoke check.
 
+Run local syntax and bootstrap checks with:
+
+```bash
+tests/bin/check-local.sh
+```
+
+Run the disposable WordPress fixture harness with:
+
+```bash
+tests/bin/run-local.sh
+```
+
+See [tests/README.md](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/tests/README.md:1) for publisher integration and release zip install smoke tests.
+
 ## License
 
 GPL-2.0-or-later. See the plugin header for licensing details.
