@@ -1,0 +1,8 @@
+services:
+  wordpress:
+    volumes:
+      - ./tests/runtime/empty-plugin-dir:/var/www/html/wp-content/plugins/simula-security-telemetry-for-wordfence
+
+  wpcli:
+    volumes:
+      - ./tests/runtime/empty-plugin-dir:/var/www/html/wp-content/plugins/simula-security-telemetry-for-wordfence

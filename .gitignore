@@ -26,3 +26,6 @@ node_modules/
 
 # ignore the plugin *.zip file
 simula-security-telemetry-for-wordfence.zip
+
+# ignore disposable test harness output
+tests/runtime/

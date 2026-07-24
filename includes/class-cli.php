@@ -25,7 +25,11 @@ final class Simula_Security_Telemetry_CLI {
         $this->finish($result);
     }
 
-    /** Resets the incident cursor to 0 for controlled backfill. */
+    /**
+     * Resets the incident cursor to 0 for controlled backfill.
+     *
+     * @subcommand reset-cursor
+     */
     public function reset_cursor() {
         Simula_Security_Telemetry_Incidents::reset_cursor();
         WP_CLI::success(__('Incident cursor reset to 0.', 'simula-security-telemetry-for-wordfence'));
@@ -82,4 +86,3 @@ final class Simula_Security_Telemetry_CLI {
         WP_CLI::error($message);
     }
 }
-
