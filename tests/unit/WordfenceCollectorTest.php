@@ -20,4 +20,13 @@ return [
         sstfw_assert_same('2001:0db8:abcd:0012::/64', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'normalize_ip_range', ['2001:db8:abcd:12::1']));
         sstfw_assert_same('', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'normalize_ip_range', ["bad\nip"]));
     },
+    'wordpress_version falls back to global version and unknown' => function () {
+        global $wp_version;
+
+        $wp_version = '6.8.1';
+        sstfw_assert_same('6.8.1', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'wordpress_version'));
+
+        $wp_version = '';
+        sstfw_assert_same('unknown', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'wordpress_version'));
+    },
 ];

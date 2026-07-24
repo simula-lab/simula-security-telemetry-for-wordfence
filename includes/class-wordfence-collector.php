@@ -385,6 +385,7 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         }
 
         return [
+            'wordpress_version'             => self::wordpress_version(),
             'core_update_available'        => self::core_update_available(),
             'plugin_update_available_total' => self::plugin_update_count(),
             'theme_update_available_total'  => self::theme_update_count(),
@@ -537,6 +538,24 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         $table_identifier = self::quote_identifier($table);
 
         return array_map('intval', (array) Simula_Security_Telemetry_Util::db_get_col('SELECT DISTINCT ' . self::quote_identifier($user_column) . " FROM $table_identifier"));
+    }
+
+    /** Returns the installed WordPress version, or unknown if the runtime cannot provide it. */
+    private static function wordpress_version() {
+        if (function_exists('get_bloginfo')) {
+            $version = (string) get_bloginfo('version');
+            if ($version !== '') {
+                return $version;
+            }
+        }
+
+        global $wp_version;
+
+        if (is_string($wp_version) && $wp_version !== '') {
+            return $wp_version;
+        }
+
+        return 'unknown';
     }
 
     /** Returns whether a WordPress core update is available. */
@@ -729,4 +748,3 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         return '';
     }
 }
-
