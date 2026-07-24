@@ -272,6 +272,7 @@ final class Simula_Security_Telemetry_Service {
             $flags['scan_enabled'] ||
             $flags['license_type'];
         $flags['needs_wordpress_posture'] =
+            $flags['wordpress_version_info'] ||
             $flags['core_update_available'] ||
             $flags['plugin_update_available_total'] ||
             $flags['theme_update_available_total'] ||
@@ -746,6 +747,7 @@ final class Simula_Security_Telemetry_Service {
         $wordpress_posture   = is_array($data['wordpress_posture'] ?? null) ? $data['wordpress_posture'] : [];
         $wordfence_version   = Simula_Security_Telemetry_Output::escape_label((string) ($wordfence_posture['version'] ?? 'unknown'));
         $wordfence_license   = Simula_Security_Telemetry_Output::escape_label((string) ($wordfence_posture['license_type'] ?? 'unknown'));
+        $wordpress_version   = Simula_Security_Telemetry_Output::escape_label((string) ($wordpress_posture['wordpress_version'] ?? 'unknown'));
 
         if (!empty($flags['installed'])) {
             Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_installed', 'gauge', 'Whether Wordfence appears installed.', [['labels' => ['site' => $site], 'value' => (int) ($wordfence_posture['installed'] ?? 0)]]);
@@ -773,6 +775,10 @@ final class Simula_Security_Telemetry_Service {
 
         if (!empty($flags['license_type'])) {
             Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_license_type', 'gauge', 'Wordfence license type metadata.', [['labels' => ['site' => $site, 'type' => $wordfence_license], 'value' => 1]]);
+        }
+
+        if (!empty($flags['wordpress_version_info'])) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_wordpress_version_info', 'gauge', 'WordPress core version metadata.', [['labels' => ['site' => $site, 'version' => $wordpress_version], 'value' => 1]]);
         }
 
         if (!empty($flags['core_update_available'])) {
@@ -947,4 +953,3 @@ final class Simula_Security_Telemetry_Service {
         return isset($data[$key]) ? (int) $data[$key] : 0;
     }
 }
-

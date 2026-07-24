@@ -245,6 +245,8 @@ All metrics include a `site` label.
   Whether Wordfence scanning appears enabled.
 - `wordpress_wordfence_license_type{type="free|premium|unknown"}`
   Wordfence license type metadata.
+- `wordpress_wordfence_wordpress_version_info{version="..."}`
+  WordPress core version metadata. Emits `version="unknown"` if the runtime cannot provide a version.
 - `wordpress_wordfence_core_update_available`
   Whether a WordPress core update is available.
 - `wordpress_wordfence_plugin_update_available_total`

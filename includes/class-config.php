@@ -175,6 +175,10 @@ final class Simula_Security_Telemetry_Config {
                 'label'       => __('Wordfence license type', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Wordfence license type metadata as free, premium, or unknown.', 'simula-security-telemetry-for-wordfence'),
             ],
+            'wordpress_version_info' => [
+                'label'       => __('WordPress version info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Static WordPress core version metadata.', 'simula-security-telemetry-for-wordfence'),
+            ],
             'core_update_available' => [
                 'label'       => __('WordPress core update available', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Whether a WordPress core update is available.', 'simula-security-telemetry-for-wordfence'),
@@ -203,4 +207,3 @@ final class Simula_Security_Telemetry_Config {
         return array_fill_keys(array_keys(self::metric_definitions()), 1);
     }
 }
-
