@@ -372,7 +372,7 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
     }
 
     /** Collects WordPress update and administrator 2FA posture. */
-    public static function collect_wordpress_posture() {
+    public static function collect_wordpress_posture($include_plugin_inventory = true) {
         $admin_ids      = self::administrator_user_ids();
         $protected_ids  = self::two_factor_protected_user_ids();
         $without_2fa    = 0;
@@ -384,10 +384,17 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
             }
         }
 
+        $plugin_inventory = $include_plugin_inventory ? self::collect_plugin_inventory() : self::empty_plugin_inventory();
+
         return [
             'wordpress_version'             => self::wordpress_version(),
             'core_update_available'        => self::core_update_available(),
             'plugin_update_available_total' => self::plugin_update_count(),
+            'plugins_installed_total'       => $plugin_inventory['installed_total'],
+            'plugins_active_total'          => $plugin_inventory['active_total'],
+            'plugins_inactive_total'        => $plugin_inventory['inactive_total'],
+            'plugins_network_active_total'  => $plugin_inventory['network_active_total'],
+            'plugin_inventory'              => $plugin_inventory['plugins'],
             'theme_update_available_total'  => self::theme_update_count(),
             'admin_users_total'             => count($admin_ids),
             'admin_users_without_2fa_total' => $without_2fa,
@@ -556,6 +563,110 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         }
 
         return 'unknown';
+    }
+
+    /** Collects installed plugin inventory records and bounded aggregate totals. */
+    private static function collect_plugin_inventory() {
+        self::ensure_plugin_functions_loaded();
+
+        $plugins = function_exists('get_plugins') ? get_plugins() : [];
+        $updates = function_exists('get_site_transient') ? get_site_transient('update_plugins') : null;
+        $records = [];
+        $totals  = self::empty_plugin_inventory();
+
+        foreach ((array) $plugins as $plugin_file => $plugin_data) {
+            $state = self::plugin_state((string) $plugin_file);
+            $totals['installed_total']++;
+
+            if ($state === 'network_active') {
+                $totals['network_active_total']++;
+            } elseif ($state === 'active') {
+                $totals['active_total']++;
+            } else {
+                $totals['inactive_total']++;
+            }
+
+            $records[] = [
+                'plugin_file'      => self::bounded_plugin_label((string) $plugin_file, 191),
+                'name'             => self::bounded_plugin_label(self::plugin_data_value($plugin_data, 'Name', (string) $plugin_file), 120),
+                'version'          => self::bounded_plugin_label(self::plugin_data_value($plugin_data, 'Version', 'unknown'), 64),
+                'state'            => $state,
+                'update_available' => self::plugin_update_available((string) $plugin_file, $updates),
+            ];
+        }
+
+        $totals['plugins'] = $records;
+
+        return $totals;
+    }
+
+    /** Returns an empty plugin inventory structure. */
+    private static function empty_plugin_inventory() {
+        return [
+            'installed_total'      => 0,
+            'active_total'         => 0,
+            'inactive_total'       => 0,
+            'network_active_total' => 0,
+            'plugins'              => [],
+        ];
+    }
+
+    /** Loads WordPress plugin helper functions when they are available. */
+    private static function ensure_plugin_functions_loaded() {
+        if (function_exists('get_plugins') && function_exists('is_plugin_active') && function_exists('is_plugin_active_for_network')) {
+            return;
+        }
+
+        $plugin_file = ABSPATH . 'wp-admin/includes/plugin.php';
+        if (is_readable($plugin_file)) {
+            require_once $plugin_file;
+        }
+    }
+
+    /** Returns a plugin state label with network-active kept distinct from site-active. */
+    private static function plugin_state($plugin_file) {
+        if (function_exists('is_plugin_active_for_network') && is_plugin_active_for_network($plugin_file)) {
+            return 'network_active';
+        }
+
+        if (function_exists('is_plugin_active') && is_plugin_active($plugin_file)) {
+            return 'active';
+        }
+
+        return 'inactive';
+    }
+
+    /** Reads a scalar plugin data field with fallback. */
+    private static function plugin_data_value($plugin_data, $key, $fallback) {
+        if (is_array($plugin_data) && isset($plugin_data[$key]) && is_scalar($plugin_data[$key]) && (string) $plugin_data[$key] !== '') {
+            return (string) $plugin_data[$key];
+        }
+
+        return (string) $fallback;
+    }
+
+    /** Returns whether WordPress has update data for a plugin file. */
+    private static function plugin_update_available($plugin_file, $updates) {
+        return is_object($updates) && isset($updates->response) && is_array($updates->response) && isset($updates->response[$plugin_file]) ? 1 : 0;
+    }
+
+    /** Sanitizes and caps plugin inventory label values. */
+    private static function bounded_plugin_label($value, $max_length) {
+        $value = is_scalar($value) ? (string) $value : '';
+        $value = function_exists('wp_strip_all_tags') ? wp_strip_all_tags($value) : strip_tags($value);
+        $value = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $value);
+        $value = trim(is_string($value) ? $value : '');
+
+        if ($value === '') {
+            return 'unknown';
+        }
+
+        $max_length = max(1, (int) $max_length);
+        if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+            return mb_strlen($value, 'UTF-8') > $max_length ? mb_substr($value, 0, $max_length, 'UTF-8') : $value;
+        }
+
+        return strlen($value) > $max_length ? substr($value, 0, $max_length) : $value;
     }
 
     /** Returns whether a WordPress core update is available. */

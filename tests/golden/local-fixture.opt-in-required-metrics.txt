@@ -1,0 +1,1 @@
+wordpress_wordfence_plugin_inventory_info

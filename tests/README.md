@@ -39,11 +39,12 @@ The script:
 
 - Starts MariaDB, WordPress, and WP-CLI with `docker compose`.
 - Installs WordPress if needed.
+- Installs and activates the current official Wordfence plugin from the WordPress plugin repository.
 - Activates this plugin from the mounted workspace.
 - Configures metrics and incident output under `tests/runtime/output`.
 - Seeds synthetic Wordfence-like tables and administrator 2FA state.
 - Runs WP-CLI smoke checks for `status`, full export, metrics-only export, incidents-only export, and cursor reset.
-- Validates the generated `.prom` file against `tests/golden/local-fixture.required-metrics.txt`.
+- Validates the generated `.prom` file against the local fixture golden files, including exact aggregate plugin counts and active inventory rows for Wordfence and this plugin.
 
 The generated files are ignored under `tests/runtime/`.
 
@@ -51,13 +52,13 @@ Set `SSTFW_KEEP_TEST_STACK=1` to keep containers and volumes after a run for deb
 
 ## Publisher Integration
 
-Run the same harness with official Wordfence installed from the WordPress plugin repository:
+Run the official-publisher smoke profile:
 
 ```bash
 tests/bin/run-publisher.sh
 ```
 
-This path requires outbound network access from Docker for WordPress.org plugin installation. It keeps the environment disposable and local-only, using the same isolated Compose network and test output directory.
+Both Docker smoke profiles require outbound network access from Docker for WordPress.org plugin installation. They keep the environment disposable and local-only, using isolated Compose networks and the test output directory.
 
 Set image overrides when validating a pinned release candidate:
 
