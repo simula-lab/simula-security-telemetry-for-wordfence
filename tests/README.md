@@ -11,7 +11,7 @@ tests/bin/check-local.sh
 ```
 
 This runs PHP syntax checks, shell syntax checks, and `tests/bootstrap-smoke.php`.
-It also runs dependency-free unit tests with `tests/bin/run-unit.php`.
+It also runs dependency-free unit tests with `tests/bin/run-unit.php`, validates README/readme metric coverage, parses the Grafana dashboard JSON, and checks the Prometheus alert examples.
 
 ## Coverage
 
@@ -76,4 +76,4 @@ Build and install the generated zip into the disposable WordPress stack:
 tests/bin/run-zip-install.sh
 ```
 
-This script depends on `build-zip.sh`, installs the generated archive with WP-CLI, activates the plugin, runs an export, and validates the generated `.prom` file.
+This script depends on `build-zip.sh`, installs the current official Wordfence plugin, installs the generated archive with WP-CLI, activates the plugin, runs an export, and validates the generated `.prom` file.

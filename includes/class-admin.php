@@ -343,6 +343,9 @@ final class Simula_Security_Telemetry_Admin {
                 <?php self::render_state_row(__('Slow collector interval', 'simula-security-telemetry-for-wordfence'), $slow_interval_seconds > 0 ? Simula_Security_Telemetry_Settings::format_state_duration($slow_interval_seconds) : __('Unknown', 'simula-security-telemetry-for-wordfence')); ?>
                 <?php self::render_state_row(__('Slow collector status', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::freshness_summary($last_slow_refresh, $slow_interval_seconds, !empty($options['enabled']), __('Slow collector', 'simula-security-telemetry-for-wordfence'), $now)); ?>
                 <?php self::render_state_row(__('Next slow collector run', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Settings::format_state_time($next_slow_export)); ?>
+                <?php self::render_state_row(__('Plugin inventory metric', 'simula-security-telemetry-for-wordfence'), empty($options['enabled_metrics']['plugin_inventory_info']) ? __('Disabled', 'simula-security-telemetry-for-wordfence') : __('Enabled', 'simula-security-telemetry-for-wordfence')); ?>
+                <?php self::render_state_row(__('Admin inventory metric', 'simula-security-telemetry-for-wordfence'), empty($options['enabled_metrics']['admin_user_info']) ? __('Disabled', 'simula-security-telemetry-for-wordfence') : __('Enabled', 'simula-security-telemetry-for-wordfence')); ?>
+                <?php self::render_state_row(__('Admin identity mode', 'simula-security-telemetry-for-wordfence'), (string) ($options['admin_identity_mode'] ?? 'hashed')); ?>
             </tbody>
         </table>
         <?php

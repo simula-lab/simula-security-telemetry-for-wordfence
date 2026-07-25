@@ -26,6 +26,27 @@ return [
         sstfw_assert_same('Fast export is overdue by 1 minute relative to the configured 1 minute interval.', Simula_Security_Telemetry_Settings::freshness_summary(60, 60, true, 'Fast export', 180));
         sstfw_assert_same('Fast export is within the configured interval at 30 seconds old out of 1 minute.', Simula_Security_Telemetry_Settings::freshness_summary(90, 60, true, 'Fast export', 120));
     },
+    'get_options upgrades older stored options with conservative v3 defaults' => function () {
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::OPTION] = [
+            'enabled' => 1,
+            'metric_prefix' => 'wordpress_wordfence',
+            'enabled_metrics' => [
+                'export_success' => 1,
+                'plugin_info' => 1,
+                'admin_users_total' => 0,
+            ],
+        ];
+
+        $options = Simula_Security_Telemetry_Settings::get_options();
+
+        sstfw_assert_same('hashed', $options['admin_identity_mode']);
+        sstfw_assert_same(0, $options['enabled_metrics']['plugin_inventory_info']);
+        sstfw_assert_same(0, $options['enabled_metrics']['admin_user_info']);
+        sstfw_assert_same(1, $options['enabled_metrics']['wordpress_version_info']);
+        sstfw_assert_same(0, $options['enabled_metrics']['admin_users_total']);
+
+        unset($GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::OPTION]);
+    },
     'private sanitizers normalize submitted values' => function () {
         sstfw_assert_same('wordpress_wordfence', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_metric_prefix', ['1 bad prefix']));
         sstfw_assert_same('valid_prefix', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_metric_prefix', ['valid prefix']));
