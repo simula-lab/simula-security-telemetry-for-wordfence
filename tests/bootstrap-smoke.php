@@ -39,7 +39,7 @@ if (!function_exists('__')) {
 }
 
 if (!function_exists('add_action')) {
-    function add_action($hook, $callback) {
+    function add_action($hook, $callback, $priority = 10, $accepted_args = 1) {
         $GLOBALS['sstfw_smoke_actions'][$hook][] = $callback;
     }
 }
@@ -105,6 +105,7 @@ $required_classes = [
     'Simula_Security_Telemetry_Output',
     'Simula_Security_Telemetry_Wordfence_Schema',
     'Simula_Security_Telemetry_Wordfence_Collector',
+    'Simula_Security_Telemetry_WordPress_Collector',
     'Simula_Security_Telemetry_Wordfence',
     'Simula_Security_Telemetry_Incidents',
     'Simula_Security_Telemetry_Service',
