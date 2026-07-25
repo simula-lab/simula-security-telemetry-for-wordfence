@@ -90,6 +90,7 @@ php tests/bin/assert-prom-samples.php \
   tests/golden/local-fixture.required-samples.txt
 
 wp eval-file /tests/wp-cli/enable-plugin-inventory.php
+wp eval-file /tests/wp-cli/enable-admin-inventory.php
 wp simula-security-telemetry export --metrics-only --scope=slow
 
 php tests/bin/assert-prom.php \

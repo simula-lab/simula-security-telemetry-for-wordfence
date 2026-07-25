@@ -33,6 +33,8 @@ return [
         sstfw_assert_same('text', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_incident_log_format', ['xml']));
         sstfw_assert_same('hash', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_privacy_ip_mode', ['hash']));
         sstfw_assert_same('full', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_privacy_ip_mode', ['invalid']));
+        sstfw_assert_same('id_only', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_admin_identity_mode', ['id_only']));
+        sstfw_assert_same('hashed', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_admin_identity_mode', ['raw']));
         sstfw_assert_same(10000, sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_incident_max_rows', [50000]));
     },
 ];

@@ -60,4 +60,34 @@ return [
         sstfw_assert_same('Plugin Name', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'bounded_plugin_label', ['<b>Plugin</b> Name', 20]));
         sstfw_assert_same('abcdef', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'bounded_plugin_label', ['abcdefghi', 6]));
     },
+    'collect_admin_user_inventory hashes identities and keeps 2fa state per admin' => function () {
+        $admins = [
+            (object) ['ID' => 7, 'user_login' => 'admin@example.test', 'display_name' => 'Site Admin'],
+            (object) ['ID' => 8, 'user_login' => 'ops', 'display_name' => 'Ops User'],
+        ];
+
+        $inventory = sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_admin_user_inventory', [$admins, [7], 'hashed']);
+
+        sstfw_assert_same(2, count($inventory));
+        sstfw_assert_true((bool) preg_match('/^[a-f0-9]{64}$/', $inventory[0]['user_id_hash']));
+        sstfw_assert_true((bool) preg_match('/^[a-f0-9]{64}$/', $inventory[0]['login_hash']));
+        sstfw_assert_true((bool) preg_match('/^[a-f0-9]{64}$/', $inventory[0]['display_name_hash']));
+        sstfw_assert_true($inventory[0]['login_hash'] !== 'admin@example.test');
+        sstfw_assert_true($inventory[0]['display_name_hash'] !== 'Site Admin');
+        sstfw_assert_same(1, $inventory[0]['two_factor_enabled']);
+        sstfw_assert_same(0, $inventory[1]['two_factor_enabled']);
+    },
+    'collect_admin_user_inventory supports id only and disabled modes' => function () {
+        $admins = [
+            ['ID' => 9, 'user_login' => 'root', 'display_name' => 'Root Admin'],
+        ];
+
+        $id_only = sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_admin_user_inventory', [$admins, [], 'id_only']);
+        sstfw_assert_same('9', $id_only[0]['user_id']);
+        sstfw_assert_same(0, $id_only[0]['two_factor_enabled']);
+        sstfw_assert_true(!isset($id_only[0]['login_hash']));
+
+        $disabled = sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_admin_user_inventory', [$admins, [], 'disabled']);
+        sstfw_assert_same([], $disabled);
+    },
 ];

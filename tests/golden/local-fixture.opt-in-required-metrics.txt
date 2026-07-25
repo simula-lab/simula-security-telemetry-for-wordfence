@@ -1,1 +1,2 @@
 wordpress_wordfence_plugin_inventory_info
+wordpress_wordfence_admin_user_info

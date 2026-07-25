@@ -44,7 +44,7 @@ The script:
 - Configures metrics and incident output under `tests/runtime/output`.
 - Seeds synthetic Wordfence-like tables and administrator 2FA state.
 - Runs WP-CLI smoke checks for `status`, full export, metrics-only export, incidents-only export, and cursor reset.
-- Validates the generated `.prom` file against the local fixture golden files, including exact aggregate plugin counts and active inventory rows for Wordfence and this plugin.
+- Validates the generated `.prom` file against the local fixture golden files, including exact aggregate plugin counts, active inventory rows for Wordfence and this plugin, and opt-in hashed administrator inventory.
 
 The generated files are ignored under `tests/runtime/`.
 

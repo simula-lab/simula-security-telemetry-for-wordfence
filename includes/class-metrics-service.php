@@ -150,6 +150,7 @@ final class Simula_Security_Telemetry_Service {
             'prefix'             => $options['metric_prefix'],
             'scope'              => $scope,
             'flags'              => $flags,
+            'admin_identity_mode' => (string) ($options['admin_identity_mode'] ?? 'hashed'),
             'window_counts'      => [],
             'status_counts'      => [],
             'top_attack_sources' => [],
@@ -224,7 +225,11 @@ final class Simula_Security_Telemetry_Service {
             }
 
             if ($flags['needs_wordpress_posture']) {
-                $data['wordpress_posture'] = Simula_Security_Telemetry_Wordfence_Collector::collect_wordpress_posture(!empty($flags['needs_plugin_inventory']));
+                $data['wordpress_posture'] = Simula_Security_Telemetry_Wordfence_Collector::collect_wordpress_posture(
+                    !empty($flags['needs_plugin_inventory']),
+                    !empty($flags['needs_admin_inventory']),
+                    (string) ($options['admin_identity_mode'] ?? 'hashed')
+                );
             }
         }
 
@@ -282,13 +287,15 @@ final class Simula_Security_Telemetry_Service {
             $flags['plugin_inventory_info'] ||
             $flags['theme_update_available_total'] ||
             $flags['admin_users_total'] ||
-            $flags['admin_users_without_2fa_total'];
+            $flags['admin_users_without_2fa_total'] ||
+            $flags['admin_user_info'];
         $flags['needs_plugin_inventory'] =
             $flags['plugins_installed_total'] ||
             $flags['plugins_active_total'] ||
             $flags['plugins_inactive_total'] ||
             $flags['plugins_network_active_total'] ||
             $flags['plugin_inventory_info'];
+        $flags['needs_admin_inventory'] = $flags['admin_user_info'];
 
         return $flags;
     }
@@ -759,6 +766,7 @@ final class Simula_Security_Telemetry_Service {
         $wordfence_version   = Simula_Security_Telemetry_Output::escape_label((string) ($wordfence_posture['version'] ?? 'unknown'));
         $wordfence_license   = Simula_Security_Telemetry_Output::escape_label((string) ($wordfence_posture['license_type'] ?? 'unknown'));
         $wordpress_version   = Simula_Security_Telemetry_Output::escape_label((string) ($wordpress_posture['wordpress_version'] ?? 'unknown'));
+        $admin_identity_mode = (string) ($data['admin_identity_mode'] ?? 'hashed');
 
         if (!empty($flags['installed'])) {
             Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_installed', 'gauge', 'Whether Wordfence appears installed.', [['labels' => ['site' => $site], 'value' => (int) ($wordfence_posture['installed'] ?? 0)]]);
@@ -845,6 +853,34 @@ final class Simula_Security_Telemetry_Service {
 
         if (!empty($flags['admin_users_without_2fa_total'])) {
             Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_admin_users_without_2fa_total', 'gauge', 'Number of administrator users without Wordfence two-factor secrets.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['admin_users_without_2fa_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['admin_user_info']) && $admin_identity_mode !== 'disabled') {
+            $samples = [];
+            foreach ((array) ($wordpress_posture['admin_user_inventory'] ?? []) as $admin_user) {
+                if ($admin_identity_mode === 'id_only') {
+                    $labels = [
+                        'site'               => $site,
+                        'user_id'            => Simula_Security_Telemetry_Output::escape_label((string) ($admin_user['user_id'] ?? '0')),
+                        'two_factor_enabled' => empty($admin_user['two_factor_enabled']) ? '0' : '1',
+                    ];
+                } else {
+                    $labels = [
+                        'site'               => $site,
+                        'user_id_hash'       => Simula_Security_Telemetry_Output::escape_label((string) ($admin_user['user_id_hash'] ?? 'unknown')),
+                        'login_hash'         => Simula_Security_Telemetry_Output::escape_label((string) ($admin_user['login_hash'] ?? 'unknown')),
+                        'display_name_hash'  => Simula_Security_Telemetry_Output::escape_label((string) ($admin_user['display_name_hash'] ?? 'unknown')),
+                        'two_factor_enabled' => empty($admin_user['two_factor_enabled']) ? '0' : '1',
+                    ];
+                }
+
+                $samples[] = [
+                    'labels' => $labels,
+                    'value'  => 1,
+                ];
+            }
+
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_admin_user_info', 'gauge', 'Administrator user inventory metadata.', $samples);
         }
 
         return $metrics;

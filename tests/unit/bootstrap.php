@@ -19,6 +19,7 @@ $GLOBALS['sstfw_test_plugins'] = [];
 $GLOBALS['sstfw_test_active_plugins'] = [];
 $GLOBALS['sstfw_test_network_active_plugins'] = [];
 $GLOBALS['sstfw_test_site_transients'] = [];
+$GLOBALS['sstfw_test_users'] = [];
 
 if (!function_exists('__')) {
     function __($text, $domain = 'default') {
@@ -145,7 +146,22 @@ if (!function_exists('get_site_transient')) {
 
 if (!function_exists('get_users')) {
     function get_users($args = []) {
-        return [];
+        if (($args['fields'] ?? null) === 'ID') {
+            return array_map(
+                static function ($user) {
+                    return is_object($user) && isset($user->ID) ? (int) $user->ID : (int) ($user['ID'] ?? 0);
+                },
+                $GLOBALS['sstfw_test_users']
+            );
+        }
+
+        return $GLOBALS['sstfw_test_users'];
+    }
+}
+
+if (!function_exists('wp_salt')) {
+    function wp_salt($scheme = 'auth') {
+        return 'unit-test-site-salt-' . (string) $scheme;
     }
 }
 

@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.3.3
+Stable tag: 3.0.0-alpha
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -137,8 +137,9 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_theme_update_available_total
 * wordpress_wordfence_admin_users_total
 * wordpress_wordfence_admin_users_without_2fa_total
+* wordpress_wordfence_admin_user_info
 
-Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory is disabled by default because plugin names, versions, and active state can expose sensitive operational details.
+Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory and per-admin inventory are disabled by default because plugin names, versions, active state, and administrator identities can expose sensitive operational details. Admin inventory uses hashed identity labels by default when enabled.
 
 = What does the incident log export do? =
 
@@ -173,6 +174,20 @@ The directory that will contain the .prom file must already exist and be writabl
 1. Settings screen showing Prometheus metric controls, incident log settings, manual actions, and current exporter state.
 
 == Changelog ==
+
+= 3.0.0 =
+
+* Split the plugin implementation into explicit include classes for configuration, settings, admin UI, WP-CLI, metrics rendering, Wordfence schema detection, collection, output, incidents, and utilities.
+* Added disposable Docker test harnesses for local fixture, publisher integration, and release zip install validation.
+* Added dependency-free PHP unit tests, bootstrap smoke checks, Prometheus output validators, and coverage tooling for environments with Xdebug or PCOV.
+* Added WordPress core version metadata through wordpress_wordfence_wordpress_version_info.
+* Added installed plugin aggregate metrics for installed, active, inactive, and network-active plugin totals.
+* Added opt-in per-plugin inventory metrics with plugin file, name, version, active state, and update availability labels.
+* Added opt-in administrator inventory metrics with hashed identity labels by default and per-admin Wordfence two-factor status.
+* Added administrator identity label modes for hashed, ID-only, and counts-only operation.
+* Updated WP-CLI status output to show plugin inventory, admin inventory, and admin identity mode settings.
+* Updated the Docker smoke test to install and activate the current official Wordfence plugin before activating this plugin.
+* Updated documentation for the new WordPress version, plugin inventory, and administrator inventory metric families.
 
 = 2.3.3 =
 

@@ -27,6 +27,7 @@ final class Simula_Security_Telemetry_Settings {
     public static function get_options() {
         $options = get_option(Simula_Security_Telemetry_Config::OPTION, []);
         $options = wp_parse_args(is_array($options) ? $options : [], Simula_Security_Telemetry_Config::defaults());
+        $options['admin_identity_mode'] = self::sanitize_admin_identity_mode($options['admin_identity_mode'] ?? Simula_Security_Telemetry_Config::defaults()['admin_identity_mode']);
         $options['enabled_metrics'] = self::normalize_enabled_metrics($options['enabled_metrics'] ?? []);
 
         return $options;
@@ -99,6 +100,7 @@ final class Simula_Security_Telemetry_Settings {
         $output['privacy_drop_user_agent'] = empty($input['privacy_drop_user_agent']) ? 0 : 1;
         $output['privacy_exclude_private_ips'] = empty($input['privacy_exclude_private_ips']) ? 0 : 1;
         $output['privacy_retention_note'] = self::sanitize_retention_note($input['privacy_retention_note'] ?? $defaults['privacy_retention_note']);
+        $output['admin_identity_mode'] = self::sanitize_admin_identity_mode($input['admin_identity_mode'] ?? $defaults['admin_identity_mode']);
         $output['enabled_metrics']      = self::sanitize_enabled_metrics($input['enabled_metrics'] ?? []);
 
         if ($output['site_label'] === '') {
@@ -360,6 +362,13 @@ final class Simula_Security_Telemetry_Settings {
         return in_array($value, ['full', 'truncate', 'hash', 'drop'], true) ? $value : Simula_Security_Telemetry_Config::defaults()['privacy_ip_mode'];
     }
 
+    /** Validates the configured administrator identity label mode. */
+    private static function sanitize_admin_identity_mode($value) {
+        $value = sanitize_key(wp_unslash((string) $value));
+
+        return in_array($value, ['hashed', 'id_only', 'disabled'], true) ? $value : Simula_Security_Telemetry_Config::defaults()['admin_identity_mode'];
+    }
+
     /** Validates the maximum number of incident rows exported per run. */
     private static function sanitize_incident_max_rows($value) {
         $value = absint($value);
@@ -428,4 +437,3 @@ final class Simula_Security_Telemetry_Settings {
     //     return $options;
     // }
 }
-
