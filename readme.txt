@@ -161,9 +161,9 @@ If WP-CLI is available, the plugin registers:
 * wp simula-security-telemetry reset-cursor
 * wp simula-security-telemetry status
 
-= Does the plugin include Grafana and Prometheus assets? =
+= Does the project provide Grafana and Prometheus examples? =
 
-Yes. Import examples/grafana/grafana-dashboard-wordfence-security-overview.json into Grafana and load examples/prometheus/wordfence-alerts.yml into Prometheus or your rule management workflow. The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs. Inventory-based alert examples require the matching opt-in inventory metric to be enabled.
+Yes. The source repository provides repository-only examples under examples/grafana/ and examples/prometheus/. They are intentionally not included in the WordPress.org plugin zip. The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs. Inventory-based alert examples require the matching opt-in inventory metric to be enabled.
 
 = What permissions are required? =
 
