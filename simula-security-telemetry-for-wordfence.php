@@ -30,6 +30,7 @@ require_once SSTFW_PLUGIN_DIR . 'includes/class-settings.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-output.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence-schema.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence-collector.php';
+require_once SSTFW_PLUGIN_DIR . 'includes/class-wordpress-collector.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-incident-exporter.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-metrics-service.php';

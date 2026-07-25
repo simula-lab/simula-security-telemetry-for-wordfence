@@ -138,6 +138,62 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_admin_users_total
 * wordpress_wordfence_admin_users_without_2fa_total
 * wordpress_wordfence_admin_user_info
+* wordpress_wordfence_users_total
+* wordpress_wordfence_users_created_window
+* wordpress_wordfence_admin_users_created_window
+* wordpress_wordfence_admin_users_modified_window
+* wordpress_wordfence_roles_total
+* wordpress_wordfence_role_capabilities_total
+* wordpress_wordfence_unexpected_admin_capabilities_total
+* wordpress_wordfence_users_can_register_enabled
+* wordpress_wordfence_default_role_info
+* wordpress_wordfence_file_edit_allowed
+* wordpress_wordfence_file_mods_allowed
+* wordpress_wordfence_debug_enabled
+* wordpress_wordfence_debug_display_enabled
+* wordpress_wordfence_xmlrpc_enabled
+* wordpress_wordfence_rest_api_enabled
+* wordpress_wordfence_search_engine_visibility_enabled
+* wordpress_wordfence_home_url_info
+* wordpress_wordfence_site_url_info
+* wordpress_wordfence_plugins_added_window
+* wordpress_wordfence_plugins_removed_window
+* wordpress_wordfence_plugins_activated_window
+* wordpress_wordfence_plugins_deactivated_window
+* wordpress_wordfence_mu_plugins_total
+* wordpress_wordfence_dropins_total
+* wordpress_wordfence_active_theme_info
+* wordpress_wordfence_themes_installed_total
+* wordpress_wordfence_themes_update_available_total
+* wordpress_wordfence_successful_logins_window
+* wordpress_wordfence_password_resets_window
+* wordpress_wordfence_user_email_changes_window
+* wordpress_wordfence_application_passwords_total
+* wordpress_wordfence_admin_application_passwords_total
+* wordpress_wordfence_sessions_total
+* wordpress_wordfence_cron_events_total
+* wordpress_wordfence_cron_hooks_total
+* wordpress_wordfence_cron_new_hooks_window
+* wordpress_wordfence_cron_scheduled_events_total
+* wordpress_wordfence_cron_suspicious_hooks_total
+* wordpress_wordfence_options_total
+* wordpress_wordfence_autoload_options_total
+* wordpress_wordfence_autoload_options_bytes
+* wordpress_wordfence_options_changed_window
+* wordpress_wordfence_new_autoload_options_window
+* wordpress_wordfence_sensitive_options_changed_window
+* wordpress_wordfence_posts_modified_window
+* wordpress_wordfence_pages_modified_window
+* wordpress_wordfence_posts_with_script_tags_total
+* wordpress_wordfence_posts_with_iframe_tags_total
+* wordpress_wordfence_posts_with_suspicious_redirects_total
+* wordpress_wordfence_recent_admin_post_edits_window
+* wordpress_wordfence_upload_php_files_total
+* wordpress_wordfence_upload_executable_files_total
+* wordpress_wordfence_recent_upload_php_files_window
+* wordpress_wordfence_plugin_files_modified_window
+* wordpress_wordfence_theme_files_modified_window
+* wordpress_wordfence_wp_content_recently_modified_files_total
 
 Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory and per-admin inventory are disabled by default because plugin names, versions, active state, and administrator identities can expose sensitive operational details. Admin inventory uses hashed identity labels by default when enabled.
 
@@ -184,6 +240,7 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added installed plugin aggregate metrics for installed, active, inactive, and network-active plugin totals.
 * Added opt-in per-plugin inventory metrics with plugin file, name, version, active state, and update availability labels.
 * Added opt-in administrator inventory metrics with hashed identity labels by default and per-admin Wordfence two-factor status.
+* Added WordPress settings, role/user, plugin/theme drift, account event, cron/option persistence, content injection, and uploads/file IoC metric families.
 * Added administrator identity label modes for hashed, ID-only, and counts-only operation.
 * Updated WP-CLI and admin status output to show plugin inventory, admin inventory, and admin identity mode settings.
 * Updated Grafana dashboard and Prometheus alert examples for WordPress version, plugin posture, plugin inventory, admin inventory, core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.

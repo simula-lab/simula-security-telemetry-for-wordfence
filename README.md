@@ -273,6 +273,69 @@ All metrics include a `site` label.
 - `wordpress_wordfence_admin_user_info{user_id_hash="...",login_hash="...",display_name_hash="...",two_factor_enabled="0|1"}`
   Opt-in administrator inventory metadata with privacy-preserving hashed identity labels by default. Disabled by default because administrator identities are sensitive. In `id_only` mode the metric uses a `user_id` label instead of hash labels; in `disabled` mode only aggregate admin counts are exported.
 
+### WordPress drift, persistence, and IoC metrics
+
+The following metrics run during slow collection and are cached for fast exports. Drift metrics compare the current slow snapshot to the previous slow snapshot, so the first slow run establishes a baseline.
+
+- `wordpress_wordfence_users_total{role="administrator|editor|author|contributor|subscriber|other"}`
+- `wordpress_wordfence_users_created_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_admin_users_created_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_admin_users_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_roles_total`
+- `wordpress_wordfence_role_capabilities_total{role="..."}`
+- `wordpress_wordfence_unexpected_admin_capabilities_total`
+- `wordpress_wordfence_users_can_register_enabled`
+- `wordpress_wordfence_default_role_info{role="..."}`
+- `wordpress_wordfence_file_edit_allowed`
+- `wordpress_wordfence_file_mods_allowed`
+- `wordpress_wordfence_debug_enabled`
+- `wordpress_wordfence_debug_display_enabled`
+- `wordpress_wordfence_xmlrpc_enabled`
+- `wordpress_wordfence_rest_api_enabled`
+- `wordpress_wordfence_search_engine_visibility_enabled`
+- `wordpress_wordfence_home_url_info{hash="..."}`
+- `wordpress_wordfence_site_url_info{hash="..."}`
+- `wordpress_wordfence_plugins_added_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugins_removed_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugins_activated_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugins_deactivated_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_mu_plugins_total`
+- `wordpress_wordfence_dropins_total`
+- `wordpress_wordfence_active_theme_info{theme="...",version="..."}`
+- `wordpress_wordfence_themes_installed_total`
+- `wordpress_wordfence_themes_update_available_total`
+- `wordpress_wordfence_successful_logins_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_password_resets_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_user_email_changes_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_application_passwords_total`
+- `wordpress_wordfence_admin_application_passwords_total`
+- `wordpress_wordfence_sessions_total{role="..."}`
+- `wordpress_wordfence_cron_events_total`
+- `wordpress_wordfence_cron_hooks_total`
+- `wordpress_wordfence_cron_new_hooks_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_cron_scheduled_events_total{recurrence="single|hourly|twicedaily|daily|custom"}`
+- `wordpress_wordfence_cron_suspicious_hooks_total`
+- `wordpress_wordfence_options_total`
+- `wordpress_wordfence_autoload_options_total`
+- `wordpress_wordfence_autoload_options_bytes`
+- `wordpress_wordfence_options_changed_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_new_autoload_options_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_sensitive_options_changed_window{option_group="site_url|users|mail|auth|cron|plugins|other",window="1h|24h|7d"}`
+- `wordpress_wordfence_posts_modified_window{post_type="post|page|attachment|other",window="1h|24h|7d"}`
+- `wordpress_wordfence_pages_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_posts_with_script_tags_total{post_type="post|page|other"}`
+- `wordpress_wordfence_posts_with_iframe_tags_total{post_type="post|page|other"}`
+- `wordpress_wordfence_posts_with_suspicious_redirects_total{post_type="post|page|other"}`
+- `wordpress_wordfence_recent_admin_post_edits_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_upload_php_files_total`
+- `wordpress_wordfence_upload_executable_files_total`
+- `wordpress_wordfence_recent_upload_php_files_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugin_files_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_theme_files_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_wp_content_recently_modified_files_total{area="plugins|themes|uploads|mu_plugins"}`
+
+These metrics avoid raw usernames, emails, option names, cron hook names, session tokens, application password names, and file paths in labels.
+
 ## Incident Log Export
 
 When incident export is enabled, each fast or full export appends newly observed blocked Wordfence hits to the configured log file. The default `text` format preserves the v1 log line format. The `jsonl` format emits one JSON object per blocked event for Loki, ELK, OpenSearch, and similar pipelines.

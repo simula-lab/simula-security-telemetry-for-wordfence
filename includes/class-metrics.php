@@ -18,6 +18,11 @@ final class Simula_Security_Telemetry_Metrics {
         add_action('admin_init', ['Simula_Security_Telemetry_Settings', 'register_settings']);
         add_action(Simula_Security_Telemetry_Config::CRON_HOOK, ['Simula_Security_Telemetry_Service', 'export_fast']);
         add_action(Simula_Security_Telemetry_Config::SLOW_CRON_HOOK, ['Simula_Security_Telemetry_Service', 'export_slow']);
+        add_action('wp_login', ['Simula_Security_Telemetry_WordPress_Collector', 'record_successful_login'], 10, 2);
+        add_action('password_reset', ['Simula_Security_Telemetry_WordPress_Collector', 'record_password_reset'], 10, 2);
+        add_action('profile_update', ['Simula_Security_Telemetry_WordPress_Collector', 'record_profile_update'], 10, 3);
+        add_action('wp_create_application_password', ['Simula_Security_Telemetry_WordPress_Collector', 'record_application_password_change'], 10, 1);
+        add_action('wp_delete_application_password', ['Simula_Security_Telemetry_WordPress_Collector', 'record_application_password_change'], 10, 1);
         add_filter('cron_schedules', [__CLASS__, 'cron_schedules']);
         add_filter('plugin_action_links_' . plugin_basename(SSTFW_PLUGIN_FILE), ['Simula_Security_Telemetry_Admin', 'plugin_action_links']);
 

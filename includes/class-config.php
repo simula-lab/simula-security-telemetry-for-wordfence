@@ -224,6 +224,230 @@ final class Simula_Security_Telemetry_Config {
                 'label'       => __('Admin user inventory info', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Opt-in administrator inventory with privacy-preserving identity labels and per-admin Wordfence two-factor status. This can expose sensitive operational details.', 'simula-security-telemetry-for-wordfence'),
             ],
+            'users_total' => [
+                'label'       => __('Users total by role', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('WordPress users grouped by a bounded role label.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'users_created_window' => [
+                'label'       => __('Users created by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently created WordPress users grouped by bounded role and window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'admin_users_created_window' => [
+                'label'       => __('Admin users created by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently created administrator users grouped by window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'admin_users_modified_window' => [
+                'label'       => __('Admin users modified by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Administrator profile modifications observed by plugin hooks grouped by window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'roles_total' => [
+                'label'       => __('Roles total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of registered WordPress roles.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'role_capabilities_total' => [
+                'label'       => __('Role capabilities total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Role capability counts grouped by bounded role label.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'unexpected_admin_capabilities_total' => [
+                'label'       => __('Unexpected admin capabilities total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Count of administrator-level capabilities assigned to non-administrator roles.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'users_can_register_enabled' => [
+                'label'       => __('Users can register enabled', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether public user registration is enabled.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'default_role_info' => [
+                'label'       => __('Default user role info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Default new-user role as bounded metadata.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'file_edit_allowed' => [
+                'label'       => __('File edit allowed', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether WordPress file editing appears allowed.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'file_mods_allowed' => [
+                'label'       => __('File modifications allowed', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether WordPress file modifications appear allowed.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'debug_enabled' => [
+                'label'       => __('Debug enabled', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether WP_DEBUG is enabled.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'debug_display_enabled' => [
+                'label'       => __('Debug display enabled', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether WP_DEBUG_DISPLAY is enabled.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'xmlrpc_enabled' => [
+                'label'       => __('XML-RPC enabled', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether XML-RPC appears enabled.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'rest_api_enabled' => [
+                'label'       => __('REST API enabled', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether the WordPress REST API appears enabled.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'search_engine_visibility_enabled' => [
+                'label'       => __('Search engine discouragement enabled', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether search engine visibility is discouraged.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'home_url_info' => [
+                'label'       => __('Home URL info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Hashed WordPress home URL metadata.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'site_url_info' => [
+                'label'       => __('Site URL info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Hashed WordPress site URL metadata.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugins_added_window' => [
+                'label'       => __('Plugins added by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Plugin additions detected by slow-snapshot comparison.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugins_removed_window' => [
+                'label'       => __('Plugins removed by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Plugin removals detected by slow-snapshot comparison.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugins_activated_window' => [
+                'label'       => __('Plugins activated by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Plugin activations detected by slow-snapshot comparison.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugins_deactivated_window' => [
+                'label'       => __('Plugins deactivated by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Plugin deactivations detected by slow-snapshot comparison.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'mu_plugins_total' => [
+                'label'       => __('MU plugins total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of must-use plugins.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'dropins_total' => [
+                'label'       => __('Drop-ins total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of WordPress drop-in files.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'active_theme_info' => [
+                'label'       => __('Active theme info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Active theme name and version metadata.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'themes_installed_total' => [
+                'label'       => __('Themes installed total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of installed WordPress themes.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'themes_update_available_total' => [
+                'label'       => __('Theme updates available total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of available WordPress theme updates.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'successful_logins_window' => [
+                'label'       => __('Successful logins by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Successful logins observed by plugin hooks grouped by bounded role and window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'password_resets_window' => [
+                'label'       => __('Password resets by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Password resets observed by plugin hooks grouped by bounded role and window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'user_email_changes_window' => [
+                'label'       => __('User email changes by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Email changes observed by plugin hooks grouped by bounded role and window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'application_passwords_total' => [
+                'label'       => __('Application passwords total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Total stored WordPress application passwords.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'admin_application_passwords_total' => [
+                'label'       => __('Admin application passwords total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Stored WordPress application passwords owned by administrator users.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'sessions_total' => [
+                'label'       => __('Sessions total by role', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Stored WordPress session-token counts grouped by bounded role.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'cron_events_total' => [
+                'label'       => __('Cron events total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Total scheduled WordPress cron events.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'cron_hooks_total' => [
+                'label'       => __('Cron hooks total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of distinct scheduled WordPress cron hooks.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'cron_new_hooks_window' => [
+                'label'       => __('New cron hooks by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('New cron hook names detected by slow-snapshot comparison.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'cron_scheduled_events_total' => [
+                'label'       => __('Cron scheduled events by recurrence', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Scheduled cron events grouped by bounded recurrence label.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'cron_suspicious_hooks_total' => [
+                'label'       => __('Suspicious cron hooks total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Count of cron hooks matching suspicious persistence-oriented names.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'options_total' => [
+                'label'       => __('Options total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Total rows in the WordPress options table.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'autoload_options_total' => [
+                'label'       => __('Autoload options total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Total autoloaded WordPress options.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'autoload_options_bytes' => [
+                'label'       => __('Autoload options bytes', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Approximate byte size of autoloaded WordPress option values.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'options_changed_window' => [
+                'label'       => __('Options changed by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Sensitive option changes detected by slow-snapshot comparison.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'new_autoload_options_window' => [
+                'label'       => __('New autoload options by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('New autoloaded option rows detected by slow-snapshot comparison.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'sensitive_options_changed_window' => [
+                'label'       => __('Sensitive options changed by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Sensitive option changes grouped by bounded option group and window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'posts_modified_window' => [
+                'label'       => __('Posts modified by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently modified content grouped by bounded post type and window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'pages_modified_window' => [
+                'label'       => __('Pages modified by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently modified WordPress pages grouped by window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'posts_with_script_tags_total' => [
+                'label'       => __('Posts with script tags total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Published content containing script tags grouped by bounded post type.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'posts_with_iframe_tags_total' => [
+                'label'       => __('Posts with iframe tags total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Published content containing iframe tags grouped by bounded post type.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'posts_with_suspicious_redirects_total' => [
+                'label'       => __('Posts with suspicious redirects total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Published content containing simple suspicious redirect indicators grouped by bounded post type.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'recent_admin_post_edits_window' => [
+                'label'       => __('Recent admin post edits by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recent content modifications by administrator users grouped by window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'upload_php_files_total' => [
+                'label'       => __('Upload PHP files total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('PHP-like files found under uploads.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'upload_executable_files_total' => [
+                'label'       => __('Upload executable files total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Executable-like files found under uploads.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'recent_upload_php_files_window' => [
+                'label'       => __('Recent upload PHP files by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently modified PHP-like files under uploads grouped by window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'plugin_files_modified_window' => [
+                'label'       => __('Plugin files modified by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently modified files under plugins grouped by window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'theme_files_modified_window' => [
+                'label'       => __('Theme files modified by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently modified files under themes grouped by window.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'wp_content_recently_modified_files_total' => [
+                'label'       => __('WP content recently modified files total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Recently modified files under bounded wp-content areas.', 'simula-security-telemetry-for-wordfence'),
+            ],
         ];
     }
 

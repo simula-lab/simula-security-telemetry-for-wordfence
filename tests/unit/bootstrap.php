@@ -20,6 +20,10 @@ $GLOBALS['sstfw_test_active_plugins'] = [];
 $GLOBALS['sstfw_test_network_active_plugins'] = [];
 $GLOBALS['sstfw_test_site_transients'] = [];
 $GLOBALS['sstfw_test_users'] = [];
+$GLOBALS['sstfw_test_user_meta'] = [];
+$GLOBALS['sstfw_test_roles'] = [];
+$GLOBALS['sstfw_test_options']['users_can_register'] = 0;
+$GLOBALS['sstfw_test_options']['default_role'] = 'subscriber';
 
 if (!function_exists('__')) {
     function __($text, $domain = 'default') {
@@ -69,6 +73,12 @@ if (!function_exists('home_url')) {
     }
 }
 
+if (!function_exists('site_url')) {
+    function site_url($path = '') {
+        return 'https://example.test' . $path;
+    }
+}
+
 if (!function_exists('wp_parse_args')) {
     function wp_parse_args($args, $defaults = []) {
         return array_merge((array) $defaults, (array) $args);
@@ -77,6 +87,10 @@ if (!function_exists('wp_parse_args')) {
 
 if (!function_exists('get_option')) {
     function get_option($name, $default = false) {
+        if (array_key_exists($name, $GLOBALS['sstfw_test_options'])) {
+            return $GLOBALS['sstfw_test_options'][$name];
+        }
+
         return array_key_exists($name, $GLOBALS['sstfw_options']) ? $GLOBALS['sstfw_options'][$name] : $default;
     }
 }
@@ -159,6 +173,36 @@ if (!function_exists('get_users')) {
     }
 }
 
+if (!function_exists('get_userdata')) {
+    function get_userdata($user_id) {
+        foreach ($GLOBALS['sstfw_test_users'] as $user) {
+            if ((is_object($user) && (int) $user->ID === (int) $user_id) || (is_array($user) && (int) ($user['ID'] ?? 0) === (int) $user_id)) {
+                return $user;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('get_user_meta')) {
+    function get_user_meta($user_id, $key = '', $single = false) {
+        return $GLOBALS['sstfw_test_user_meta'][(int) $user_id][$key] ?? ($single ? '' : []);
+    }
+}
+
+if (!function_exists('wp_roles')) {
+    function wp_roles() {
+        return (object) ['roles' => $GLOBALS['sstfw_test_roles']];
+    }
+}
+
+if (!function_exists('apply_filters')) {
+    function apply_filters($hook_name, $value) {
+        return $value;
+    }
+}
+
 if (!function_exists('wp_salt')) {
     function wp_salt($scheme = 'auth') {
         return 'unit-test-site-salt-' . (string) $scheme;
@@ -179,6 +223,7 @@ if (!class_exists('Simula_Security_Telemetry_Config')) {
     require_once dirname(__DIR__, 2) . '/includes/class-output.php';
     require_once dirname(__DIR__, 2) . '/includes/class-wordfence-schema.php';
     require_once dirname(__DIR__, 2) . '/includes/class-wordfence-collector.php';
+    require_once dirname(__DIR__, 2) . '/includes/class-wordpress-collector.php';
 }
 
 function sstfw_assert_same($expected, $actual, $message = '') {
