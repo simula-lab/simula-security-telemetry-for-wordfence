@@ -185,6 +185,19 @@ final class Simula_Security_Telemetry_Admin {
                     </fieldset>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">
+                    <label for="sstfw-admin-identity-mode"><?php echo esc_html__('Admin identity labels', 'simula-security-telemetry-for-wordfence'); ?></label>
+                </th>
+                <td>
+                    <select id="sstfw-admin-identity-mode" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[admin_identity_mode]">
+                        <option value="hashed" <?php selected($options['admin_identity_mode'], 'hashed'); ?>><?php echo esc_html__('Hash administrator IDs, logins, and display names', 'simula-security-telemetry-for-wordfence'); ?></option>
+                        <option value="id_only" <?php selected($options['admin_identity_mode'], 'id_only'); ?>><?php echo esc_html__('Export administrator numeric IDs only', 'simula-security-telemetry-for-wordfence'); ?></option>
+                        <option value="disabled" <?php selected($options['admin_identity_mode'], 'disabled'); ?>><?php echo esc_html__('Counts only; no per-admin identity labels', 'simula-security-telemetry-for-wordfence'); ?></option>
+                    </select>
+                    <p class="description"><?php echo esc_html__('Applies only when the opt-in admin_user_info metric is enabled. Hashed mode is recommended for Prometheus labels because it avoids raw usernames, display names, and email addresses.', 'simula-security-telemetry-for-wordfence'); ?></p>
+                </td>
+            </tr>
         </table>
         <?php
     }
@@ -353,4 +366,3 @@ final class Simula_Security_Telemetry_Admin {
         <?php
     }
 }
-

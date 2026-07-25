@@ -89,6 +89,8 @@ Settings > Security Telemetry
 - `Site label`
 - `Exported metrics`
   Each metric family can be enabled or disabled independently.
+- `Admin identity labels`
+  Controls labels for the opt-in per-admin inventory metric.
 
 ### Incident log settings
 
@@ -122,6 +124,7 @@ Default values:
 - `Incident IP privacy`: `Log full IP address`
 - `Incident privacy filters`: disabled
 - `Retention note`: empty
+- `Admin identity labels`: hashed
 
 Path validation rules:
 
@@ -176,7 +179,7 @@ All metrics include a `site` label.
 
 - `wordpress_wordfence_export_success`
   Indicates whether the last export succeeded.
-- `wordpress_wordfence_plugin_info{version="2.3.3"}`
+- `wordpress_wordfence_plugin_info{version="..."}`
   Static plugin metadata metric.
 - `wordpress_wordfence_last_export_timestamp_seconds`
   Unix timestamp of the last export attempt or successful export.
@@ -267,6 +270,8 @@ All metrics include a `site` label.
   Number of administrator users.
 - `wordpress_wordfence_admin_users_without_2fa_total`
   Number of administrator users without Wordfence two-factor secrets.
+- `wordpress_wordfence_admin_user_info{user_id_hash="...",login_hash="...",display_name_hash="...",two_factor_enabled="0|1"}`
+  Opt-in administrator inventory metadata with privacy-preserving hashed identity labels by default. Disabled by default because administrator identities are sensitive. In `id_only` mode the metric uses a `user_id` label instead of hash labels; in `disabled` mode only aggregate admin counts are exported.
 
 ## Incident Log Export
 

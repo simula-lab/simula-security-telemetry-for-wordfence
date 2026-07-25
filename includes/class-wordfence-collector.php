@@ -372,8 +372,9 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
     }
 
     /** Collects WordPress update and administrator 2FA posture. */
-    public static function collect_wordpress_posture($include_plugin_inventory = true) {
-        $admin_ids      = self::administrator_user_ids();
+    public static function collect_wordpress_posture($include_plugin_inventory = true, $include_admin_inventory = false, $admin_identity_mode = 'hashed') {
+        $admin_users    = self::administrator_users();
+        $admin_ids      = array_map('intval', array_column($admin_users, 'ID'));
         $protected_ids  = self::two_factor_protected_user_ids();
         $without_2fa    = 0;
         $protected_flip = array_fill_keys(array_map('intval', $protected_ids), true);
@@ -385,6 +386,7 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         }
 
         $plugin_inventory = $include_plugin_inventory ? self::collect_plugin_inventory() : self::empty_plugin_inventory();
+        $admin_inventory  = $include_admin_inventory ? self::collect_admin_user_inventory($admin_users, $protected_ids, $admin_identity_mode) : [];
 
         return [
             'wordpress_version'             => self::wordpress_version(),
@@ -398,6 +400,7 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
             'theme_update_available_total'  => self::theme_update_count(),
             'admin_users_total'             => count($admin_ids),
             'admin_users_without_2fa_total' => $without_2fa,
+            'admin_user_inventory'          => $admin_inventory,
         ];
     }
 
@@ -514,18 +517,101 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         return 'unknown';
     }
 
-    /** Returns administrator user IDs. */
-    private static function administrator_user_ids() {
+    /** Returns administrator users with only the fields needed for metrics. */
+    private static function administrator_users() {
         if (!function_exists('get_users')) {
             return [];
         }
 
         $users = get_users([
             'role'   => 'administrator',
-            'fields' => 'ID',
+            'fields' => ['ID', 'user_login', 'display_name'],
         ]);
 
-        return array_map('intval', is_array($users) ? $users : []);
+        $records = [];
+        foreach (is_array($users) ? $users : [] as $user) {
+            $user_id = self::object_or_array_value($user, 'ID', 0);
+            if ((int) $user_id <= 0) {
+                continue;
+            }
+
+            $records[] = [
+                'ID'           => (int) $user_id,
+                'user_login'   => self::object_or_array_value($user, 'user_login', ''),
+                'display_name' => self::object_or_array_value($user, 'display_name', ''),
+            ];
+        }
+
+        return $records;
+    }
+
+    /** Builds opt-in administrator inventory records without exposing raw names in hashed mode. */
+    private static function collect_admin_user_inventory($admin_users, $protected_ids, $identity_mode) {
+        $identity_mode = in_array($identity_mode, ['hashed', 'id_only', 'disabled'], true) ? $identity_mode : 'hashed';
+        if ($identity_mode === 'disabled') {
+            return [];
+        }
+
+        $protected_flip = array_fill_keys(array_map('intval', (array) $protected_ids), true);
+        $records        = [];
+
+        foreach ((array) $admin_users as $user) {
+            $user_id = (int) self::object_or_array_value($user, 'ID', 0);
+            if ($user_id <= 0) {
+                continue;
+            }
+
+            $two_factor_enabled = empty($protected_flip[$user_id]) ? 0 : 1;
+
+            if ($identity_mode === 'id_only') {
+                $records[] = [
+                    'user_id'            => (string) $user_id,
+                    'two_factor_enabled' => $two_factor_enabled,
+                ];
+                continue;
+            }
+
+            $login        = self::object_or_array_value($user, 'user_login', '');
+            $display_name = self::object_or_array_value($user, 'display_name', '');
+
+            $records[] = [
+                'user_id_hash'       => self::stable_identity_hash((string) $user_id, 'user_id'),
+                'login_hash'         => self::stable_identity_hash((string) $login, 'login'),
+                'display_name_hash'  => self::stable_identity_hash((string) $display_name, 'display_name'),
+                'two_factor_enabled' => $two_factor_enabled,
+            ];
+        }
+
+        return $records;
+    }
+
+    /** Reads a named value from an object or associative array. */
+    private static function object_or_array_value($value, $key, $fallback) {
+        if (is_array($value) && array_key_exists($key, $value)) {
+            return is_scalar($value[$key]) ? (string) $value[$key] : $fallback;
+        }
+
+        if (is_object($value) && isset($value->{$key})) {
+            return is_scalar($value->{$key}) ? (string) $value->{$key} : $fallback;
+        }
+
+        return $fallback;
+    }
+
+    /** Generates a stable site-local hash for sensitive administrator identity labels. */
+    private static function stable_identity_hash($value, $purpose) {
+        $salt = function_exists('wp_salt') ? wp_salt('auth') : '';
+        if (!is_string($salt) || $salt === '') {
+            $salt = defined('AUTH_SALT') ? (string) AUTH_SALT : '';
+        }
+        if ($salt === '' && function_exists('home_url')) {
+            $salt = (string) home_url('/');
+        }
+        if ($salt === '') {
+            $salt = 'simula-security-telemetry-for-wordfence';
+        }
+
+        return hash_hmac('sha256', (string) $purpose . ':' . (string) $value, $salt);
     }
 
     /** Returns user IDs with Wordfence two-factor secrets when available. */

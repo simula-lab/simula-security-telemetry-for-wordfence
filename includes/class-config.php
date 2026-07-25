@@ -16,7 +16,7 @@ final class Simula_Security_Telemetry_Config {
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '2.3.3';
+    public const VERSION        = '3.0.0-alpha';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
@@ -44,6 +44,7 @@ final class Simula_Security_Telemetry_Config {
             'privacy_drop_user_agent' => 0,
             'privacy_exclude_private_ips' => 0,
             'privacy_retention_note' => '',
+            'admin_identity_mode' => 'hashed',
             'enabled_metrics'      => self::default_enabled_metrics(),
         ];
     }
@@ -219,6 +220,10 @@ final class Simula_Security_Telemetry_Config {
                 'label'       => __('Admin users without 2FA', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Number of administrator users without a Wordfence two-factor secret.', 'simula-security-telemetry-for-wordfence'),
             ],
+            'admin_user_info' => [
+                'label'       => __('Admin user inventory info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Opt-in administrator inventory with privacy-preserving identity labels and per-admin Wordfence two-factor status. This can expose sensitive operational details.', 'simula-security-telemetry-for-wordfence'),
+            ],
         ];
     }
 
@@ -226,6 +231,7 @@ final class Simula_Security_Telemetry_Config {
     public static function default_enabled_metrics() {
         $defaults = array_fill_keys(array_keys(self::metric_definitions()), 1);
         $defaults['plugin_inventory_info'] = 0;
+        $defaults['admin_user_info']       = 0;
 
         return $defaults;
     }
