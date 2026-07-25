@@ -62,7 +62,10 @@ zip -q "$ZIP_FILE" ./*.php
 # 4d) add languages (pot, po, mo)
 [ -d "languages" ] && zip -qr "$ZIP_FILE" "languages" "${ZIP_EXCLUDES[@]}"
 
-# 4e) add assets (unless excluded)
+# 4e) add example Grafana and Prometheus assets
+# [ -d "examples" ] && zip -qr "$ZIP_FILE" "examples" "${ZIP_EXCLUDES[@]}"
+
+# 4f) add assets (unless excluded)
 if [ "$NO_ASSETS" -eq 1 ]; then
   echo "Skipping assets directory as requested."
 else

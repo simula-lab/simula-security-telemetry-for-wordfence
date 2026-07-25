@@ -163,7 +163,7 @@ If WP-CLI is available, the plugin registers:
 
 = Does the plugin include Grafana and Prometheus assets? =
 
-Yes. Import examples/grafana/grafana-dashboard-wordfence-security-overview.json into Grafana and load examples/prometheus/wordfence-alerts.yml into Prometheus or your rule management workflow.
+Yes. Import examples/grafana/grafana-dashboard-wordfence-security-overview.json into Grafana and load examples/prometheus/wordfence-alerts.yml into Prometheus or your rule management workflow. The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs. Inventory-based alert examples require the matching opt-in inventory metric to be enabled.
 
 = What permissions are required? =
 
@@ -185,7 +185,9 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added opt-in per-plugin inventory metrics with plugin file, name, version, active state, and update availability labels.
 * Added opt-in administrator inventory metrics with hashed identity labels by default and per-admin Wordfence two-factor status.
 * Added administrator identity label modes for hashed, ID-only, and counts-only operation.
-* Updated WP-CLI status output to show plugin inventory, admin inventory, and admin identity mode settings.
+* Updated WP-CLI and admin status output to show plugin inventory, admin inventory, and admin identity mode settings.
+* Updated Grafana dashboard and Prometheus alert examples for WordPress version, plugin posture, plugin inventory, admin inventory, core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.
+* Added release asset validation for README/readme metric coverage, Grafana JSON, and Prometheus alert examples.
 * Updated the Docker smoke test to install and activate the current official Wordfence plugin before activating this plugin.
 * Updated documentation for the new WordPress version, plugin inventory, and administrator inventory metric families.
 

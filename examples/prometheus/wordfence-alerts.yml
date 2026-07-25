@@ -73,6 +73,33 @@ groups:
           summary: Vulnerable WordPress component on {{ $labels.site }}
           description: Wordfence reports vulnerable or outdated core, plugin, or theme findings.
 
+      - alert: WordPressCoreUpdateAvailable
+        expr: wordpress_wordfence_core_update_available > 0
+        for: 6h
+        labels:
+          severity: warning
+        annotations:
+          summary: WordPress core update available on {{ $labels.site }}
+          description: WordPress reports that a core update is available. Review release notes and patch the site.
+
+      - alert: WordPressPluginUpdatesAvailable
+        expr: wordpress_wordfence_plugin_update_available_total > 0
+        for: 6h
+        labels:
+          severity: warning
+        annotations:
+          summary: WordPress plugin updates available on {{ $labels.site }}
+          description: One or more installed WordPress plugins have available updates.
+
+      - alert: WordPressSecurityPluginInactive
+        expr: wordpress_wordfence_plugin_inventory_info{plugin_file="wordfence/wordfence.php",state="inactive"} == 1
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: Wordfence plugin is inactive on {{ $labels.site }}
+          description: The opt-in plugin inventory metric reports Wordfence installed but inactive. This alert requires wordpress_wordfence_plugin_inventory_info to be enabled.
+
       - alert: WordfenceTwoFactorDisabled
         expr: wordpress_wordfence_two_factor_enabled == 0
         for: 1h

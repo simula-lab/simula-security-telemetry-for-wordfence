@@ -76,6 +76,7 @@ install_wordpress_if_needed
 
 wp plugin deactivate "$PLUGIN_SLUG" || true
 wp plugin delete "$PLUGIN_SLUG" || true
+wp plugin install wordfence --activate --force
 wp plugin install "/tests/zip/$PLUGIN_SLUG.zip" --force --activate
 wp eval-file /tests/wp-cli/configure-test-options.php
 wp eval-file /tests/wp-cli/seed-wordfence-fixtures.php

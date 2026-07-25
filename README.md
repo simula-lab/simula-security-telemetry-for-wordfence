@@ -351,7 +351,9 @@ For production scheduling, prefer system cron invoking WP-CLI over relying only 
 
 - Import `examples/grafana/grafana-dashboard-wordfence-security-overview.json` into Grafana and select your Prometheus datasource.
 - Load `examples/prometheus/wordfence-alerts.yml` into Prometheus or your rule management workflow.
-- Adjust alert thresholds to match site traffic. The defaults are intentionally conservative starting points for blocked request spikes, failed login bursts, stale exports, malware findings, vulnerabilities, and administrator 2FA coverage.
+- The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs.
+- The alert examples include stale or failed exports, blocked request spikes, failed login bursts, malware and vulnerability findings, WordPress core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.
+- Adjust alert thresholds to match site traffic. The defaults are intentionally conservative starting points and inventory-based alerts require the matching opt-in inventory metric to be enabled.
 
 ## Example Prometheus Scrape Flow
 
@@ -394,6 +396,8 @@ Run local syntax and bootstrap checks with:
 ```bash
 tests/bin/check-local.sh
 ```
+
+This also validates README/readme metric coverage, the Grafana dashboard JSON, and the Prometheus alert examples.
 
 Run unit-test line coverage with Xdebug or PCOV enabled:
 

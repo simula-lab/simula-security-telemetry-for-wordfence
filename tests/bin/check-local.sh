@@ -12,3 +12,4 @@ done
 
 php tests/bootstrap-smoke.php
 php tests/bin/run-unit.php
+php tests/bin/validate-release-assets.php
