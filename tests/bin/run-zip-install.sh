@@ -8,18 +8,17 @@ export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-sstfw-zip-test}"
 PLUGIN_SLUG="simula-security-telemetry-for-wordfence"
 
 mkdir -p tests/runtime/output tests/runtime/zip
-mkdir -p tests/runtime/empty-plugin-dir
 
 ./build-zip.sh "$PLUGIN_SLUG"
 cp "$PLUGIN_SLUG.zip" "tests/runtime/zip/$PLUGIN_SLUG.zip"
 
 compose() {
   if docker compose version >/dev/null 2>&1; then
-    docker compose -f docker-compose.yml -f tests/docker-compose.zip.yml "$@"
+    docker compose --project-directory "$ROOT_DIR" -f tests/docker-compose.zip.yml "$@"
     return
   fi
 
-  docker-compose -f docker-compose.yml -f tests/docker-compose.zip.yml "$@"
+  docker-compose --project-directory "$ROOT_DIR" -f tests/docker-compose.zip.yml "$@"
 }
 
 cleanup() {
@@ -74,8 +73,6 @@ wait_for_wordpress_files
 prepare_wordpress_install_dirs
 install_wordpress_if_needed
 
-wp plugin deactivate "$PLUGIN_SLUG" || true
-wp plugin delete "$PLUGIN_SLUG" || true
 wp plugin install wordfence --activate --force
 wp plugin install "/tests/zip/$PLUGIN_SLUG.zip" --force --activate
 wp eval-file /tests/wp-cli/configure-test-options.php

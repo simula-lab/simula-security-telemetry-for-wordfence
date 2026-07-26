@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.0.0-alpha
+Stable tag: 3.0.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
