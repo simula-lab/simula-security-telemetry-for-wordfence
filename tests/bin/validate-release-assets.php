@@ -35,6 +35,19 @@ if ($metric_keys === []) {
 
 $readme_md  = sstfw_read_file($root . '/README.md');
 $readme_txt = sstfw_read_file($root . '/readme.txt');
+$plugin_php = sstfw_read_file($root . '/simula-security-telemetry-for-wordfence.php');
+
+if (!preg_match('/^\s*\*\s*Version:\s*([0-9]+(?:\.[0-9]+)+)\s*$/m', $plugin_php, $plugin_version_match)) {
+    sstfw_asset_fail('Main plugin file is missing a numeric Version header.');
+}
+
+if (!preg_match('/^Stable tag:\s*([0-9]+(?:\.[0-9]+)+)\s*$/mi', $readme_txt, $stable_tag_match)) {
+    sstfw_asset_fail('readme.txt is missing a numeric Stable tag.');
+}
+
+if ($stable_tag_match[1] !== $plugin_version_match[1]) {
+    sstfw_asset_fail('readme.txt Stable tag does not match main plugin Version header.');
+}
 
 foreach ($metric_keys as $metric_key) {
     $metric_name = 'wordpress_wordfence_' . $metric_key;
