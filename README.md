@@ -89,6 +89,8 @@ Settings > Security Telemetry
 - `Site label`
 - `Exported metrics`
   Each metric family can be enabled or disabled independently.
+- `Admin identity labels`
+  Controls labels for the opt-in per-admin inventory metric.
 
 ### Incident log settings
 
@@ -122,6 +124,7 @@ Default values:
 - `Incident IP privacy`: `Log full IP address`
 - `Incident privacy filters`: disabled
 - `Retention note`: empty
+- `Admin identity labels`: hashed
 
 Path validation rules:
 
@@ -176,10 +179,14 @@ All metrics include a `site` label.
 
 - `wordpress_wordfence_export_success`
   Indicates whether the last export succeeded.
-- `wordpress_wordfence_plugin_info{version="2.2.2"}`
+- `wordpress_wordfence_plugin_info{version="..."}`
   Static plugin metadata metric.
 - `wordpress_wordfence_last_export_timestamp_seconds`
   Unix timestamp of the last export attempt or successful export.
+- `wordpress_wordfence_next_export_timestamp_seconds`
+  Unix timestamp of the next scheduled fast exporter run when WP-Cron has one queued.
+- `wordpress_wordfence_next_slow_export_timestamp_seconds`
+  Unix timestamp of the next scheduled slow collector run when WP-Cron has one queued.
 - `wordpress_wordfence_enabled`
   `1` when the exporter master switch is enabled, `0` otherwise.
 - `wordpress_wordfence_error_info{type="write_failed|schema_unsupported|wordfence_missing|incident_failed|unknown"}`
@@ -221,7 +228,7 @@ All metrics include a `site` label.
 - `wordpress_wordfence_scan_issues_by_severity{severity="..."}`
   Current Wordfence scan issues grouped by severity.
 - `wordpress_wordfence_scan_findings_total{category="malware|file_change"}`
-  Current malware-like and file-change findings.
+  Current Wordfence malware issue-type and file-change findings.
 - `wordpress_wordfence_vulnerability_findings_total{component="core|plugin|theme"}`
   Current vulnerable or outdated core, plugin, and theme findings.
 
@@ -241,16 +248,93 @@ All metrics include a `site` label.
   Whether Wordfence scanning appears enabled.
 - `wordpress_wordfence_license_type{type="free|premium|unknown"}`
   Wordfence license type metadata.
+- `wordpress_wordfence_wordpress_version_info{version="..."}`
+  WordPress core version metadata. Emits `version="unknown"` if the runtime cannot provide a version.
 - `wordpress_wordfence_core_update_available`
   Whether a WordPress core update is available.
 - `wordpress_wordfence_plugin_update_available_total`
   Number of plugin updates available.
+- `wordpress_wordfence_plugins_installed_total`
+  Number of installed WordPress plugins.
+- `wordpress_wordfence_plugins_active_total`
+  Number of site-active WordPress plugins.
+- `wordpress_wordfence_plugins_inactive_total`
+  Number of inactive WordPress plugins.
+- `wordpress_wordfence_plugins_network_active_total`
+  Number of network-active WordPress plugins.
+- `wordpress_wordfence_plugin_inventory_info{plugin_file="...",name="...",version="...",state="active|inactive|network_active",update_available="0|1"}`
+  Opt-in installed plugin inventory metadata. Disabled by default because it can expose sensitive operational details.
 - `wordpress_wordfence_theme_update_available_total`
   Number of theme updates available.
 - `wordpress_wordfence_admin_users_total`
   Number of administrator users.
 - `wordpress_wordfence_admin_users_without_2fa_total`
   Number of administrator users without Wordfence two-factor secrets.
+- `wordpress_wordfence_admin_user_info{user_id_hash="...",login_hash="...",display_name_hash="...",two_factor_enabled="0|1"}`
+  Opt-in administrator inventory metadata with privacy-preserving hashed identity labels by default. Disabled by default because administrator identities are sensitive. In `id_only` mode the metric uses a `user_id` label instead of hash labels; in `disabled` mode only aggregate admin counts are exported.
+
+### WordPress drift, persistence, and IoC metrics
+
+The following metrics run during slow collection and are cached for fast exports. Drift metrics compare the current slow snapshot to the previous slow snapshot, so the first slow run establishes a baseline.
+
+- `wordpress_wordfence_users_total{role="administrator|editor|author|contributor|subscriber|other"}`
+- `wordpress_wordfence_users_created_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_admin_users_created_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_admin_users_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_roles_total`
+- `wordpress_wordfence_role_capabilities_total{role="..."}`
+- `wordpress_wordfence_unexpected_admin_capabilities_total`
+- `wordpress_wordfence_users_can_register_enabled`
+- `wordpress_wordfence_default_role_info{role="..."}`
+- `wordpress_wordfence_file_edit_allowed`
+- `wordpress_wordfence_file_mods_allowed`
+- `wordpress_wordfence_debug_enabled`
+- `wordpress_wordfence_debug_display_enabled`
+- `wordpress_wordfence_xmlrpc_enabled`
+- `wordpress_wordfence_rest_api_enabled`
+- `wordpress_wordfence_search_engine_visibility_enabled`
+- `wordpress_wordfence_home_url_info{hash="..."}`
+- `wordpress_wordfence_site_url_info{hash="..."}`
+- `wordpress_wordfence_plugins_added_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugins_removed_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugins_activated_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugins_deactivated_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_mu_plugins_total`
+- `wordpress_wordfence_dropins_total`
+- `wordpress_wordfence_active_theme_info{theme="...",version="..."}`
+- `wordpress_wordfence_themes_installed_total`
+- `wordpress_wordfence_themes_update_available_total`
+- `wordpress_wordfence_successful_logins_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_password_resets_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_user_email_changes_window{role="...",window="1h|24h|7d"}`
+- `wordpress_wordfence_application_passwords_total`
+- `wordpress_wordfence_admin_application_passwords_total`
+- `wordpress_wordfence_sessions_total{role="..."}`
+- `wordpress_wordfence_cron_events_total`
+- `wordpress_wordfence_cron_hooks_total`
+- `wordpress_wordfence_cron_new_hooks_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_cron_scheduled_events_total{recurrence="single|hourly|twicedaily|daily|custom"}`
+- `wordpress_wordfence_cron_suspicious_hooks_total`
+- `wordpress_wordfence_options_total`
+- `wordpress_wordfence_autoload_options_total`
+- `wordpress_wordfence_autoload_options_bytes`
+- `wordpress_wordfence_options_changed_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_new_autoload_options_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_sensitive_options_changed_window{option_group="site_url|users|mail|auth|cron|plugins|other",window="1h|24h|7d"}`
+- `wordpress_wordfence_posts_modified_window{post_type="post|page|attachment|other",window="1h|24h|7d"}`
+- `wordpress_wordfence_pages_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_posts_with_script_tags_total{post_type="post|page|other"}`
+- `wordpress_wordfence_posts_with_iframe_tags_total{post_type="post|page|other"}`
+- `wordpress_wordfence_posts_with_suspicious_redirects_total{post_type="post|page|other"}`
+- `wordpress_wordfence_recent_admin_post_edits_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_upload_php_files_total`
+- `wordpress_wordfence_upload_executable_files_total`
+- `wordpress_wordfence_recent_upload_php_files_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_plugin_files_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_theme_files_modified_window{window="1h|24h|7d"}`
+- `wordpress_wordfence_wp_content_recently_modified_files_total{area="plugins|themes|uploads|mu_plugins"}`
+
+These metrics avoid raw usernames, emails, option names, cron hook names, session tokens, application password names, and file paths in labels.
 
 ## Incident Log Export
 
@@ -328,9 +412,11 @@ For production scheduling, prefer system cron invoking WP-CLI over relying only 
 
 ## Grafana and Prometheus Assets
 
-- Import `examples/grafana/grafana-dashboard-wordfence-security-overview.json` into Grafana and select your Prometheus datasource.
-- Load `examples/prometheus/wordfence-alerts.yml` into Prometheus or your rule management workflow.
-- Adjust alert thresholds to match site traffic. The defaults are intentionally conservative starting points for blocked request spikes, failed login bursts, stale exports, malware findings, vulnerabilities, and administrator 2FA coverage.
+- Import the repository-only Grafana dashboard example from `examples/grafana/grafana-dashboard-wordfence-security-overview.json` into Grafana and select your Prometheus datasource.
+- Load the repository-only Prometheus alert example from `examples/prometheus/wordfence-alerts.yml` into Prometheus or your rule management workflow.
+- The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs.
+- The alert examples include stale or failed exports, blocked request spikes, failed login bursts, malware and vulnerability findings, WordPress core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.
+- Adjust alert thresholds to match site traffic. The defaults are intentionally conservative starting points and inventory-based alerts require the matching opt-in inventory metric to be enabled.
 
 ## Example Prometheus Scrape Flow
 
@@ -362,11 +448,35 @@ You should:
 
 ## Development
 
-Repository structure is intentionally minimal:
+The plugin entrypoint now stays intentionally small:
 
 - [simula-security-telemetry-for-wordfence.php](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/simula-security-telemetry-for-wordfence.php:1)
 
-The plugin is currently implemented as a single-file WordPress plugin for simple deployment and review.
+Implementation classes live under `includes/` and are loaded explicitly for WordPress.org-compatible packaging. See [docs/file-layout.md](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/docs/file-layout.md:1) for the current class map and bootstrap smoke check.
+
+Run local syntax and bootstrap checks with:
+
+```bash
+tests/bin/check-local.sh
+```
+
+This also validates README/readme metric coverage, the Grafana dashboard JSON, and the Prometheus alert examples.
+
+Run unit-test line coverage with Xdebug or PCOV enabled:
+
+```bash
+php tests/bin/coverage.php
+```
+
+Use `php tests/bin/coverage.php --min=80` when you want the v3.0 coverage target enforced.
+
+Run the disposable WordPress fixture harness with:
+
+```bash
+tests/bin/run-local.sh
+```
+
+See [tests/README.md](/Users/ouss/Documents/workspace/simula/wordpress/plugins_repos/simula-security-telemetry-for-wordfence/tests/README.md:1) for publisher integration and release zip install smoke tests.
 
 ## License
 

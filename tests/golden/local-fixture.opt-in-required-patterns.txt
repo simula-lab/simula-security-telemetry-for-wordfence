@@ -1,0 +1,3 @@
+^wordpress_wordfence_plugin_inventory_info\{site="sstfw-test\.local",plugin_file="simula-security-telemetry-for-wordfence/simula-security-telemetry-for-wordfence\.php",name="Simula Security Telemetry for Wordfence",version="[^"]+",state="active",update_available="[01]"\} 1$
+^wordpress_wordfence_plugin_inventory_info\{site="sstfw-test\.local",plugin_file="wordfence/wordfence\.php",name="Wordfence Security",version="[^"]+",state="active",update_available="[01]"\} 1$
+^wordpress_wordfence_admin_user_info\{site="sstfw-test\.local",user_id_hash="[a-f0-9]{64}",login_hash="[a-f0-9]{64}",display_name_hash="[a-f0-9]{64}",two_factor_enabled="1"\} 1$

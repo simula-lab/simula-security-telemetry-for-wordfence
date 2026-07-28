@@ -4,12 +4,12 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.2.2
+Stable tag: 3.0.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
 
-Export Prometheus metrics from Wordfence into a node_exporter textfile collector .prom file and append incidents detected by wordfence to a local log file.
+Export metrics from Wordfence into a node_exporter textfile collector .prom file and append incidents detected by wordfence to a local log file.
 
 == Description ==
 Simula Security Telemetry for Wordfence exports Wordfence security telemetry in two forms:
@@ -98,6 +98,8 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_export_success
 * wordpress_wordfence_plugin_info
 * wordpress_wordfence_last_export_timestamp_seconds
+* wordpress_wordfence_next_export_timestamp_seconds
+* wordpress_wordfence_next_slow_export_timestamp_seconds
 * wordpress_wordfence_enabled
 * wordpress_wordfence_error_info
 * wordpress_wordfence_blocked_events_total
@@ -124,13 +126,76 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_live_traffic_enabled
 * wordpress_wordfence_scan_enabled
 * wordpress_wordfence_license_type
+* wordpress_wordfence_wordpress_version_info
 * wordpress_wordfence_core_update_available
 * wordpress_wordfence_plugin_update_available_total
+* wordpress_wordfence_plugins_installed_total
+* wordpress_wordfence_plugins_active_total
+* wordpress_wordfence_plugins_inactive_total
+* wordpress_wordfence_plugins_network_active_total
+* wordpress_wordfence_plugin_inventory_info
 * wordpress_wordfence_theme_update_available_total
 * wordpress_wordfence_admin_users_total
 * wordpress_wordfence_admin_users_without_2fa_total
+* wordpress_wordfence_admin_user_info
+* wordpress_wordfence_users_total
+* wordpress_wordfence_users_created_window
+* wordpress_wordfence_admin_users_created_window
+* wordpress_wordfence_admin_users_modified_window
+* wordpress_wordfence_roles_total
+* wordpress_wordfence_role_capabilities_total
+* wordpress_wordfence_unexpected_admin_capabilities_total
+* wordpress_wordfence_users_can_register_enabled
+* wordpress_wordfence_default_role_info
+* wordpress_wordfence_file_edit_allowed
+* wordpress_wordfence_file_mods_allowed
+* wordpress_wordfence_debug_enabled
+* wordpress_wordfence_debug_display_enabled
+* wordpress_wordfence_xmlrpc_enabled
+* wordpress_wordfence_rest_api_enabled
+* wordpress_wordfence_search_engine_visibility_enabled
+* wordpress_wordfence_home_url_info
+* wordpress_wordfence_site_url_info
+* wordpress_wordfence_plugins_added_window
+* wordpress_wordfence_plugins_removed_window
+* wordpress_wordfence_plugins_activated_window
+* wordpress_wordfence_plugins_deactivated_window
+* wordpress_wordfence_mu_plugins_total
+* wordpress_wordfence_dropins_total
+* wordpress_wordfence_active_theme_info
+* wordpress_wordfence_themes_installed_total
+* wordpress_wordfence_themes_update_available_total
+* wordpress_wordfence_successful_logins_window
+* wordpress_wordfence_password_resets_window
+* wordpress_wordfence_user_email_changes_window
+* wordpress_wordfence_application_passwords_total
+* wordpress_wordfence_admin_application_passwords_total
+* wordpress_wordfence_sessions_total
+* wordpress_wordfence_cron_events_total
+* wordpress_wordfence_cron_hooks_total
+* wordpress_wordfence_cron_new_hooks_window
+* wordpress_wordfence_cron_scheduled_events_total
+* wordpress_wordfence_cron_suspicious_hooks_total
+* wordpress_wordfence_options_total
+* wordpress_wordfence_autoload_options_total
+* wordpress_wordfence_autoload_options_bytes
+* wordpress_wordfence_options_changed_window
+* wordpress_wordfence_new_autoload_options_window
+* wordpress_wordfence_sensitive_options_changed_window
+* wordpress_wordfence_posts_modified_window
+* wordpress_wordfence_pages_modified_window
+* wordpress_wordfence_posts_with_script_tags_total
+* wordpress_wordfence_posts_with_iframe_tags_total
+* wordpress_wordfence_posts_with_suspicious_redirects_total
+* wordpress_wordfence_recent_admin_post_edits_window
+* wordpress_wordfence_upload_php_files_total
+* wordpress_wordfence_upload_executable_files_total
+* wordpress_wordfence_recent_upload_php_files_window
+* wordpress_wordfence_plugin_files_modified_window
+* wordpress_wordfence_theme_files_modified_window
+* wordpress_wordfence_wp_content_recently_modified_files_total
 
-Each metric family can be enabled or disabled independently from the settings screen.
+Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory and per-admin inventory are disabled by default because plugin names, versions, active state, and administrator identities can expose sensitive operational details. Admin inventory uses hashed identity labels by default when enabled.
 
 = What does the incident log export do? =
 
@@ -152,9 +217,9 @@ If WP-CLI is available, the plugin registers:
 * wp simula-security-telemetry reset-cursor
 * wp simula-security-telemetry status
 
-= Does the plugin include Grafana and Prometheus assets? =
+= Does the project provide Grafana and Prometheus examples? =
 
-Yes. Import examples/grafana/grafana-dashboard-wordfence-security-overview.json into Grafana and load examples/prometheus/wordfence-alerts.yml into Prometheus or your rule management workflow.
+Yes. The source repository provides repository-only examples under examples/grafana/ and examples/prometheus/. They are intentionally not included in the WordPress.org plugin zip. The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs. Inventory-based alert examples require the matching opt-in inventory metric to be enabled.
 
 = What permissions are required? =
 
@@ -165,6 +230,29 @@ The directory that will contain the .prom file must already exist and be writabl
 1. Settings screen showing Prometheus metric controls, incident log settings, manual actions, and current exporter state.
 
 == Changelog ==
+
+= 3.0.0 =
+
+* Split the plugin implementation into explicit include classes for configuration, settings, admin UI, WP-CLI, metrics rendering, Wordfence schema detection, collection, output, incidents, and utilities.
+* Added disposable Docker test harnesses for local fixture, publisher integration, and release zip install validation.
+* Added dependency-free PHP unit tests, bootstrap smoke checks, Prometheus output validators, and coverage tooling for environments with Xdebug or PCOV.
+* Added WordPress core version metadata through wordpress_wordfence_wordpress_version_info.
+* Added installed plugin aggregate metrics for installed, active, inactive, and network-active plugin totals.
+* Added opt-in per-plugin inventory metrics with plugin file, name, version, active state, and update availability labels.
+* Added opt-in administrator inventory metrics with hashed identity labels by default and per-admin Wordfence two-factor status.
+* Added WordPress settings, role/user, plugin/theme drift, account event, cron/option persistence, content injection, and uploads/file IoC metric families.
+* Added administrator identity label modes for hashed, ID-only, and counts-only operation.
+* Updated WP-CLI and admin status output to show plugin inventory, admin inventory, and admin identity mode settings.
+* Updated Grafana dashboard and Prometheus alert examples for WordPress version, plugin posture, plugin inventory, admin inventory, core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.
+* Added release asset validation for README/readme metric coverage, Grafana JSON, and Prometheus alert examples.
+* Updated the Docker smoke test to install and activate the current official Wordfence plugin before activating this plugin.
+* Updated documentation for the new WordPress version, plugin inventory, and administrator inventory metric families.
+
+= 2.3.3 =
+
+* Added clearer stale-export diagnostics through next scheduled fast and slow export timestamps plus richer admin and WP-CLI freshness status output.
+* Fixed scan finding classification so malware counts prefer structured Wordfence issue types instead of broad message text matches.
+* Reduced false malware positives for non-malware scan issues such as skipped scan paths and unknown files.
 
 = 2.2.2 =
 
@@ -197,6 +285,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 2.3.3 =
+
+Improves scan finding classification so malware counts follow Wordfence issue types more closely, avoids false positives from descriptive text, and makes stale exports easier to diagnose.
 
 = 2.2.2 =
 

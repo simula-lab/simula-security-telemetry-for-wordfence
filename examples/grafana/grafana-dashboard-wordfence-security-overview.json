@@ -140,9 +140,67 @@
       "type": "bargauge"
     },
     {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 28},
+      "id": 15,
+      "options": {"colorMode": "none", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "name"},
+      "targets": [{"expr": "wordpress_wordfence_wordpress_version_info{instance_name=~\"${instance_name:regex}\"}", "legendFormat": "{{site}} {{version}}", "refId": "A"}],
+      "title": "WordPress Version",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 28},
+      "id": 16,
+      "options": {"displayMode": "gradient", "legend": {"displayMode": "list", "placement": "bottom"}, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true},
+      "targets": [
+        {"expr": "sum(wordpress_wordfence_plugins_installed_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} installed", "refId": "A"},
+        {"expr": "sum(wordpress_wordfence_plugins_active_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} active", "refId": "B"},
+        {"expr": "sum(wordpress_wordfence_plugins_inactive_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} inactive", "refId": "C"},
+        {"expr": "sum(wordpress_wordfence_plugin_update_available_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} updates", "refId": "D"}
+      ],
+      "title": "Plugin Posture",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 28},
+      "id": 17,
+      "options": {"cellHeight": "sm", "showHeader": true},
+      "targets": [{"expr": "wordpress_wordfence_plugin_inventory_info{instance_name=~\"${instance_name:regex}\"}", "format": "table", "instant": true, "legendFormat": "{{site}} {{plugin_file}}", "refId": "A"}],
+      "title": "Plugin Inventory",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 36},
+      "id": 18,
+      "options": {"cellHeight": "sm", "showHeader": true},
+      "targets": [{"expr": "wordpress_wordfence_admin_user_info{instance_name=~\"${instance_name:regex}\"}", "format": "table", "instant": true, "legendFormat": "{{site}} admin", "refId": "A"}],
+      "title": "Admin Inventory",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 36},
+      "id": 19,
+      "options": {"displayMode": "gradient", "legend": {"displayMode": "list", "placement": "bottom"}, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true},
+      "targets": [
+        {"expr": "sum(wordpress_wordfence_admin_users_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} admins", "refId": "A"},
+        {"expr": "sum(wordpress_wordfence_admin_users_without_2fa_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} without 2FA", "refId": "B"}
+      ],
+      "title": "Admin 2FA Coverage",
+      "type": "bargauge"
+    },
+    {
       "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
-      "id": 14,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 44},
+      "id": 20,
       "options": {"dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": false, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true},
       "targets": [{"expr": "{instance_name=~\"${instance_name:regex}\"} |~ \"Wordfence blocked request|\\\"wf_table\\\"\"", "queryType": "range", "refId": "A"}],
       "title": "Wordfence Incident Logs",
