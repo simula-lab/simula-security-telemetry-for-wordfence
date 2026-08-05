@@ -187,6 +187,20 @@ final class Simula_Security_Telemetry_Service {
 
         if ($flags['needs_window_counts']) {
             $data['window_counts'] = self::collect_window_counts($table, $data['time_identifier'], $where_sql, $data['windows'], $flags);
+
+            if (!empty($flags['failed_login_attempts_window'])) {
+                $login_counts = Simula_Security_Telemetry_Wordfence_Collector::collect_failed_login_window_counts($data['windows'], 'failed_login');
+                if (is_array($login_counts) && $login_counts !== []) {
+                    $data['window_counts'] = array_merge($data['window_counts'], $login_counts);
+                }
+            }
+
+            if (!empty($flags['brute_force_events_window'])) {
+                $login_counts = Simula_Security_Telemetry_Wordfence_Collector::collect_failed_login_window_counts($data['windows'], 'brute_username');
+                if (is_array($login_counts) && $login_counts !== []) {
+                    $data['window_counts'] = array_merge($data['window_counts'], $login_counts);
+                }
+            }
         }
 
         if ($flags['blocked_events_by_status_24h']) {
@@ -781,7 +795,7 @@ final class Simula_Security_Telemetry_Service {
                 $metrics,
                 $prefix . '_failed_login_attempts_window',
                 'gauge',
-                'Failed login attempts observed within recent windows.',
+                'Failed Wordfence login attempts observed within recent windows.',
                 self::build_window_metric_samples($site, $data['window_counts'], 'failed_login')
             );
         }
@@ -801,7 +815,7 @@ final class Simula_Security_Telemetry_Service {
                 $metrics,
                 $prefix . '_brute_force_events_window',
                 'gauge',
-                'Brute-force activity observed within recent windows.',
+                'Brute-force activity observed within recent windows. Username values use failed Wordfence login attempts when the login-attempt table is available; XML-RPC values use retained hit/live-traffic rows.',
                 array_merge(
                     self::build_window_metric_samples($site, $data['window_counts'], 'brute_username', ['vector' => 'username']),
                     self::build_window_metric_samples($site, $data['window_counts'], 'brute_xmlrpc', ['vector' => 'xmlrpc'])

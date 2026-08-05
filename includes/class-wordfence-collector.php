@@ -96,6 +96,49 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         return implode(",\n                ", $selects);
     }
 
+    /** Collects failed login counts from Wordfence's dedicated login-attempt table. */
+    public static function collect_failed_login_window_counts($windows, $count_prefix = 'failed_login') {
+        $table = Simula_Security_Telemetry_Wordfence_Schema::wordfence_logins_table();
+        if (!Simula_Security_Telemetry_Wordfence_Schema::table_exists($table)) {
+            return [];
+        }
+
+        $count_prefix = (string) $count_prefix;
+        if (!preg_match('/\A[A-Za-z0-9_]+\z/', $count_prefix)) {
+            return [];
+        }
+
+        $time_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['ctime', 'time', 'created_at']);
+        $fail_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['fail', 'failed']);
+        if ($time_column === null || $fail_column === null) {
+            return [];
+        }
+
+        $time_identifier  = self::quote_identifier($time_column);
+        $fail_identifier  = self::quote_identifier($fail_column);
+        $table_identifier = self::quote_identifier($table);
+        $selects          = [];
+
+        foreach (Simula_Security_Telemetry_Config::WINDOWS as $window) {
+            $selects[] = sprintf(
+                'SUM(CASE WHEN %1$s >= %2$d AND %3$s > 0 THEN 1 ELSE 0 END) AS %4$s_count_%5$s',
+                $time_identifier,
+                (int) $windows[$window],
+                $fail_identifier,
+                $count_prefix,
+                $window
+            );
+        }
+
+        return Simula_Security_Telemetry_Util::db_get_row(
+            "SELECT
+                " . implode(",\n                ", $selects) . "
+            FROM $table_identifier
+            WHERE $time_identifier >= " . (int) $windows['7d'],
+            ARRAY_A
+        );
+    }
+
     /** Returns the bounded Wordfence block-type to exported category map. */
     public static function firewall_block_category_map() {
         return [

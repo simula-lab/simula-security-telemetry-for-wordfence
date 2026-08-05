@@ -16,7 +16,7 @@ final class Simula_Security_Telemetry_Config {
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '3.1.0';
+    public const VERSION        = '3.1.2';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
@@ -122,7 +122,7 @@ final class Simula_Security_Telemetry_Config {
             ],
             'failed_login_attempts_window' => [
                 'label'       => __('Failed login attempts by window', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Failed login activity over 5m, 1h, 24h, and 7d windows.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Failed Wordfence login attempts over 5m, 1h, 24h, and 7d windows.', 'simula-security-telemetry-for-wordfence'),
             ],
             'locked_out_total' => [
                 'label'       => __('Current lockouts', 'simula-security-telemetry-for-wordfence'),

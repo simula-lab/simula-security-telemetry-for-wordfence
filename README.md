@@ -200,9 +200,9 @@ All metrics include a `site` label.
 ### Wordfence activity metrics
 
 - `wordpress_wordfence_blocked_events_total`
-  Deprecated ambiguous alias. This metric counts matching Wordfence hit/live-traffic rows, is cumulative from the plugin's persisted baseline, is not a daily/weekly/monthly count, and may reset if plugin state is deleted or reinitialized. Use Prometheus `increase()` for interval deltas, subject to counter reset behavior.
+  Deprecated ambiguous alias of `wordpress_wordfence_blocked_hit_rows_total`. This metric counts matching Wordfence hit/live-traffic rows, is cumulative from the plugin's persisted baseline, is not a daily/weekly/monthly count, and may reset if plugin state is deleted or reinitialized. Use Prometheus `increase()` for interval deltas, subject to counter reset behavior.
 - `wordpress_wordfence_blocked_events_window{window="5m|1h|24h|7d"}`
-  Deprecated ambiguous alias for retained Wordfence hit/live-traffic rows in recent time windows.
+  Deprecated ambiguous alias of `wordpress_wordfence_blocked_hit_rows_window` for retained Wordfence hit/live-traffic rows in recent time windows.
 - `wordpress_wordfence_blocked_hit_rows_total`
   Cumulative counter of newly observed Wordfence hit/live-traffic rows matching the blocked-hit predicate. This is not the Wordfence Firewall Summary "Attacks Blocked" statistic.
 - `wordpress_wordfence_blocked_hit_rows_window{window="5m|1h|24h|7d"}`
@@ -220,11 +220,11 @@ All metrics include a `site` label.
 - `wordpress_wordfence_blocked_events_by_status_24h{status="..."}`
   Blocked hits over the last 24 hours grouped by HTTP status.
 - `wordpress_wordfence_failed_login_attempts_window{window="5m|1h|24h|7d"}`
-  Failed login activity in recent windows.
+  Failed Wordfence login attempts in recent windows. This uses Wordfence's `wfLogins` table when available and falls back to retained hit/live-traffic row text matching on older or unsupported schemas.
 - `wordpress_wordfence_rate_limited_events_window{window="5m|1h|24h|7d"}`
-  Rate-limited or throttled requests in recent windows.
+  Rate-limited or throttled requests in recent windows. This remains a retained hit/live-traffic heuristic.
 - `wordpress_wordfence_brute_force_events_window{vector="username|xmlrpc",window="5m|1h|24h|7d"}`
-  Brute-force activity in recent windows.
+  Brute-force activity in recent windows. The `username` vector uses failed `wfLogins` rows when available and falls back to retained hit/live-traffic text matching on older or unsupported schemas. The `xmlrpc` vector remains hit/live-traffic based.
 - `wordpress_wordfence_top_attack_sources_24h{source_type="country|ip_range",source="..."}`
   Top blocked attack sources over the last 24 hours.
 - `wordpress_wordfence_latest_hit_timestamp_seconds`

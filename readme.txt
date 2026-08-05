@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.1.0
+Stable tag: 3.1.2
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -245,6 +245,12 @@ The directory that will contain the .prom file must already exist and be writabl
 
 == Changelog ==
 
+= 3.1.2 =
+
+* Count failed-login windows from Wordfence's wfLogins table when available, with the previous hit/live-traffic text heuristic retained as a fallback.
+* Count brute_force_events_window{vector="username"} from failed wfLogins rows when available. The xmlrpc vector remains hit/live-traffic based.
+* Document rate-limited windows as retained hit/live-traffic heuristics.
+
 = 3.1.0 =
 
 * Added Wordfence Firewall Summary-compatible aggregate block metrics by category and 24h, 7d, and 30d reporting window.
@@ -308,6 +314,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 3.1.2 =
+
+Uses Wordfence's wfLogins table for failed-login and username brute-force windows when available, preserving older hit/live-traffic fallback behavior.
 
 = 3.1.0 =
 

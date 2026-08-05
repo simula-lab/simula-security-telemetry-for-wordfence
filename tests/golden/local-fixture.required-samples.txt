@@ -5,6 +5,12 @@ wordpress_wordfence_plugins_network_active_total{site="sstfw-test.local"} 0
 wordpress_wordfence_blocked_hit_rows_total{site="sstfw-test.local"} 395
 wordpress_wordfence_blocked_hit_rows_window{site="sstfw-test.local",window="24h"} 88
 wordpress_wordfence_blocked_hit_rows_window{site="sstfw-test.local",window="7d"} 395
+wordpress_wordfence_failed_login_attempts_window{site="sstfw-test.local",window="1h"} 2
+wordpress_wordfence_failed_login_attempts_window{site="sstfw-test.local",window="24h"} 3
+wordpress_wordfence_failed_login_attempts_window{site="sstfw-test.local",window="7d"} 4
+wordpress_wordfence_brute_force_events_window{site="sstfw-test.local",vector="username",window="1h"} 2
+wordpress_wordfence_brute_force_events_window{site="sstfw-test.local",vector="username",window="24h"} 3
+wordpress_wordfence_brute_force_events_window{site="sstfw-test.local",vector="username",window="7d"} 4
 wordpress_wordfence_firewall_blocks_available{site="sstfw-test.local"} 1
 wordpress_wordfence_firewall_blocks_collection_success{site="sstfw-test.local"} 1
 wordpress_wordfence_firewall_blocks_window{site="sstfw-test.local",category="complex",window="24h"} 52
