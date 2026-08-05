@@ -247,18 +247,15 @@ The directory that will contain the .prom file must already exist and be writabl
 
 = 3.1.2 =
 
-* Count failed-login windows from Wordfence's wfLogins table when available, with the previous hit/live-traffic text heuristic retained as a fallback.
-* Count brute_force_events_window{vector="username"} from failed wfLogins rows when available. The xmlrpc vector remains hit/live-traffic based.
-* Document rate-limited windows as retained hit/live-traffic heuristics.
-
-= 3.1.0 =
-
 * Added Wordfence Firewall Summary-compatible aggregate block metrics by category and 24h, 7d, and 30d reporting window.
 * Added explicit blocked_hit_rows aliases for the existing hit/live-traffic row metrics while keeping blocked_events metrics for compatibility.
 * Added Firewall Summary source availability, collection-success, source-info, and latest-bucket diagnostics.
 * Updated admin and WP-CLI status output to distinguish hit-row metrics from aggregate Firewall Summary metrics.
 * Updated Prometheus rules, Grafana dashboard examples, Docker fixtures, and documentation for source-model comparison and migration.
 * Marked ambiguous blocked_events metric names as deprecated aliases in documentation.
+* Count failed-login windows from Wordfence's wfLogins table when available, with the previous hit/live-traffic text heuristic retained as a fallback.
+* Count brute_force_events_window{vector="username"} from failed wfLogins rows when available. The xmlrpc vector remains hit/live-traffic based.
+* Document rate-limited windows as retained hit/live-traffic heuristics.
 
 = 3.0.0 =
 
