@@ -96,6 +96,121 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         return implode(",\n                ", $selects);
     }
 
+    /** Returns the bounded Wordfence block-type to exported category map. */
+    public static function firewall_block_category_map() {
+        return [
+            'fakegoogle' => 'complex',
+            'badpost'    => 'complex',
+            'country'    => 'complex',
+            'advanced'   => 'complex',
+            'waf'        => 'complex',
+            'throttle'   => 'brute_force',
+            'brute'      => 'brute_force',
+            'blacklist'  => 'blocklist',
+            'manual'     => 'blocklist',
+        ];
+    }
+
+    /** Maps a raw Wordfence block type to a bounded exported category. */
+    public static function firewall_block_category($block_type) {
+        $block_type = strtolower(trim((string) $block_type));
+        $map        = self::firewall_block_category_map();
+
+        return isset($map[$block_type]) ? $map[$block_type] : 'other';
+    }
+
+    /** Returns the supported Firewall Summary reporting windows and their Wordfence day-bucket sizes. */
+    public static function firewall_block_windows() {
+        return [
+            '24h' => 1,
+            '7d'  => 7,
+            '30d' => 30,
+        ];
+    }
+
+    /** Collects Wordfence Firewall Summary-compatible aggregate block counts. */
+    public static function collect_firewall_block_metrics($now) {
+        global $wpdb;
+
+        $result = [
+            'available'          => 0,
+            'collection_success' => 0,
+            'source'             => 'wfBlockedIPLog',
+            'schema'             => 'unsupported',
+            'error_type'         => 'schema_unsupported',
+            'latest_timestamp'   => 0,
+            'counts'             => self::empty_firewall_block_counts(),
+        ];
+
+        $table = Simula_Security_Telemetry_Wordfence_Schema::wordfence_blocked_ip_log_table();
+        if (!Simula_Security_Telemetry_Wordfence_Schema::table_exists($table)) {
+            return $result;
+        }
+
+        $columns            = Simula_Security_Telemetry_Wordfence_Schema::table_columns($table);
+        $day_column         = Simula_Security_Telemetry_Util::resolve_first_candidate($columns, ['unixday', 'unixDay']);
+        $type_column        = Simula_Security_Telemetry_Util::resolve_first_candidate($columns, ['blockType', 'type']);
+        $count_column       = Simula_Security_Telemetry_Util::resolve_first_candidate($columns, ['blockCount']);
+        $has_standard_shape = $day_column !== null && $type_column !== null && $count_column !== null;
+
+        if (!$has_standard_shape) {
+            return $result;
+        }
+
+        $result['available']  = 1;
+        $result['schema']     = 'wfblockediplog-unixday-blocktype-blockcount';
+        $result['error_type'] = '';
+
+        $table_identifier = self::quote_identifier($table);
+        $day_identifier   = self::quote_identifier($day_column);
+        $type_identifier  = self::quote_identifier($type_column);
+        $count_identifier = self::quote_identifier($count_column);
+        $thresholds       = self::firewall_block_unixday_thresholds($now);
+        $minimum_day      = min($thresholds);
+        $previous_error   = (string) $wpdb->last_error;
+
+        $rows = Simula_Security_Telemetry_Util::db_get_results(
+            "SELECT $day_identifier AS unixday, $type_identifier AS block_type, SUM($count_identifier) AS block_count
+            FROM $table_identifier
+            WHERE $day_identifier >= " . (int) $minimum_day . "
+            GROUP BY $day_identifier, $type_identifier",
+            ARRAY_A
+        );
+
+        if ($wpdb->last_error !== '' && $wpdb->last_error !== $previous_error) {
+            $result['collection_success'] = 0;
+            $result['error_type']         = 'query_failed';
+            $wpdb->last_error             = $previous_error;
+
+            return $result;
+        }
+
+        foreach ((array) $rows as $row) {
+            $unixday = isset($row['unixday']) ? (int) $row['unixday'] : 0;
+            if ($unixday <= 0) {
+                continue;
+            }
+
+            $category = self::firewall_block_category($row['block_type'] ?? '');
+            $count    = max(0, (int) ($row['block_count'] ?? 0));
+
+            foreach ($thresholds as $window => $threshold) {
+                if ($unixday >= $threshold) {
+                    $result['counts'][$window][$category] += $count;
+                }
+            }
+
+            $timestamp = $unixday * DAY_IN_SECONDS;
+            if ($timestamp > $result['latest_timestamp']) {
+                $result['latest_timestamp'] = $timestamp;
+            }
+        }
+
+        $result['collection_success'] = 1;
+
+        return $result;
+    }
+
     /** Collects the top blocked attack sources by country and normalized IP range. */
     public static function collect_top_attack_sources($table, $time_identifier, $blocked_where, $since_timestamp) {
         global $wpdb;
@@ -221,6 +336,33 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         }
 
         return $counts;
+    }
+
+    /** Builds a zero-filled Firewall Summary count matrix. */
+    private static function empty_firewall_block_counts() {
+        $counts = [];
+
+        foreach (self::firewall_block_windows() as $window => $days) {
+            $counts[$window] = [
+                'complex'     => 0,
+                'brute_force' => 0,
+                'blocklist'   => 0,
+                'other'       => 0,
+            ];
+        }
+
+        return $counts;
+    }
+
+    /** Converts supported Firewall Summary windows to Wordfence unixday thresholds. */
+    private static function firewall_block_unixday_thresholds($now) {
+        $thresholds = [];
+
+        foreach (self::firewall_block_windows() as $window => $days) {
+            $thresholds[$window] = (int) floor(((int) $now - ((int) $days * DAY_IN_SECONDS)) / DAY_IN_SECONDS);
+        }
+
+        return $thresholds;
     }
 
     /** Collects Wordfence two-factor status and protected-user counts. */

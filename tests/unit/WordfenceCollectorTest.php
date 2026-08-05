@@ -14,6 +14,27 @@ return [
         sstfw_assert_same('(a = 1 AND b = 2)', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'combine_where_all', [['a = 1', '', 'b = 2']]));
         sstfw_assert_same('0=1', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'combine_where_all', [['a = 1', '0=1']]));
     },
+    'firewall block category mapping is bounded and complete' => function () {
+        foreach ([
+            ['fakegoogle', 'complex'],
+            ['badpost', 'complex'],
+            ['country', 'complex'],
+            ['advanced', 'complex'],
+            ['waf', 'complex'],
+            ['throttle', 'brute_force'],
+            ['brute', 'brute_force'],
+            ['blacklist', 'blocklist'],
+            ['manual', 'blocklist'],
+            ['new-wordfence-type', 'other'],
+            ['', 'other'],
+            [null, 'other'],
+        ] as $case) {
+            sstfw_assert_same($case[1], Simula_Security_Telemetry_Wordfence_Collector::firewall_block_category($case[0]));
+        }
+    },
+    'firewall block windows are the supported bounded labels' => function () {
+        sstfw_assert_same(['24h' => 1, '7d' => 7, '30d' => 30], Simula_Security_Telemetry_Wordfence_Collector::firewall_block_windows());
+    },
     'normalize_ip_range bounds ipv4 ipv6 and integer addresses' => function () {
         sstfw_assert_same('203.0.113.0/24', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'normalize_ip_range', ['203.0.113.44']));
         sstfw_assert_same('203.0.113.0/24', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'normalize_ip_range', ['3405803820']));

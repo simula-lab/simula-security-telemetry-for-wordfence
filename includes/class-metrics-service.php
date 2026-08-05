@@ -155,6 +155,7 @@ final class Simula_Security_Telemetry_Service {
             'status_counts'      => [],
             'top_attack_sources' => [],
             'lockout_counts'     => [],
+            'firewall_blocks'     => [],
             'two_factor_metrics' => [],
             'scan_issue_metrics' => [],
             'source_freshness'   => [],
@@ -167,7 +168,7 @@ final class Simula_Security_Telemetry_Service {
             'state_updates'      => [],
         ];
 
-        if ($flags['blocked_events_total']) {
+        if ($flags['blocked_events_total'] || $flags['blocked_hit_rows_total']) {
             $table_identifier = Simula_Security_Telemetry_Util::quote_identifier($table);
             $id_identifier = Simula_Security_Telemetry_Util::quote_identifier($id_column);
             $incremental = Simula_Security_Telemetry_Util::db_get_row(
@@ -203,6 +204,14 @@ final class Simula_Security_Telemetry_Service {
 
         if ($flags['locked_out_total']) {
             $data['lockout_counts'] = Simula_Security_Telemetry_Wordfence_Collector::collect_lockout_counts($now);
+        }
+
+        if ($flags['needs_firewall_block_metrics']) {
+            $data['firewall_blocks'] = Simula_Security_Telemetry_Wordfence_Collector::collect_firewall_block_metrics($now);
+            $data['state_updates'] = array_merge(
+                $data['state_updates'],
+                self::firewall_block_state_updates($data['firewall_blocks'], $now)
+            );
         }
 
         if ($flags['needs_source_freshness']) {
@@ -280,9 +289,16 @@ final class Simula_Security_Telemetry_Service {
 
         $flags['needs_window_counts'] =
             $flags['blocked_events_window'] ||
+            $flags['blocked_hit_rows_window'] ||
             $flags['failed_login_attempts_window'] ||
             $flags['rate_limited_events_window'] ||
             $flags['brute_force_events_window'];
+        $flags['needs_firewall_block_metrics'] =
+            $flags['firewall_blocks_window'] ||
+            $flags['firewall_blocks_available'] ||
+            $flags['firewall_blocks_collection_success'] ||
+            $flags['firewall_blocks_source_info'] ||
+            $flags['firewall_blocks_latest_timestamp_seconds'];
         $flags['needs_scan_metrics'] =
             $flags['scan_issues_by_severity'] ||
             $flags['scan_findings_total'] ||
@@ -395,7 +411,7 @@ final class Simula_Security_Telemetry_Service {
         $window_selects = [];
         $table_identifier = Simula_Security_Telemetry_Util::quote_identifier($table);
 
-        if (!empty($flags['blocked_events_window'])) {
+        if (!empty($flags['blocked_events_window']) || !empty($flags['blocked_hit_rows_window'])) {
             $window_selects[] = Simula_Security_Telemetry_Wordfence_Collector::build_window_count_select_sql('blocked', $where_sql, $time_identifier, $windows);
         }
 
@@ -469,6 +485,7 @@ final class Simula_Security_Telemetry_Service {
 
         $metrics = array_merge($metrics, self::render_core_export_metrics($options, $now, $data));
         $metrics = array_merge($metrics, self::render_blocked_event_metrics($data));
+        $metrics = array_merge($metrics, self::render_firewall_block_metrics($data));
         $metrics = array_merge($metrics, self::render_activity_window_metrics($data));
         $metrics = array_merge($metrics, self::render_access_control_metrics($data));
         $metrics = array_merge($metrics, self::render_scan_metrics($data));
@@ -576,7 +593,19 @@ final class Simula_Security_Telemetry_Service {
                 $metrics,
                 $prefix . '_blocked_events_total',
                 'counter',
-                'Cumulative count of newly observed blocked Wordfence hits.',
+                'Deprecated ambiguous alias: cumulative count of newly observed blocked Wordfence hit/live-traffic rows; not the Wordfence Firewall Summary.',
+                [
+                    ['labels' => ['site' => $site], 'value' => $data['blocked_total']],
+                ]
+            );
+        }
+
+        if (!empty($flags['blocked_hit_rows_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_blocked_hit_rows_total',
+                'counter',
+                'Cumulative count of newly observed Wordfence hit/live-traffic rows matching the blocked-hit predicate.',
                 [
                     ['labels' => ['site' => $site], 'value' => $data['blocked_total']],
                 ]
@@ -588,7 +617,17 @@ final class Simula_Security_Telemetry_Service {
                 $metrics,
                 $prefix . '_blocked_events_window',
                 'gauge',
-                'Blocked Wordfence hits seen within recent windows.',
+                'Deprecated ambiguous alias: blocked Wordfence hit/live-traffic rows seen within recent windows.',
+                self::build_window_metric_samples($site, $data['window_counts'], 'blocked')
+            );
+        }
+
+        if (!empty($flags['blocked_hit_rows_window'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_blocked_hit_rows_window',
+                'gauge',
+                'Wordfence hit/live-traffic rows matching the blocked-hit predicate seen within recent windows.',
                 self::build_window_metric_samples($site, $data['window_counts'], 'blocked')
             );
         }
@@ -637,6 +676,95 @@ final class Simula_Security_Telemetry_Service {
                 $samples
             );
         }
+
+        return $metrics;
+    }
+
+    /** Renders Wordfence Firewall Summary-compatible aggregate metric families. */
+    private static function render_firewall_block_metrics($data) {
+        $metrics = [];
+        $flags   = $data['flags'];
+        $prefix  = $data['prefix'];
+        $site    = $data['site'];
+        $summary = is_array($data['firewall_blocks'] ?? null) ? $data['firewall_blocks'] : [];
+        $available = (int) ($summary['available'] ?? 0);
+
+        if (!empty($flags['firewall_blocks_available'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_firewall_blocks_available',
+                'gauge',
+                'Whether the supported Wordfence aggregate Firewall Summary block source is available.',
+                [
+                    ['labels' => ['site' => $site], 'value' => $available],
+                ]
+            );
+        }
+
+        if (!empty($flags['firewall_blocks_collection_success'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_firewall_blocks_collection_success',
+                'gauge',
+                'Whether the latest Wordfence Firewall Summary aggregate collection completed successfully.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($summary['collection_success'] ?? 0)],
+                ]
+            );
+        }
+
+        if (!empty($flags['firewall_blocks_source_info']) && $available === 1) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_firewall_blocks_source_info',
+                'gauge',
+                'Bounded metadata for the detected Wordfence Firewall Summary aggregate source.',
+                [
+                    [
+                        'labels' => [
+                            'site'   => $site,
+                            'source' => Simula_Security_Telemetry_Output::escape_label((string) ($summary['source'] ?? 'wfBlockedIPLog')),
+                            'schema' => Simula_Security_Telemetry_Output::escape_label((string) ($summary['schema'] ?? 'unsupported')),
+                        ],
+                        'value' => 1,
+                    ],
+                ]
+            );
+        }
+
+        if (!empty($flags['firewall_blocks_latest_timestamp_seconds']) && $available === 1 && !empty($summary['collection_success'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_firewall_blocks_latest_timestamp_seconds',
+                'gauge',
+                'Unix timestamp for the latest Wordfence aggregate Firewall Summary day bucket.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($summary['latest_timestamp'] ?? 0)],
+                ]
+            );
+        }
+
+        if (empty($flags['firewall_blocks_window']) || $available !== 1 || empty($summary['collection_success'])) {
+            return $metrics;
+        }
+
+        $samples = [];
+        foreach (Simula_Security_Telemetry_Wordfence_Collector::firewall_block_windows() as $window => $days) {
+            foreach (['complex', 'brute_force', 'blocklist', 'other'] as $category) {
+                $samples[] = [
+                    'labels' => ['site' => $site, 'category' => $category, 'window' => $window],
+                    'value'  => (int) ($summary['counts'][$window][$category] ?? 0),
+                ];
+            }
+        }
+
+        Simula_Security_Telemetry_Output::append_metric_family(
+            $metrics,
+            $prefix . '_firewall_blocks_window',
+            'gauge',
+            'Wordfence aggregate Firewall Summary block counts by bounded category and reporting window.',
+            $samples
+        );
 
         return $metrics;
     }
@@ -1299,6 +1427,25 @@ final class Simula_Security_Telemetry_Service {
         }
 
         return $samples;
+    }
+
+    /** Converts the latest Firewall Summary collection result into persisted status fields. */
+    private static function firewall_block_state_updates($summary, $now) {
+        $summary = is_array($summary) ? $summary : [];
+        $updates = [
+            'firewall_blocks_available'          => (int) ($summary['available'] ?? 0),
+            'firewall_blocks_collection_success' => (int) ($summary['collection_success'] ?? 0),
+            'firewall_blocks_source'             => (string) ($summary['source'] ?? 'wfBlockedIPLog'),
+            'firewall_blocks_schema'             => (string) ($summary['schema'] ?? 'unsupported'),
+            'firewall_blocks_error_type'         => (string) ($summary['error_type'] ?? ''),
+            'firewall_blocks_last_collection'    => (int) $now,
+        ];
+
+        if (!empty($summary['collection_success'])) {
+            $updates['firewall_blocks_last_success'] = (int) $now;
+        }
+
+        return $updates;
     }
 
     /** Writes failure metrics for an unsuccessful metrics export attempt. */

@@ -15,6 +15,11 @@ final class Simula_Security_Telemetry_Wordfence_Schema {
         return self::wordfence_table_aliases(['wfHits', 'wfhits']);
     }
 
+    /** Returns the resolved Wordfence aggregate blocked-IP log table name. */
+    public static function wordfence_blocked_ip_log_table() {
+        return self::wordfence_table_aliases(['wfBlockedIPLog', 'wfblockediplog']);
+    }
+
     /** Checks whether a database table exists, using a local cache. */
     public static function table_exists($table) {
         static $cache = [];
@@ -222,4 +227,3 @@ final class Simula_Security_Telemetry_Wordfence_Schema {
         return $cache[$suffix];
     }
 }
-

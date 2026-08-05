@@ -16,7 +16,7 @@ final class Simula_Security_Telemetry_Config {
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '3.0.0-alpha';
+    public const VERSION        = '3.1.0';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
@@ -82,11 +82,39 @@ final class Simula_Security_Telemetry_Config {
             ],
             'blocked_events_total' => [
                 'label'       => __('Blocked events total', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Cumulative counter of newly observed blocked Wordfence hits.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Deprecated ambiguous alias: cumulative counter of newly observed blocked Wordfence hit/live-traffic rows, not the Wordfence Firewall Summary.', 'simula-security-telemetry-for-wordfence'),
             ],
             'blocked_events_window' => [
                 'label'       => __('Blocked events by window', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Blocked Wordfence hits over 5m, 1h, 24h, and 7d windows.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Deprecated ambiguous alias: blocked Wordfence hit/live-traffic rows over 5m, 1h, 24h, and 7d windows.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'blocked_hit_rows_total' => [
+                'label'       => __('Blocked hit rows total', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Cumulative counter of newly observed Wordfence hit/live-traffic rows matching the blocked-hit predicate.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'blocked_hit_rows_window' => [
+                'label'       => __('Blocked hit rows by window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Retained Wordfence hit/live-traffic rows matching the blocked-hit predicate over 5m, 1h, 24h, and 7d windows.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'firewall_blocks_window' => [
+                'label'       => __('Wordfence Firewall Summary metrics', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Wordfence aggregate Firewall Summary block counts by bounded category over 24h, 7d, and 30d windows.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'firewall_blocks_available' => [
+                'label'       => __('Firewall Summary source available', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Reports whether the supported Wordfence aggregate block source table and columns are available.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'firewall_blocks_collection_success' => [
+                'label'       => __('Firewall Summary collection success', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Reports whether the latest Firewall Summary aggregate collection completed successfully.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'firewall_blocks_source_info' => [
+                'label'       => __('Firewall Summary source info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Bounded metadata for the detected Firewall Summary aggregate source schema.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'firewall_blocks_latest_timestamp_seconds' => [
+                'label'       => __('Firewall Summary latest timestamp', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Unix timestamp for the latest Wordfence aggregate block day bucket when available.', 'simula-security-telemetry-for-wordfence'),
             ],
             'blocked_events_by_status_24h' => [
                 'label'       => __('Blocked events by status (24h)', 'simula-security-telemetry-for-wordfence'),

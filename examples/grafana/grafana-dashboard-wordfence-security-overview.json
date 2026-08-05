@@ -35,8 +35,8 @@
       "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
       "id": 3,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum(wordpress_wordfence_blocked_events_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}}", "refId": "A"}],
-      "title": "Blocked 5m",
+      "targets": [{"expr": "sum(wordpress_wordfence_blocked_hit_rows_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}}", "refId": "A"}],
+      "title": "Blocked Hit Rows 5m",
       "type": "stat"
     },
     {
@@ -75,8 +75,8 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
       "id": 7,
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"expr": "sum(wordpress_wordfence_blocked_events_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "blocked {{site}}", "refId": "A"}, {"expr": "sum(wordpress_wordfence_failed_login_attempts_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "failed login {{site}}", "refId": "B"}, {"expr": "sum(wordpress_wordfence_rate_limited_events_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "rate limited {{site}}", "refId": "C"}],
-      "title": "Security Activity",
+      "targets": [{"expr": "sum(wordpress_wordfence_blocked_hit_rows_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "blocked hit rows {{site}}", "refId": "A"}, {"expr": "sum(wordpress_wordfence_failed_login_attempts_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "failed login {{site}}", "refId": "B"}, {"expr": "sum(wordpress_wordfence_rate_limited_events_window{window=\"5m\",instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "rate limited {{site}}", "refId": "C"}],
+      "title": "Blocked Hit Row Activity",
       "type": "timeseries"
     },
     {
@@ -198,8 +198,52 @@
       "type": "bargauge"
     },
     {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 44},
+      "id": 21,
+      "options": {"displayMode": "gradient", "legend": {"displayMode": "list", "placement": "bottom"}, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true},
+      "targets": [{"expr": "sum(wordpress_wordfence_firewall_blocks_window{instance_name=~\"${instance_name:regex}\"}) by (site, window)", "legendFormat": "{{site}} {{window}}", "refId": "A"}],
+      "title": "Wordfence Firewall Summary",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 44},
+      "id": 22,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"expr": "sum(wordpress_wordfence_firewall_blocks_window{instance_name=~\"${instance_name:regex}\"}) by (site, window, category)", "legendFormat": "{{site}} {{window}} {{category}}", "refId": "A"}],
+      "title": "Firewall Summary by Category",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 52},
+      "id": 23,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"expr": "sum(wordpress_wordfence_blocked_hit_rows_window{window=~\"24h|7d\",instance_name=~\"${instance_name:regex}\"}) by (site, window) / sum(wordpress_wordfence_firewall_blocks_window{window=~\"24h|7d\",instance_name=~\"${instance_name:regex}\"}) by (site, window)", "legendFormat": "{{site}} {{window}}", "refId": "A"}],
+      "title": "Telemetry Source Comparison",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "bool"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 52},
+      "id": 24,
+      "options": {"displayMode": "gradient", "legend": {"displayMode": "list", "placement": "bottom"}, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true},
+      "targets": [
+        {"expr": "wordpress_wordfence_firewall_blocks_available{instance_name=~\"${instance_name:regex}\"}", "legendFormat": "{{site}} available", "refId": "A"},
+        {"expr": "wordpress_wordfence_firewall_blocks_collection_success{instance_name=~\"${instance_name:regex}\"}", "legendFormat": "{{site}} collection success", "refId": "B"},
+        {"expr": "wordpress_wordfence_export_success{instance_name=~\"${instance_name:regex}\"}", "legendFormat": "{{site}} export success", "refId": "C"}
+      ],
+      "title": "Collector Status",
+      "type": "bargauge"
+    },
+    {
       "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 44},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 60},
       "id": 20,
       "options": {"dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": false, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true},
       "targets": [{"expr": "{instance_name=~\"${instance_name:regex}\"} |~ \"Wordfence blocked request|\\\"wf_table\\\"\"", "queryType": "range", "refId": "A"}],

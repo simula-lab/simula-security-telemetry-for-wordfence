@@ -54,6 +54,10 @@ $wpdb->query(
     "CREATE TABLE IF NOT EXISTS `$blocked_table` (
         `id` bigint unsigned NOT NULL AUTO_INCREMENT,
         `IP` varchar(45) DEFAULT NULL,
+        `countryCode` varchar(8) DEFAULT NULL,
+        `unixday` int unsigned DEFAULT NULL,
+        `blockType` varchar(32) DEFAULT NULL,
+        `blockCount` int unsigned DEFAULT NULL,
         `username` varchar(191) DEFAULT NULL,
         `expiration` bigint unsigned DEFAULT NULL,
         PRIMARY KEY (`id`)
@@ -103,6 +107,47 @@ foreach ($hit_rows as $row) {
     );
 }
 
+for ($i = 0; $i < 84; $i++) {
+    $wpdb->insert(
+        $hits_table,
+        [
+            'attackLogTime' => $now - 120 - $i,
+            'ctime' => $now - 120 - $i,
+            'IP' => '203.0.113.50',
+            'ctry' => 'US',
+            'statusCode' => 403,
+            'action' => 'blocked:waf',
+            'actionDescription' => 'Bulk fixture blocked request',
+            'method' => 'GET',
+            'URL' => '/fixture-current-block',
+            'referer' => '',
+            'UA' => 'Fixture user agent',
+        ],
+        ['%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s']
+    );
+}
+
+for ($i = 0; $i < 306; $i++) {
+    $timestamp = $now - (2 * DAY_IN_SECONDS) - $i;
+    $wpdb->insert(
+        $hits_table,
+        [
+            'attackLogTime' => $timestamp,
+            'ctime' => $timestamp,
+            'IP' => '198.51.100.80',
+            'ctry' => 'DE',
+            'statusCode' => 403,
+            'action' => 'blocked:waf',
+            'actionDescription' => 'Bulk fixture older blocked request',
+            'method' => 'GET',
+            'URL' => '/fixture-week-block',
+            'referer' => '',
+            'UA' => 'Fixture user agent',
+        ],
+        ['%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s']
+    );
+}
+
 $issue_rows = [
     ['critical', 'malware', 'Malware signature detected', 'Malicious webshell marker found in fixture file.', $now - 120],
     ['high', 'vulnerability', 'Plugin vulnerability update available', 'A plugin security update is available.', $now - 180],
@@ -144,6 +189,33 @@ $wpdb->insert(
     ],
     ['%s', '%s', '%d']
 );
+
+$current_day = (int) floor(($now - 60) / DAY_IN_SECONDS);
+$week_day    = (int) floor(($now - (2 * DAY_IN_SECONDS)) / DAY_IN_SECONDS);
+$month_day   = (int) floor(($now - (8 * DAY_IN_SECONDS)) / DAY_IN_SECONDS);
+$aggregate_block_rows = [
+    ['203.0.113.60', 'US', $current_day, 'waf', 52],
+    ['203.0.113.61', 'US', $current_day, 'brute', 451],
+    ['198.51.100.60', 'DE', $week_day, 'badpost', 69],
+    ['198.51.100.61', 'DE', $week_day, 'throttle', 770],
+    ['192.0.2.60', 'FR', $month_day, 'advanced', 506],
+    ['192.0.2.61', 'FR', $month_day, 'brute', 4006],
+];
+
+foreach ($aggregate_block_rows as $row) {
+    $wpdb->insert(
+        $blocked_table,
+        [
+            'IP' => $row[0],
+            'countryCode' => $row[1],
+            'unixday' => $row[2],
+            'blockType' => $row[3],
+            'blockCount' => $row[4],
+            'expiration' => 0,
+        ],
+        ['%s', '%s', '%d', '%s', '%d', '%d']
+    );
+}
 
 if ($wpdb->last_error !== '') {
     WP_CLI::error($wpdb->last_error);

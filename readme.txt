@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.0.0
+Stable tag: 3.1.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -25,7 +25,8 @@ By default, the plugin runs a fast collector every 15 minutes and a slow collect
 * Configurable cron interval
 * Separate fast and slow collector intervals
 * Per-metric-family enable or disable controls
-* Blocked event counters and recent activity windows
+* Wordfence Firewall Summary-compatible aggregate block counts
+* Blocked hit-row counters and recent activity windows
 * Blocked event counts by HTTP status code over the last 24 hours
 * Failed login, rate-limited, and brute-force activity windows
 * Current lockout counts for IPs and users
@@ -42,7 +43,11 @@ By default, the plugin runs a fast collector every 15 minutes and a slow collect
 * Source freshness and WordPress/Wordfence posture metrics
 * A ready-to-import Grafana dashboard and sample Prometheus alert rules
 
-Blocked events are currently identified from the Wordfence hits table where:
+Simula exposes two distinct Wordfence blocking measurements. blocked_hit_rows_* counts retained hit/live-traffic records matching a blocked-request predicate. firewall_blocks_* reports Wordfence's aggregate Firewall Summary counts by category. The values are not expected to be equal because they have different sources, units, retention behavior, and categorization.
+
+The legacy blocked_events_* names are deprecated aliases for the hit/live-traffic row model. They are still emitted for compatibility, but they must not be treated as the Wordfence Firewall Summary "Attacks Blocked" statistic.
+
+Blocked hit rows are currently identified from the Wordfence hits table where:
 
 * action matches blocked:*
 * or the HTTP status code is 403 or 503
@@ -104,6 +109,13 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_error_info
 * wordpress_wordfence_blocked_events_total
 * wordpress_wordfence_blocked_events_window
+* wordpress_wordfence_blocked_hit_rows_total
+* wordpress_wordfence_blocked_hit_rows_window
+* wordpress_wordfence_firewall_blocks_window
+* wordpress_wordfence_firewall_blocks_available
+* wordpress_wordfence_firewall_blocks_collection_success
+* wordpress_wordfence_firewall_blocks_source_info
+* wordpress_wordfence_firewall_blocks_latest_timestamp_seconds
 * wordpress_wordfence_blocked_events_by_status_24h
 * wordpress_wordfence_failed_login_attempts_window
 * wordpress_wordfence_rate_limited_events_window
@@ -197,6 +209,8 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 
 Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory and per-admin inventory are disabled by default because plugin names, versions, active state, and administrator identities can expose sensitive operational details. Admin inventory uses hashed identity labels by default when enabled.
 
+blocked_events_total and blocked_events_window are deprecated ambiguous aliases for hit/live-traffic row counts. blocked_hit_rows_total and blocked_hit_rows_window are the explicit names for that same low-level data model. firewall_blocks_window is the Wordfence Firewall Summary-compatible aggregate metric; it reads wfBlockedIPLog/wfblockediplog with unixday, blockType, and SUM(blockCount), maps known block types to complex, brute_force, and blocklist, and bounds all other values to other. If the aggregate source is unavailable, the availability metric is 0 and category/window series are omitted instead of fabricated.
+
 = What does the incident log export do? =
 
 It appends newly observed blocked Wordfence hits to a local .log or .jsonl path. The default text format preserves the original plain-text log line. The JSON Lines format emits one structured JSON object per blocked event for Loki, ELK, OpenSearch, and similar tooling. The exported incident timestamp is taken from the Wordfence hit row, falling back across known timestamp columns before using export time. The exporter tracks the last processed hit ID, and you can reset the incident cursor from the admin UI or WP-CLI to backfill retained history up to the configured per-run limit.
@@ -230,6 +244,15 @@ The directory that will contain the .prom file must already exist and be writabl
 1. Settings screen showing Prometheus metric controls, incident log settings, manual actions, and current exporter state.
 
 == Changelog ==
+
+= 3.1.0 =
+
+* Added Wordfence Firewall Summary-compatible aggregate block metrics by category and 24h, 7d, and 30d reporting window.
+* Added explicit blocked_hit_rows aliases for the existing hit/live-traffic row metrics while keeping blocked_events metrics for compatibility.
+* Added Firewall Summary source availability, collection-success, source-info, and latest-bucket diagnostics.
+* Updated admin and WP-CLI status output to distinguish hit-row metrics from aggregate Firewall Summary metrics.
+* Updated Prometheus rules, Grafana dashboard examples, Docker fixtures, and documentation for source-model comparison and migration.
+* Marked ambiguous blocked_events metric names as deprecated aliases in documentation.
 
 = 3.0.0 =
 
@@ -285,6 +308,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 3.1.0 =
+
+Adds Wordfence Firewall Summary-compatible aggregate block metrics and explicit blocked_hit_rows aliases. Existing blocked_events metrics remain available but are now documented as deprecated hit/live-traffic row aliases, not Wordfence Firewall Summary totals.
 
 = 2.3.3 =
 
