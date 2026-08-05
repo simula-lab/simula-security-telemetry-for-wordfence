@@ -20,13 +20,13 @@ groups:
           description: The latest export failed. Check WordPress admin or WP-CLI status for the detailed error.
 
       - alert: WordfenceBlockedRequestSpike
-        expr: wordpress_wordfence_blocked_events_window{window="5m"} > 100
+        expr: wordpress_wordfence_blocked_hit_rows_window{window="5m"} > 100
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: Wordfence blocked request spike on {{ $labels.site }}
-          description: More than 100 blocked requests were observed in a 5 minute window.
+          summary: Wordfence blocked hit-row spike on {{ $labels.site }}
+          description: More than 100 retained Wordfence hit/live-traffic rows matching the blocked-hit predicate were observed in a 5 minute window.
 
       - alert: WordfenceFailedLoginBurst
         expr: wordpress_wordfence_failed_login_attempts_window{window="5m"} > 25
@@ -126,3 +126,35 @@ groups:
         annotations:
           summary: Wordfence source data appears stale on {{ $labels.site }}
           description: No recent Wordfence hit data has been observed for more than 24 hours.
+
+  - name: simula-wordfence-firewall-summary
+    rules:
+      - record: site:wordpress_wordfence_firewall_blocks:sum
+        expr: |
+          sum by (site, window) (
+            wordpress_wordfence_firewall_blocks_window
+          )
+
+      - record: site:wordpress_wordfence_hit_rows_to_firewall_blocks:ratio
+        expr: |
+          sum by (site, window) (
+            wordpress_wordfence_blocked_hit_rows_window
+          )
+          /
+          sum by (site, window) (
+            wordpress_wordfence_firewall_blocks_window
+          )
+
+      - alert: WordfenceTelemetrySourcesDiverge
+        expr: |
+          site:wordpress_wordfence_hit_rows_to_firewall_blocks:ratio < 0.25
+          and
+          sum by (site, window) (
+            wordpress_wordfence_firewall_blocks_window
+          ) > 100
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: Wordfence hit-row and firewall-summary telemetry differ materially
+          description: The two Wordfence data sources have diverged. This is diagnostic and does not by itself indicate exporter failure.
