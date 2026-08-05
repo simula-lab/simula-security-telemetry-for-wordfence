@@ -39,4 +39,127 @@ return [
         sstfw_assert_same('write_failed', Simula_Security_Telemetry_Output::classify_error_type('Directory is not writable'));
         sstfw_assert_same('unknown', Simula_Security_Telemetry_Output::classify_error_type('Something else'));
     },
+    'firewall summary rendering emits bounded aggregate samples' => function () {
+        $data = [
+            'flags' => [
+                'firewall_blocks_window' => true,
+                'firewall_blocks_available' => true,
+                'firewall_blocks_collection_success' => true,
+                'firewall_blocks_source_info' => true,
+                'firewall_blocks_latest_timestamp_seconds' => true,
+            ],
+            'prefix' => 'wordpress_wordfence',
+            'site' => 'example.test',
+            'firewall_blocks' => [
+                'available' => 1,
+                'collection_success' => 1,
+                'source' => 'wfBlockedIPLog',
+                'schema' => 'wfblockediplog-unixday-blocktype-blockcount',
+                'latest_timestamp' => 172800,
+                'counts' => [
+                    '24h' => ['complex' => 52, 'brute_force' => 451, 'blocklist' => 0, 'other' => 0],
+                    '7d' => ['complex' => 121, 'brute_force' => 1221, 'blocklist' => 0, 'other' => 0],
+                    '30d' => ['complex' => 627, 'brute_force' => 5227, 'blocklist' => 0, 'other' => 0],
+                ],
+            ],
+        ];
+
+        $lines = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'render_firewall_block_metrics', [$data]);
+        $body = implode("\n", $lines);
+
+        sstfw_assert_true(strpos($body, '# TYPE wordpress_wordfence_firewall_blocks_window gauge') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_available{site="example.test"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_collection_success{site="example.test"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'source="wfBlockedIPLog",schema="wfblockediplog-unixday-blocktype-blockcount"') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_window{site="example.test",category="complex",window="24h"} 52') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_window{site="example.test",category="brute_force",window="30d"} 5227') !== false);
+    },
+    'firewall summary unavailable does not emit fabricated category counts' => function () {
+        $data = [
+            'flags' => [
+                'firewall_blocks_window' => true,
+                'firewall_blocks_available' => true,
+                'firewall_blocks_collection_success' => true,
+                'firewall_blocks_source_info' => true,
+                'firewall_blocks_latest_timestamp_seconds' => true,
+            ],
+            'prefix' => 'wordpress_wordfence',
+            'site' => 'example.test',
+            'firewall_blocks' => [
+                'available' => 0,
+                'collection_success' => 0,
+                'schema' => 'unsupported',
+                'counts' => [],
+            ],
+        ];
+
+        $lines = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'render_firewall_block_metrics', [$data]);
+        $body = implode("\n", $lines);
+
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_available{site="example.test"} 0') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_collection_success{site="example.test"} 0') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_window{') === false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_firewall_blocks_source_info{') === false);
+    },
+    'blocked hit row aliases render equal to legacy values' => function () {
+        $data = [
+            'flags' => [
+                'blocked_events_total' => true,
+                'blocked_hit_rows_total' => true,
+                'blocked_events_window' => true,
+                'blocked_hit_rows_window' => true,
+                'blocked_events_by_status_24h' => false,
+                'top_attack_sources_24h' => false,
+            ],
+            'prefix' => 'wordpress_wordfence',
+            'site' => 'example.test',
+            'blocked_total' => 3651,
+            'window_counts' => [
+                'blocked_count_5m' => 3,
+                'blocked_count_1h' => 9,
+                'blocked_count_24h' => 88,
+                'blocked_count_7d' => 395,
+            ],
+        ];
+
+        $lines = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'render_blocked_event_metrics', [$data]);
+        $body = implode("\n", $lines);
+
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_blocked_events_total{site="example.test"} 3651') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_blocked_hit_rows_total{site="example.test"} 3651') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_blocked_events_window{site="example.test",window="24h"} 88') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_blocked_hit_rows_window{site="example.test",window="24h"} 88') !== false);
+    },
+    'activity windows render login-backed username brute force values independently from xmlrpc values' => function () {
+        $data = [
+            'flags' => [
+                'failed_login_attempts_window' => true,
+                'rate_limited_events_window' => false,
+                'brute_force_events_window' => true,
+            ],
+            'prefix' => 'wordpress_wordfence',
+            'site' => 'example.test',
+            'window_counts' => [
+                'failed_login_count_5m' => 2,
+                'failed_login_count_1h' => 2,
+                'failed_login_count_24h' => 3,
+                'failed_login_count_7d' => 4,
+                'brute_username_count_5m' => 2,
+                'brute_username_count_1h' => 2,
+                'brute_username_count_24h' => 3,
+                'brute_username_count_7d' => 4,
+                'brute_xmlrpc_count_5m' => 0,
+                'brute_xmlrpc_count_1h' => 1,
+                'brute_xmlrpc_count_24h' => 1,
+                'brute_xmlrpc_count_7d' => 1,
+            ],
+        ];
+
+        $lines = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'render_activity_window_metrics', [$data]);
+        $body = implode("\n", $lines);
+
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_failed_login_attempts_window{site="example.test",window="24h"} 3') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_brute_force_events_window{site="example.test",vector="username",window="7d"} 4') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_brute_force_events_window{site="example.test",vector="xmlrpc",window="1h"} 1') !== false);
+    },
 ];

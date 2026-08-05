@@ -26,7 +26,8 @@ By default, it runs a fast collector every 15 minutes and a slow collector hourl
 - Configurable cron interval
 - Separate fast and slow collector intervals
 - Per-metric-family enable or disable controls
-- Blocked event counters and recent activity windows
+- Wordfence Firewall Summary-compatible aggregate block counts
+- Blocked hit-row counters and recent activity windows
 - Blocked event counts by HTTP status code
 - Failed login, rate-limited, and brute-force activity windows
 - Current lockout counts for IPs and users
@@ -44,7 +45,11 @@ By default, it runs a fast collector every 15 minutes and a slow collector hourl
 - Source freshness and WordPress/Wordfence posture metrics
 - A ready-to-import Grafana dashboard and sample Prometheus alert rules
 
-Blocked events are currently identified as Wordfence hits where:
+Simula exposes two distinct Wordfence blocking measurements. `blocked_hit_rows_*` counts retained hit/live-traffic records matching a blocked-request predicate. `firewall_blocks_*` reports Wordfence's aggregate Firewall Summary counts by category. The values are not expected to be equal because they have different sources, units, retention behavior, and categorization.
+
+The legacy `blocked_events_*` names are deprecated aliases for the hit/live-traffic row model. They are still emitted for compatibility, but they must not be treated as the Wordfence Firewall Summary "Attacks Blocked" statistic.
+
+Blocked hit rows are currently identified as Wordfence hits where:
 
 - `action LIKE 'blocked:%'`
 - or `statusCode/status IN (403, 503)`
@@ -195,17 +200,31 @@ All metrics include a `site` label.
 ### Wordfence activity metrics
 
 - `wordpress_wordfence_blocked_events_total`
-  Cumulative counter of newly observed blocked hits.
+  Deprecated ambiguous alias of `wordpress_wordfence_blocked_hit_rows_total`. This metric counts matching Wordfence hit/live-traffic rows, is cumulative from the plugin's persisted baseline, is not a daily/weekly/monthly count, and may reset if plugin state is deleted or reinitialized. Use Prometheus `increase()` for interval deltas, subject to counter reset behavior.
 - `wordpress_wordfence_blocked_events_window{window="5m|1h|24h|7d"}`
-  Blocked hits in recent time windows.
+  Deprecated ambiguous alias of `wordpress_wordfence_blocked_hit_rows_window` for retained Wordfence hit/live-traffic rows in recent time windows.
+- `wordpress_wordfence_blocked_hit_rows_total`
+  Cumulative counter of newly observed Wordfence hit/live-traffic rows matching the blocked-hit predicate. This is not the Wordfence Firewall Summary "Attacks Blocked" statistic.
+- `wordpress_wordfence_blocked_hit_rows_window{window="5m|1h|24h|7d"}`
+  Retained Wordfence hit/live-traffic rows matching the blocked-hit predicate in recent rolling windows.
+- `wordpress_wordfence_firewall_blocks_window{category="complex|brute_force|blocklist|other",window="24h|7d|30d"}`
+  Wordfence aggregate Firewall Summary block counts from `wfBlockedIPLog`/`wfblockediplog` using `unixday`, `blockType`, and `SUM(blockCount)`. Known mappings are `fakegoogle`, `badpost`, `country`, `advanced`, and `waf` to `complex`; `throttle` and `brute` to `brute_force`; `blacklist` and `manual` to `blocklist`; all other values to `other`. The current implementation follows Wordfence's documented 24-hour, 7-day, and 30-day statistics and its observed unixday bucket query shape.
+- `wordpress_wordfence_firewall_blocks_available`
+  `1` when the supported aggregate source table and columns are detected; `0` otherwise.
+- `wordpress_wordfence_firewall_blocks_collection_success`
+  `1` when the latest aggregate collection succeeded; `0` when the source is unavailable or a query failed.
+- `wordpress_wordfence_firewall_blocks_source_info{source="wfBlockedIPLog",schema="wfblockediplog-unixday-blocktype-blockcount"}`
+  Bounded metadata for the detected aggregate source. It is omitted when the source is unavailable.
+- `wordpress_wordfence_firewall_blocks_latest_timestamp_seconds`
+  Unix timestamp for the latest aggregate day bucket when the source is available.
 - `wordpress_wordfence_blocked_events_by_status_24h{status="..."}`
   Blocked hits over the last 24 hours grouped by HTTP status.
 - `wordpress_wordfence_failed_login_attempts_window{window="5m|1h|24h|7d"}`
-  Failed login activity in recent windows.
+  Failed Wordfence login attempts in recent windows. This uses Wordfence's `wfLogins` table when available and falls back to retained hit/live-traffic row text matching on older or unsupported schemas.
 - `wordpress_wordfence_rate_limited_events_window{window="5m|1h|24h|7d"}`
-  Rate-limited or throttled requests in recent windows.
+  Rate-limited or throttled requests in recent windows. This remains a retained hit/live-traffic heuristic.
 - `wordpress_wordfence_brute_force_events_window{vector="username|xmlrpc",window="5m|1h|24h|7d"}`
-  Brute-force activity in recent windows.
+  Brute-force activity in recent windows. The `username` vector uses failed `wfLogins` rows when available and falls back to retained hit/live-traffic text matching on older or unsupported schemas. The `xmlrpc` vector remains hit/live-traffic based.
 - `wordpress_wordfence_top_attack_sources_24h{source_type="country|ip_range",source="..."}`
   Top blocked attack sources over the last 24 hours.
 - `wordpress_wordfence_latest_hit_timestamp_seconds`
@@ -414,9 +433,19 @@ For production scheduling, prefer system cron invoking WP-CLI over relying only 
 
 - Import the repository-only Grafana dashboard example from `examples/grafana/grafana-dashboard-wordfence-security-overview.json` into Grafana and select your Prometheus datasource.
 - Load the repository-only Prometheus alert example from `examples/prometheus/wordfence-alerts.yml` into Prometheus or your rule management workflow.
-- The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs.
-- The alert examples include stale or failed exports, blocked request spikes, failed login bursts, malware and vulnerability findings, WordPress core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.
+- The dashboard includes Firewall Summary totals, blocked hit-row activity, source comparison, collector status, exporter health, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs.
+- The alert examples include stale or failed exports, blocked request spikes, source divergence diagnostics, failed login bursts, malware and vulnerability findings, WordPress core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.
 - Adjust alert thresholds to match site traffic. The defaults are intentionally conservative starting points and inventory-based alerts require the matching opt-in inventory metric to be enabled.
+
+Use this recording rule for a Wordfence Firewall Summary-compatible total:
+
+```promql
+sum by (site, window) (
+  wordpress_wordfence_firewall_blocks_window
+)
+```
+
+The diagnostic ratio between hit rows and aggregate firewall blocks is useful for spotting source-model divergence, but it is not an exporter accuracy percentage.
 
 ## Example Prometheus Scrape Flow
 

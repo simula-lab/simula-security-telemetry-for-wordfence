@@ -224,6 +224,7 @@ if (!class_exists('Simula_Security_Telemetry_Config')) {
     require_once dirname(__DIR__, 2) . '/includes/class-wordfence-schema.php';
     require_once dirname(__DIR__, 2) . '/includes/class-wordfence-collector.php';
     require_once dirname(__DIR__, 2) . '/includes/class-wordpress-collector.php';
+    require_once dirname(__DIR__, 2) . '/includes/class-metrics-service.php';
 }
 
 function sstfw_assert_same($expected, $actual, $message = '') {
