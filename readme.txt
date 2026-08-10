@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.1.2
+Stable tag: 3.1.3
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -246,6 +246,12 @@ The directory that will contain the .prom file must already exist and be writabl
 
 == Changelog ==
 
+= 3.1.3 =
+
+* Changed wordpress_wordfence_scan_age_seconds to report the age in seconds since Wordfence's latest successful completed scan.
+* Added wordpress_wordfence_scan_issue_update_age_seconds for the previous scan issue update age behavior.
+* Updated scan freshness documentation and tests to distinguish successful scan completion age from scan issue update age.
+
 = 3.1.2 =
 
 * Added Wordfence Firewall Summary-compatible aggregate block metrics by category and 24h, 7d, and 30d reporting window.
@@ -312,6 +318,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 3.1.3 =
+
+wordpress_wordfence_scan_age_seconds now means age since the latest successful completed Wordfence scan. Use wordpress_wordfence_scan_issue_update_age_seconds for the previous scan issue update age behavior.
 
 = 3.1.2 =
 
