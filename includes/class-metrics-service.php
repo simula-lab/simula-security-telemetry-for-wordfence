@@ -324,7 +324,8 @@ final class Simula_Security_Telemetry_Service {
             $flags['latest_hit_timestamp_seconds'] ||
             $flags['latest_blocked_hit_timestamp_seconds'] ||
             $flags['latest_scan_timestamp_seconds'] ||
-            $flags['scan_age_seconds'];
+            $flags['scan_age_seconds'] ||
+            $flags['scan_issue_update_age_seconds'];
         $flags['needs_wordfence_posture'] =
             $flags['installed'] ||
             $flags['version_info'] ||
@@ -986,6 +987,18 @@ final class Simula_Security_Telemetry_Service {
             );
         }
 
+        if (!empty($flags['scan_issue_update_age_seconds'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_scan_issue_update_age_seconds',
+                'gauge',
+                'Age in seconds of the latest observed Wordfence scan issue update.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($freshness['scan_issue_update_age'] ?? $freshness['scan_age'] ?? 0)],
+                ]
+            );
+        }
+
         return $metrics;
     }
 
@@ -1510,7 +1523,7 @@ final class Simula_Security_Telemetry_Service {
 
         if (isset($cache['source_freshness']) && is_array($cache['source_freshness'])) {
             $cached_freshness = $cache['source_freshness'];
-            foreach (['latest_scan', 'scan_age'] as $key) {
+            foreach (['latest_scan', 'scan_age', 'scan_issue_update_age'] as $key) {
                 if (array_key_exists($key, $cached_freshness)) {
                     $data['source_freshness'][$key] = $cached_freshness[$key];
                 }
@@ -1526,8 +1539,9 @@ final class Simula_Security_Telemetry_Service {
             'two_factor_metrics' => is_array($data['two_factor_metrics'] ?? null) ? $data['two_factor_metrics'] : [],
             'scan_issue_metrics' => is_array($data['scan_issue_metrics'] ?? null) ? $data['scan_issue_metrics'] : [],
             'source_freshness'   => is_array($data['source_freshness'] ?? null) ? [
-                'latest_scan' => (int) ($data['source_freshness']['latest_scan'] ?? 0),
-                'scan_age'    => (int) ($data['source_freshness']['scan_age'] ?? 0),
+                'latest_scan'           => (int) ($data['source_freshness']['latest_scan'] ?? 0),
+                'scan_age'              => (int) ($data['source_freshness']['scan_age'] ?? 0),
+                'scan_issue_update_age' => (int) ($data['source_freshness']['scan_issue_update_age'] ?? $data['source_freshness']['scan_age'] ?? 0),
             ] : [],
             'wordfence_posture' => is_array($data['wordfence_posture'] ?? null) ? $data['wordfence_posture'] : [],
             'wordpress_posture' => is_array($data['wordpress_posture'] ?? null) ? $data['wordpress_posture'] : [],

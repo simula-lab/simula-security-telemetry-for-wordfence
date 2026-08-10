@@ -519,10 +519,11 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         global $wpdb;
 
         $freshness = [
-            'latest_hit'         => 0,
-            'latest_blocked_hit' => 0,
-            'latest_scan'        => 0,
-            'scan_age'           => 0,
+            'latest_hit'            => 0,
+            'latest_blocked_hit'    => 0,
+            'latest_scan'           => 0,
+            'scan_age'              => 0,
+            'scan_issue_update_age' => 0,
         ];
 
         if (Simula_Security_Telemetry_Wordfence_Schema::table_exists($hits_table)) {
@@ -533,8 +534,9 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
             }
         }
 
-        $freshness['latest_scan'] = self::collect_latest_scan_timestamp();
-        $freshness['scan_age']    = $freshness['latest_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_scan']) : 0;
+        $freshness['latest_scan']           = self::collect_latest_scan_timestamp();
+        $freshness['scan_age']              = $freshness['latest_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_scan']) : 0;
+        $freshness['scan_issue_update_age'] = $freshness['scan_age'];
 
         return $freshness;
     }

@@ -176,6 +176,10 @@ final class Simula_Security_Telemetry_Config {
                 'label'       => __('Scan age', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Age in seconds of the latest observed Wordfence scan issue update.', 'simula-security-telemetry-for-wordfence'),
             ],
+            'scan_issue_update_age_seconds' => [
+                'label'       => __('Scan issue update age', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Age in seconds of the latest observed Wordfence scan issue update.', 'simula-security-telemetry-for-wordfence'),
+            ],
             'installed' => [
                 'label'       => __('Wordfence installed', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Whether Wordfence appears to be installed or present in the database.', 'simula-security-telemetry-for-wordfence'),

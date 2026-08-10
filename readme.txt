@@ -131,6 +131,7 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_latest_blocked_hit_timestamp_seconds
 * wordpress_wordfence_latest_scan_timestamp_seconds
 * wordpress_wordfence_scan_age_seconds
+* wordpress_wordfence_scan_issue_update_age_seconds
 * wordpress_wordfence_installed
 * wordpress_wordfence_version_info
 * wordpress_wordfence_firewall_enabled
