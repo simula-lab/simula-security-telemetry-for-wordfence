@@ -234,6 +234,8 @@ All metrics include a `site` label.
 - `wordpress_wordfence_latest_scan_timestamp_seconds`
   Latest observed scan issue update timestamp when available.
 - `wordpress_wordfence_scan_age_seconds`
+  Age since the latest successful Wordfence scan completed.
+- `wordpress_wordfence_scan_issue_update_age_seconds`
   Age of the latest observed scan issue update.
 
 ### Access-control and scan metrics
