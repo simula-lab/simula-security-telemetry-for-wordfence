@@ -215,6 +215,16 @@ if (!function_exists('absint')) {
     }
 }
 
+if (!class_exists('wfConfig')) {
+    class wfConfig {
+        public static $values = [];
+
+        public static function get($key, $default = false) {
+            return array_key_exists($key, self::$values) ? self::$values[$key] : $default;
+        }
+    }
+}
+
 if (!class_exists('Simula_Security_Telemetry_Config')) {
     require_once dirname(__DIR__, 2) . '/includes/class-config.php';
     require_once dirname(__DIR__, 2) . '/includes/class-util.php';

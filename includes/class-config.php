@@ -16,7 +16,7 @@ final class Simula_Security_Telemetry_Config {
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '3.1.2';
+    public const VERSION        = '3.1.3';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
@@ -174,6 +174,10 @@ final class Simula_Security_Telemetry_Config {
             ],
             'scan_age_seconds' => [
                 'label'       => __('Scan age', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Age in seconds since the latest successful Wordfence scan completed.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'scan_issue_update_age_seconds' => [
+                'label'       => __('Scan issue update age', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Age in seconds of the latest observed Wordfence scan issue update.', 'simula-security-telemetry-for-wordfence'),
             ],
             'installed' => [
