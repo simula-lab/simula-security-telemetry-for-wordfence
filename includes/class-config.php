@@ -174,7 +174,7 @@ final class Simula_Security_Telemetry_Config {
             ],
             'scan_age_seconds' => [
                 'label'       => __('Scan age', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Age in seconds of the latest observed Wordfence scan issue update.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Age in seconds since the latest successful Wordfence scan completed.', 'simula-security-telemetry-for-wordfence'),
             ],
             'scan_issue_update_age_seconds' => [
                 'label'       => __('Scan issue update age', 'simula-security-telemetry-for-wordfence'),

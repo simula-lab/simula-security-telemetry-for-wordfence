@@ -519,11 +519,12 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         global $wpdb;
 
         $freshness = [
-            'latest_hit'            => 0,
-            'latest_blocked_hit'    => 0,
-            'latest_scan'           => 0,
-            'scan_age'              => 0,
-            'scan_issue_update_age' => 0,
+            'latest_hit'             => 0,
+            'latest_blocked_hit'     => 0,
+            'latest_scan'            => 0,
+            'latest_successful_scan' => 0,
+            'scan_age'               => 0,
+            'scan_issue_update_age'  => 0,
         ];
 
         if (Simula_Security_Telemetry_Wordfence_Schema::table_exists($hits_table)) {
@@ -534,9 +535,10 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
             }
         }
 
-        $freshness['latest_scan']           = self::collect_latest_scan_timestamp();
-        $freshness['scan_age']              = $freshness['latest_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_scan']) : 0;
-        $freshness['scan_issue_update_age'] = $freshness['scan_age'];
+        $freshness['latest_scan']            = self::collect_latest_scan_timestamp();
+        $freshness['latest_successful_scan'] = self::collect_latest_successful_scan_timestamp();
+        $freshness['scan_age']               = $freshness['latest_successful_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_successful_scan']) : 0;
+        $freshness['scan_issue_update_age']  = $freshness['latest_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_scan']) : 0;
 
         return $freshness;
     }
@@ -621,6 +623,20 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         $value = Simula_Security_Telemetry_Util::db_get_var('SELECT COALESCE(MAX(' . self::quote_identifier($column) . "), 0) FROM $table_identifier");
 
         return self::normalize_timestamp_value($value);
+    }
+
+    /** Returns Wordfence's latest successful scan completion timestamp when available. */
+    private static function collect_latest_successful_scan_timestamp() {
+        if (!class_exists('wfConfig') || !method_exists('wfConfig', 'get')) {
+            return 0;
+        }
+
+        $last_scan_completed = wfConfig::get('lastScanCompleted', '');
+        if (!is_string($last_scan_completed) || strtolower(trim($last_scan_completed)) !== 'ok') {
+            return 0;
+        }
+
+        return self::normalize_timestamp_value(wfConfig::get('scanTime', 0));
     }
 
     /** Normalizes numeric or parseable date values into Unix timestamps. */

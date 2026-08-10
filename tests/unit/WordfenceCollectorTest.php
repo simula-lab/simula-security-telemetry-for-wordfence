@@ -50,6 +50,19 @@ return [
         $wp_version = '';
         sstfw_assert_same('unknown', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'wordpress_version'));
     },
+    'latest successful scan timestamp requires ok completion status' => function () {
+        wfConfig::$values = [
+            'lastScanCompleted' => 'ok',
+            'scanTime' => 1700000123.456,
+        ];
+        sstfw_assert_same(1700000123, sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_latest_successful_scan_timestamp'));
+
+        wfConfig::$values = [
+            'lastScanCompleted' => 'Scan terminated with error',
+            'scanTime' => 1700000123,
+        ];
+        sstfw_assert_same(0, sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_latest_successful_scan_timestamp'));
+    },
     'collect_plugin_inventory returns exclusive states and update availability' => function () {
         $updates = new stdClass();
         $updates->response = [
