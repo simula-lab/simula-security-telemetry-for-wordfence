@@ -65,7 +65,11 @@ install_wordpress_if_needed() {
 }
 
 run_wpcli_smoke() {
-  wp plugin install wordfence --activate --force
+  if [ -n "${SSTFW_WORDFENCE_VERSION:-}" ]; then
+    wp plugin install wordfence --version="$SSTFW_WORDFENCE_VERSION" --activate --force
+  else
+    wp plugin install wordfence --activate --force
+  fi
   wp plugin activate simula-security-telemetry-for-wordfence
   wp eval-file /tests/wp-cli/configure-test-options.php
   wp eval-file /tests/wp-cli/seed-wordfence-fixtures.php

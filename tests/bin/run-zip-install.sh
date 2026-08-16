@@ -73,7 +73,11 @@ wait_for_wordpress_files
 prepare_wordpress_install_dirs
 install_wordpress_if_needed
 
-wp plugin install wordfence --activate --force
+if [ -n "${SSTFW_WORDFENCE_VERSION:-}" ]; then
+  wp plugin install wordfence --version="$SSTFW_WORDFENCE_VERSION" --activate --force
+else
+  wp plugin install wordfence --activate --force
+fi
 wp plugin install "/tests/zip/$PLUGIN_SLUG.zip" --force --activate
 wp eval-file /tests/wp-cli/configure-test-options.php
 wp eval-file /tests/wp-cli/seed-wordfence-fixtures.php

@@ -19,6 +19,7 @@ $logins_table = $wpdb->prefix . 'wfLogins';
 $issues_table = $wpdb->prefix . 'wfIssues';
 $blocked_table = $wpdb->prefix . 'wfBlockedIPLog';
 $secrets_table = $wpdb->prefix . 'wfls_2fa_secrets';
+$passkeys_table = $wpdb->prefix . 'wfls_passkeys';
 
 $wpdb->query(
     "CREATE TABLE IF NOT EXISTS `$hits_table` (
@@ -91,11 +92,54 @@ $wpdb->query(
     ) $charset_collate"
 );
 
+$wpdb->query(
+    "CREATE TABLE IF NOT EXISTS `$passkeys_table` (
+        `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        `user_id` bigint(20) unsigned NOT NULL,
+        `credential_id` varbinary(1023) NOT NULL,
+        `credential_id_hash` binary(32) NOT NULL,
+        `public_key` blob NOT NULL,
+        `sign_count` bigint(20) unsigned NOT NULL DEFAULT 0,
+        `transports` varchar(255) DEFAULT NULL,
+        `label` varchar(255) DEFAULT NULL,
+        `user_handle` varbinary(255) DEFAULT NULL,
+        `ctime` int(10) unsigned NOT NULL,
+        `mtime` int(10) unsigned NOT NULL,
+        `last_used_at` int(10) unsigned DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `credential_id_hash` (`credential_id_hash`),
+        KEY `user_id` (`user_id`)
+    ) $charset_collate"
+);
+
 $wpdb->query("TRUNCATE TABLE `$hits_table`");
 $wpdb->query("TRUNCATE TABLE `$logins_table`");
 $wpdb->query("TRUNCATE TABLE `$issues_table`");
 $wpdb->query("TRUNCATE TABLE `$blocked_table`");
 $wpdb->query("TRUNCATE TABLE `$secrets_table`");
+$wpdb->query("TRUNCATE TABLE `$passkeys_table`");
+
+$fixture_admins = [
+    ['login' => 'passkey-admin', 'email' => 'passkey-admin@example.test'],
+    ['login' => 'both-admin', 'email' => 'both-admin@example.test'],
+    ['login' => 'unprotected-admin', 'email' => 'unprotected-admin@example.test'],
+];
+
+foreach ($fixture_admins as $fixture_admin) {
+    $user = get_user_by('login', $fixture_admin['login']);
+    if (!$user instanceof WP_User) {
+        $user_id = wp_insert_user([
+            'user_login'   => $fixture_admin['login'],
+            'user_pass'    => wp_generate_password(24, true),
+            'user_email'   => $fixture_admin['email'],
+            'display_name' => ucfirst(str_replace('-', ' ', $fixture_admin['login'])),
+            'role'         => 'administrator',
+        ]);
+        if (is_wp_error($user_id)) {
+            WP_CLI::error($user_id->get_error_message());
+        }
+    }
+}
 
 $hit_rows = [
     [$now - 60, '203.0.113.10', 'US', 403, 'blocked:waf', 'Blocked by firewall rule', 'POST', '/wp-login.php?bad=1', 'https://example.test/ref', 'Fixture user agent'],
@@ -128,6 +172,10 @@ foreach ($hit_rows as $row) {
 $login_rows = [
     [$now - 120, 1, 'loginFailValidUsername', 'admin', 0, '203.0.113.11'],
     [$now - 240, 1, 'loginFailInvalidUsername', 'missing-user', 0, '203.0.113.12'],
+    [$now - 260, 1, 'loginFailPasskey', 'passkey-admin', 0, '203.0.113.15'],
+    [$now - 280, 1, 'loginFailPasskeyRequired', 'both-admin', 0, '203.0.113.16'],
+    [$now - 320, 1, 'wfls_twofactor_invalid', 'admin', 1, '203.0.113.17'],
+    [$now - 340, 1, 'newWordfenceFailureAction', 'probe', 0, '203.0.113.18'],
     [$now - 4000, 1, 'loginFailValidUsername', 'editor', 0, '203.0.113.13'],
     [$now - (2 * DAY_IN_SECONDS), 1, 'loginFailInvalidUsername', 'probe', 0, '198.51.100.13'],
     [$now - 180, 0, 'loginOK', 'admin', 1, '203.0.113.14'],
@@ -219,6 +267,45 @@ if ($admin instanceof WP_User) {
             'secret' => 'fixture-secret',
         ],
         ['%d', '%s']
+    );
+}
+
+$both_admin = get_user_by('login', 'both-admin');
+if ($both_admin instanceof WP_User) {
+    $wpdb->insert(
+        $secrets_table,
+        [
+            'user_id' => (int) $both_admin->ID,
+            'secret' => 'fixture-secret-both',
+        ],
+        ['%d', '%s']
+    );
+}
+
+foreach (['passkey-admin', 'both-admin'] as $login) {
+    $user = get_user_by('login', $login);
+    if (!$user instanceof WP_User) {
+        continue;
+    }
+
+    $credential_id = 'fixture-' . $login;
+    $wpdb->query(
+        $wpdb->prepare(
+            "INSERT INTO `$passkeys_table`
+                (`user_id`, `credential_id`, `credential_id_hash`, `public_key`, `sign_count`, `transports`, `label`, `user_handle`, `ctime`, `mtime`, `last_used_at`)
+            VALUES
+                (%d, %s, UNHEX(%s), %s, %d, %s, %s, %s, %d, %d, NULL)",
+            (int) $user->ID,
+            $credential_id,
+            hash('sha256', $credential_id),
+            'fixture-public-key',
+            0,
+            'internal',
+            'Fixture passkey',
+            'fixture-user-handle-' . $login,
+            $now,
+            $now
+        )
     );
 }
 
