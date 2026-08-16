@@ -25,6 +25,11 @@ final class Simula_Security_Telemetry_Wordfence_Schema {
         return self::wordfence_table_aliases(['wfLogins', 'wflogins']);
     }
 
+    /** Returns the resolved Wordfence Login Security passkeys table name. */
+    public static function wordfence_passkeys_table() {
+        return self::wordfence_table_aliases(['wfls_passkeys']);
+    }
+
     /** Checks whether a database table exists, using a local cache. */
     public static function table_exists($table) {
         static $cache = [];

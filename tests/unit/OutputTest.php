@@ -134,6 +134,7 @@ return [
         $data = [
             'flags' => [
                 'failed_login_attempts_window' => true,
+                'authentication_failures_window' => true,
                 'rate_limited_events_window' => false,
                 'brute_force_events_window' => true,
             ],
@@ -152,6 +153,26 @@ return [
                 'brute_xmlrpc_count_1h' => 1,
                 'brute_xmlrpc_count_24h' => 1,
                 'brute_xmlrpc_count_7d' => 1,
+                'authentication_failure_password_count_5m' => 2,
+                'authentication_failure_password_count_1h' => 2,
+                'authentication_failure_password_count_24h' => 3,
+                'authentication_failure_password_count_7d' => 4,
+                'authentication_failure_passkey_count_5m' => 1,
+                'authentication_failure_passkey_count_1h' => 1,
+                'authentication_failure_passkey_count_24h' => 1,
+                'authentication_failure_passkey_count_7d' => 1,
+                'authentication_failure_passkey_required_count_5m' => 1,
+                'authentication_failure_passkey_required_count_1h' => 1,
+                'authentication_failure_passkey_required_count_24h' => 1,
+                'authentication_failure_passkey_required_count_7d' => 1,
+                'authentication_failure_two_factor_count_5m' => 0,
+                'authentication_failure_two_factor_count_1h' => 1,
+                'authentication_failure_two_factor_count_24h' => 1,
+                'authentication_failure_two_factor_count_7d' => 1,
+                'authentication_failure_other_count_5m' => 0,
+                'authentication_failure_other_count_1h' => 1,
+                'authentication_failure_other_count_24h' => 1,
+                'authentication_failure_other_count_7d' => 1,
             ],
         ];
 
@@ -159,7 +180,36 @@ return [
         $body = implode("\n", $lines);
 
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_failed_login_attempts_window{site="example.test",window="24h"} 3') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_authentication_failures_window{site="example.test",method="passkey",window="1h"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_authentication_failures_window{site="example.test",method="passkey_required",window="24h"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_authentication_failures_window{site="example.test",method="two_factor",window="7d"} 1') !== false);
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_brute_force_events_window{site="example.test",vector="username",window="7d"} 4') !== false);
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_brute_force_events_window{site="example.test",vector="xmlrpc",window="1h"} 1') !== false);
+    },
+    'access control rendering includes passkey and combined login protection metrics' => function () {
+        $data = [
+            'flags' => [
+                'locked_out_total' => false,
+                'two_factor_enabled' => true,
+                'two_factor_protected_users_total' => true,
+                'passkey_enabled' => true,
+                'passkey_protected_users_total' => true,
+                'login_protected_users_total' => true,
+            ],
+            'prefix' => 'wordpress_wordfence',
+            'site' => 'example.test',
+            'two_factor_metrics' => ['enabled' => 1, 'protected_users' => 2],
+            'passkey_metrics' => ['enabled' => 1, 'protected_users' => 2],
+            'login_protection_metrics' => ['2fa' => 2, 'passkey' => 2, 'either' => 3, 'both' => 1],
+        ];
+
+        $lines = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'render_access_control_metrics', [$data]);
+        $body = implode("\n", $lines);
+
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_two_factor_protected_users_total{site="example.test"} 2') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_passkey_enabled{site="example.test"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_passkey_protected_users_total{site="example.test"} 2') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_login_protected_users_total{site="example.test",method="either"} 3') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_login_protected_users_total{site="example.test",method="both"} 1') !== false);
     },
 ];
