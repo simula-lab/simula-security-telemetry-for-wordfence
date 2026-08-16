@@ -55,8 +55,8 @@
       "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
       "id": 5,
       "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
-      "targets": [{"expr": "sum(wordpress_wordfence_admin_users_without_2fa_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}}", "refId": "A"}],
-      "title": "Admins Without 2FA",
+      "targets": [{"expr": "sum(wordpress_wordfence_admin_users_without_login_protection_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}}", "refId": "A"}],
+      "title": "Admins Without Login Protection",
       "type": "stat"
     },
     {
@@ -192,9 +192,11 @@
       "options": {"displayMode": "gradient", "legend": {"displayMode": "list", "placement": "bottom"}, "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showUnfilled": true},
       "targets": [
         {"expr": "sum(wordpress_wordfence_admin_users_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} admins", "refId": "A"},
-        {"expr": "sum(wordpress_wordfence_admin_users_without_2fa_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} without 2FA", "refId": "B"}
+        {"expr": "sum(wordpress_wordfence_admin_users_without_login_protection_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} without login protection", "refId": "B"},
+        {"expr": "sum(wordpress_wordfence_admin_users_without_2fa_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} without 2FA only", "refId": "C"},
+        {"expr": "sum(wordpress_wordfence_admin_users_without_passkey_total{instance_name=~\"${instance_name:regex}\"}) by (site)", "legendFormat": "{{site}} without passkey", "refId": "D"}
       ],
-      "title": "Admin 2FA Coverage",
+      "title": "Admin Login Protection",
       "type": "bargauge"
     },
     {

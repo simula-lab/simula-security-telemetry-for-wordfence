@@ -16,7 +16,7 @@ final class Simula_Security_Telemetry_Config {
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '3.1.2';
+    public const VERSION        = '3.2.3';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
@@ -124,17 +124,33 @@ final class Simula_Security_Telemetry_Config {
                 'label'       => __('Failed login attempts by window', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Failed Wordfence login attempts over 5m, 1h, 24h, and 7d windows.', 'simula-security-telemetry-for-wordfence'),
             ],
+            'authentication_failures_window' => [
+                'label'       => __('Authentication failures by method and window', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Failed Wordfence authentication attempts grouped by password, passkey, passkey-required, two-factor, and other methods over 5m, 1h, 24h, and 7d windows.', 'simula-security-telemetry-for-wordfence'),
+            ],
             'locked_out_total' => [
                 'label'       => __('Current lockouts', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Current Wordfence lockout totals grouped by IP and user.', 'simula-security-telemetry-for-wordfence'),
             ],
             'two_factor_enabled' => [
                 'label'       => __('Two-factor enabled', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Whether Wordfence two-factor authentication appears configured.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether Wordfence TOTP two-factor authentication appears configured. Wordfence passkeys are reported separately.', 'simula-security-telemetry-for-wordfence'),
             ],
             'two_factor_protected_users_total' => [
                 'label'       => __('Two-factor protected users', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Count of users with Wordfence two-factor secrets configured.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Count of users with Wordfence TOTP two-factor secrets configured. Wordfence passkeys are reported separately.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'passkey_enabled' => [
+                'label'       => __('Passkey enabled', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Whether Wordfence passkeys appear configured. Older Wordfence versions without the passkey table export 0.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'passkey_protected_users_total' => [
+                'label'       => __('Passkey protected users', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Count of users with Wordfence passkeys configured. Older Wordfence versions without the passkey table export 0.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'login_protected_users_total' => [
+                'label'       => __('Login protected users', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Count of users protected by Wordfence 2FA, passkeys, either method, or both methods.', 'simula-security-telemetry-for-wordfence'),
             ],
             'scan_issues_by_severity' => [
                 'label'       => __('Scan issues by severity', 'simula-security-telemetry-for-wordfence'),
@@ -174,6 +190,10 @@ final class Simula_Security_Telemetry_Config {
             ],
             'scan_age_seconds' => [
                 'label'       => __('Scan age', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Age in seconds since the latest successful Wordfence scan completed.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'scan_issue_update_age_seconds' => [
+                'label'       => __('Scan issue update age', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Age in seconds of the latest observed Wordfence scan issue update.', 'simula-security-telemetry-for-wordfence'),
             ],
             'installed' => [
@@ -246,7 +266,15 @@ final class Simula_Security_Telemetry_Config {
             ],
             'admin_users_without_2fa_total' => [
                 'label'       => __('Admin users without 2FA', 'simula-security-telemetry-for-wordfence'),
-                'description' => __('Number of administrator users without a Wordfence two-factor secret.', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of administrator users without a Wordfence TOTP two-factor secret. Wordfence passkeys are reported separately.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'admin_users_without_passkey_total' => [
+                'label'       => __('Admin users without passkey', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of administrator users without a Wordfence passkey. Older Wordfence versions without passkeys count all administrators unless this metric is disabled.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'admin_users_without_login_protection_total' => [
+                'label'       => __('Admin users without login protection', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Number of administrator users with neither a Wordfence TOTP two-factor secret nor a Wordfence passkey.', 'simula-security-telemetry-for-wordfence'),
             ],
             'admin_user_info' => [
                 'label'       => __('Admin user inventory info', 'simula-security-telemetry-for-wordfence'),

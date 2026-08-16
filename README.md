@@ -31,7 +31,7 @@ By default, it runs a fast collector every 15 minutes and a slow collector hourl
 - Blocked event counts by HTTP status code
 - Failed login, rate-limited, and brute-force activity windows
 - Current lockout counts for IPs and users
-- Wordfence two-factor status and protected user counts
+- Wordfence two-factor, passkey, and combined login-protection counts
 - Scan issue counts by severity
 - Malware, file change, and vulnerable component findings
 - Top blocked attack sources by country and normalized IP range
@@ -220,11 +220,13 @@ All metrics include a `site` label.
 - `wordpress_wordfence_blocked_events_by_status_24h{status="..."}`
   Blocked hits over the last 24 hours grouped by HTTP status.
 - `wordpress_wordfence_failed_login_attempts_window{window="5m|1h|24h|7d"}`
-  Failed Wordfence login attempts in recent windows. This uses Wordfence's `wfLogins` table when available and falls back to retained hit/live-traffic row text matching on older or unsupported schemas.
+  Failed Wordfence login attempts in recent windows. This uses Wordfence's `wfLogins` table when available and falls back to retained hit/live-traffic row text matching on older or unsupported schemas. On Wordfence 9.0.0 this aggregate includes passkey-related failed rows where Wordfence records them with `fail > 0`.
+- `wordpress_wordfence_authentication_failures_window{method="password|passkey|passkey_required|two_factor|other",window="5m|1h|24h|7d"}`
+  Failed Wordfence authentication attempts from `wfLogins` grouped by bounded method. Wordfence 9.0.0 passkey failures are exported separately from password and two-factor failures.
 - `wordpress_wordfence_rate_limited_events_window{window="5m|1h|24h|7d"}`
   Rate-limited or throttled requests in recent windows. This remains a retained hit/live-traffic heuristic.
 - `wordpress_wordfence_brute_force_events_window{vector="username|xmlrpc",window="5m|1h|24h|7d"}`
-  Brute-force activity in recent windows. The `username` vector uses failed `wfLogins` rows when available and falls back to retained hit/live-traffic text matching on older or unsupported schemas. The `xmlrpc` vector remains hit/live-traffic based.
+  Brute-force activity in recent windows. The `username` vector uses password-classified failed `wfLogins` rows when available and falls back to retained hit/live-traffic text matching on older or unsupported schemas. The `xmlrpc` vector remains hit/live-traffic based.
 - `wordpress_wordfence_top_attack_sources_24h{source_type="country|ip_range",source="..."}`
   Top blocked attack sources over the last 24 hours.
 - `wordpress_wordfence_latest_hit_timestamp_seconds`
@@ -234,6 +236,8 @@ All metrics include a `site` label.
 - `wordpress_wordfence_latest_scan_timestamp_seconds`
   Latest observed scan issue update timestamp when available.
 - `wordpress_wordfence_scan_age_seconds`
+  Age since the latest successful Wordfence scan completed.
+- `wordpress_wordfence_scan_issue_update_age_seconds`
   Age of the latest observed scan issue update.
 
 ### Access-control and scan metrics
@@ -241,9 +245,15 @@ All metrics include a `site` label.
 - `wordpress_wordfence_locked_out_total{target="ip|user"}`
   Current lockout totals grouped by target type.
 - `wordpress_wordfence_two_factor_enabled`
-  Whether Wordfence two-factor authentication appears configured.
+  Whether Wordfence TOTP two-factor authentication appears configured. Wordfence passkeys are reported separately.
 - `wordpress_wordfence_two_factor_protected_users_total`
-  Count of users with Wordfence two-factor secrets configured.
+  Count of users with Wordfence TOTP two-factor secrets configured. Wordfence passkeys are reported separately.
+- `wordpress_wordfence_passkey_enabled`
+  Whether Wordfence passkeys appear configured. Older Wordfence versions without the `wfls_passkeys` table export `0`.
+- `wordpress_wordfence_passkey_protected_users_total`
+  Count of users with Wordfence passkeys configured. Older Wordfence versions without the `wfls_passkeys` table export `0`.
+- `wordpress_wordfence_login_protected_users_total{method="2fa|passkey|either|both"}`
+  Count of users protected by Wordfence 2FA, passkeys, either method, or both methods. Use `method="either"` for combined login-protection coverage.
 - `wordpress_wordfence_scan_issues_by_severity{severity="..."}`
   Current Wordfence scan issues grouped by severity.
 - `wordpress_wordfence_scan_findings_total{category="malware|file_change"}`
@@ -288,7 +298,11 @@ All metrics include a `site` label.
 - `wordpress_wordfence_admin_users_total`
   Number of administrator users.
 - `wordpress_wordfence_admin_users_without_2fa_total`
-  Number of administrator users without Wordfence two-factor secrets.
+  Number of administrator users without Wordfence TOTP two-factor secrets. A passkey-only admin is still counted here because this metric remains 2FA-only for compatibility.
+- `wordpress_wordfence_admin_users_without_passkey_total`
+  Number of administrator users without a Wordfence passkey. Older Wordfence versions without passkeys count all administrators unless this metric is disabled.
+- `wordpress_wordfence_admin_users_without_login_protection_total`
+  Number of administrator users with neither a Wordfence TOTP two-factor secret nor a Wordfence passkey. Prefer this metric for Wordfence 9.0.0+ admin login-protection alerts.
 - `wordpress_wordfence_admin_user_info{user_id_hash="...",login_hash="...",display_name_hash="...",two_factor_enabled="0|1"}`
   Opt-in administrator inventory metadata with privacy-preserving hashed identity labels by default. Disabled by default because administrator identities are sensitive. In `id_only` mode the metric uses a `user_id` label instead of hash labels; in `disabled` mode only aggregate admin counts are exported.
 

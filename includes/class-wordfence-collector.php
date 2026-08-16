@@ -139,6 +139,138 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         );
     }
 
+    /** Returns the bounded authentication-failure method labels. */
+    public static function authentication_failure_methods() {
+        return ['password', 'passkey', 'passkey_required', 'two_factor', 'other'];
+    }
+
+    /** Classifies a Wordfence login failure action into a bounded method label. */
+    public static function authentication_failure_method($action) {
+        $action = strtolower(trim((string) $action));
+        $compact = preg_replace('/[^a-z0-9]+/', '', $action);
+        $compact = is_string($compact) ? $compact : '';
+
+        if ($compact === 'loginfailpasskey') {
+            return 'passkey';
+        }
+
+        if ($compact === 'loginfailpasskeyrequired') {
+            return 'passkey_required';
+        }
+
+        if (strpos($compact, 'twofactor') !== false || strpos($compact, '2fa') !== false) {
+            return 'two_factor';
+        }
+
+        if (
+            strpos($compact, 'loginfail') === 0 ||
+            strpos($compact, 'invalidusername') !== false ||
+            strpos($compact, 'incorrectpassword') !== false ||
+            strpos($compact, 'failedpassword') !== false
+        ) {
+            return 'password';
+        }
+
+        return 'other';
+    }
+
+    /** Collects failed authentication counts grouped by bounded method and window. */
+    public static function collect_authentication_failure_window_counts($windows, $count_prefix = 'authentication_failure') {
+        $table = Simula_Security_Telemetry_Wordfence_Schema::wordfence_logins_table();
+        if (!Simula_Security_Telemetry_Wordfence_Schema::table_exists($table)) {
+            return [];
+        }
+
+        $count_prefix = (string) $count_prefix;
+        if (!preg_match('/\A[A-Za-z0-9_]+\z/', $count_prefix)) {
+            return [];
+        }
+
+        $time_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['ctime', 'time', 'created_at']);
+        $fail_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['fail', 'failed']);
+        $action_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['action']);
+        if ($time_column === null || $fail_column === null || $action_column === null) {
+            return [];
+        }
+
+        $time_identifier   = self::quote_identifier($time_column);
+        $fail_identifier   = self::quote_identifier($fail_column);
+        $action_identifier = self::quote_identifier($action_column);
+        $table_identifier  = self::quote_identifier($table);
+        $method_sql        = self::authentication_failure_method_sql($action_identifier);
+        $selects           = [];
+
+        foreach (Simula_Security_Telemetry_Config::WINDOWS as $window) {
+            foreach (self::authentication_failure_methods() as $method) {
+                $selects[] = sprintf(
+                    'SUM(CASE WHEN %1$s >= %2$d AND %3$s > 0 AND %4$s THEN 1 ELSE 0 END) AS %5$s_%6$s_count_%7$s',
+                    $time_identifier,
+                    (int) $windows[$window],
+                    $fail_identifier,
+                    $method_sql[$method],
+                    $count_prefix,
+                    $method,
+                    $window
+                );
+            }
+        }
+
+        return Simula_Security_Telemetry_Util::db_get_row(
+            "SELECT
+                " . implode(",\n                ", $selects) . "
+            FROM $table_identifier
+            WHERE $time_identifier >= " . (int) $windows['7d'] . " AND $fail_identifier > 0",
+            ARRAY_A
+        );
+    }
+
+    /** Collects password-classified login failure counts for username brute-force compatibility. */
+    public static function collect_password_failure_window_counts($windows, $count_prefix = 'brute_username') {
+        $table = Simula_Security_Telemetry_Wordfence_Schema::wordfence_logins_table();
+        if (!Simula_Security_Telemetry_Wordfence_Schema::table_exists($table)) {
+            return [];
+        }
+
+        $count_prefix = (string) $count_prefix;
+        if (!preg_match('/\A[A-Za-z0-9_]+\z/', $count_prefix)) {
+            return [];
+        }
+
+        $time_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['ctime', 'time', 'created_at']);
+        $fail_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['fail', 'failed']);
+        $action_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['action']);
+        if ($time_column === null || $fail_column === null || $action_column === null) {
+            return [];
+        }
+
+        $time_identifier   = self::quote_identifier($time_column);
+        $fail_identifier   = self::quote_identifier($fail_column);
+        $action_identifier = self::quote_identifier($action_column);
+        $table_identifier  = self::quote_identifier($table);
+        $password_sql      = self::authentication_failure_method_sql($action_identifier)['password'];
+        $selects           = [];
+
+        foreach (Simula_Security_Telemetry_Config::WINDOWS as $window) {
+            $selects[] = sprintf(
+                'SUM(CASE WHEN %1$s >= %2$d AND %3$s > 0 AND %4$s THEN 1 ELSE 0 END) AS %5$s_count_%6$s',
+                $time_identifier,
+                (int) $windows[$window],
+                $fail_identifier,
+                $password_sql,
+                $count_prefix,
+                $window
+            );
+        }
+
+        return Simula_Security_Telemetry_Util::db_get_row(
+            "SELECT
+                " . implode(",\n                ", $selects) . "
+            FROM $table_identifier
+            WHERE $time_identifier >= " . (int) $windows['7d'] . " AND $fail_identifier > 0",
+            ARRAY_A
+        );
+    }
+
     /** Returns the bounded Wordfence block-type to exported category map. */
     public static function firewall_block_category_map() {
         return [
@@ -412,18 +544,15 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
     public static function collect_two_factor_metrics() {
         global $wpdb;
 
-        $metrics        = ['enabled' => 0, 'protected_users' => 0];
+        $protected_ids  = self::two_factor_protected_user_ids();
+        $metrics        = ['enabled' => count($protected_ids) > 0 ? 1 : 0, 'protected_users' => count($protected_ids)];
         $secrets_table  = Simula_Security_Telemetry_Wordfence_Schema::wordfence_table('wfls_2fa_secrets');
         $settings_table = Simula_Security_Telemetry_Wordfence_Schema::wordfence_table('wfls_settings');
 
-        if (Simula_Security_Telemetry_Wordfence_Schema::table_exists($secrets_table)) {
-            $secrets_table_identifier = self::quote_identifier($secrets_table);
+        if (Simula_Security_Telemetry_Wordfence_Schema::table_exists($secrets_table) && $metrics['protected_users'] === 0) {
             $user_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($secrets_table, ['user_id', 'userID', 'userId', 'user']);
-            if ($user_column !== null) {
-                $metrics['protected_users'] = (int) Simula_Security_Telemetry_Util::db_get_var(
-                    'SELECT COUNT(DISTINCT ' . self::quote_identifier($user_column) . ") FROM $secrets_table_identifier"
-                );
-            } else {
+            if ($user_column === null) {
+                $secrets_table_identifier = self::quote_identifier($secrets_table);
                 $metrics['protected_users'] = (int) Simula_Security_Telemetry_Util::db_get_var("SELECT COUNT(*) FROM $secrets_table_identifier");
             }
         }
@@ -436,6 +565,38 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         }
 
         return $metrics;
+    }
+
+    /** Collects Wordfence passkey status and protected-user counts. */
+    public static function collect_passkey_metrics() {
+        $protected_ids = self::passkey_protected_user_ids();
+
+        return [
+            'enabled'         => count($protected_ids) > 0 ? 1 : 0,
+            'protected_users' => count($protected_ids),
+        ];
+    }
+
+    /** Collects combined Wordfence login-protection counts. */
+    public static function collect_login_protection_metrics() {
+        $two_factor_ids = self::normalize_user_id_set(self::two_factor_protected_user_ids());
+        $passkey_ids    = self::normalize_user_id_set(self::passkey_protected_user_ids());
+        $either_ids     = $two_factor_ids;
+        $both_count     = 0;
+
+        foreach ($passkey_ids as $user_id => $enabled) {
+            if (isset($two_factor_ids[$user_id])) {
+                $both_count++;
+            }
+            $either_ids[$user_id] = true;
+        }
+
+        return [
+            '2fa'     => count($two_factor_ids),
+            'passkey' => count($passkey_ids),
+            'either'  => count($either_ids),
+            'both'    => $both_count,
+        ];
     }
 
     /** Collects scan issue totals grouped by severity and finding category. */
@@ -519,10 +680,12 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         global $wpdb;
 
         $freshness = [
-            'latest_hit'         => 0,
-            'latest_blocked_hit' => 0,
-            'latest_scan'        => 0,
-            'scan_age'           => 0,
+            'latest_hit'             => 0,
+            'latest_blocked_hit'     => 0,
+            'latest_scan'            => 0,
+            'latest_successful_scan' => 0,
+            'scan_age'               => 0,
+            'scan_issue_update_age'  => 0,
         ];
 
         if (Simula_Security_Telemetry_Wordfence_Schema::table_exists($hits_table)) {
@@ -533,8 +696,10 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
             }
         }
 
-        $freshness['latest_scan'] = self::collect_latest_scan_timestamp();
-        $freshness['scan_age']    = $freshness['latest_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_scan']) : 0;
+        $freshness['latest_scan']            = self::collect_latest_scan_timestamp();
+        $freshness['latest_successful_scan'] = self::collect_latest_successful_scan_timestamp();
+        $freshness['scan_age']               = $freshness['latest_successful_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_successful_scan']) : 0;
+        $freshness['scan_issue_update_age']  = $freshness['latest_scan'] > 0 ? max(0, (int) $now - (int) $freshness['latest_scan']) : 0;
 
         return $freshness;
     }
@@ -561,12 +726,25 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         $admin_users    = self::administrator_users();
         $admin_ids      = array_map('intval', array_column($admin_users, 'ID'));
         $protected_ids  = self::two_factor_protected_user_ids();
+        $passkey_ids    = self::passkey_protected_user_ids();
         $without_2fa    = 0;
-        $protected_flip = array_fill_keys(array_map('intval', $protected_ids), true);
+        $without_passkey = 0;
+        $without_login_protection = 0;
+        $protected_flip = self::normalize_user_id_set($protected_ids);
+        $passkey_flip   = self::normalize_user_id_set($passkey_ids);
 
         foreach ($admin_ids as $admin_id) {
-            if (empty($protected_flip[(int) $admin_id])) {
+            $has_2fa     = !empty($protected_flip[(int) $admin_id]);
+            $has_passkey = !empty($passkey_flip[(int) $admin_id]);
+
+            if (!$has_2fa) {
                 $without_2fa++;
+            }
+            if (!$has_passkey) {
+                $without_passkey++;
+            }
+            if (!$has_2fa && !$has_passkey) {
+                $without_login_protection++;
             }
         }
 
@@ -585,6 +763,8 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
             'theme_update_available_total'  => self::theme_update_count(),
             'admin_users_total'             => count($admin_ids),
             'admin_users_without_2fa_total' => $without_2fa,
+            'admin_users_without_passkey_total' => $without_passkey,
+            'admin_users_without_login_protection_total' => $without_login_protection,
             'admin_user_inventory'          => $admin_inventory,
         ];
     }
@@ -619,6 +799,20 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         $value = Simula_Security_Telemetry_Util::db_get_var('SELECT COALESCE(MAX(' . self::quote_identifier($column) . "), 0) FROM $table_identifier");
 
         return self::normalize_timestamp_value($value);
+    }
+
+    /** Returns Wordfence's latest successful scan completion timestamp when available. */
+    private static function collect_latest_successful_scan_timestamp() {
+        if (!class_exists('wfConfig') || !method_exists('wfConfig', 'get')) {
+            return 0;
+        }
+
+        $last_scan_completed = wfConfig::get('lastScanCompleted', '');
+        if (!is_string($last_scan_completed) || strtolower(trim($last_scan_completed)) !== 'ok') {
+            return 0;
+        }
+
+        return self::normalize_timestamp_value(wfConfig::get('scanTime', 0));
     }
 
     /** Normalizes numeric or parseable date values into Unix timestamps. */
@@ -818,6 +1012,39 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         return array_map('intval', (array) Simula_Security_Telemetry_Util::db_get_col('SELECT DISTINCT ' . self::quote_identifier($user_column) . " FROM $table_identifier"));
     }
 
+    /** Returns user IDs with Wordfence passkeys when the Wordfence 9 table is available. */
+    private static function passkey_protected_user_ids() {
+        global $wpdb;
+
+        $table = Simula_Security_Telemetry_Wordfence_Schema::wordfence_passkeys_table();
+        if (!Simula_Security_Telemetry_Wordfence_Schema::table_exists($table)) {
+            return [];
+        }
+
+        $user_column = Simula_Security_Telemetry_Wordfence_Schema::first_available_column($table, ['user_id', 'userID', 'userId', 'user']);
+        if ($user_column === null) {
+            return [];
+        }
+
+        $table_identifier = self::quote_identifier($table);
+
+        return array_map('intval', (array) Simula_Security_Telemetry_Util::db_get_col('SELECT DISTINCT ' . self::quote_identifier($user_column) . " FROM $table_identifier"));
+    }
+
+    /** Returns a positive integer user-id set suitable for union/intersection checks. */
+    private static function normalize_user_id_set($user_ids) {
+        $set = [];
+
+        foreach ((array) $user_ids as $user_id) {
+            $user_id = (int) $user_id;
+            if ($user_id > 0) {
+                $set[$user_id] = true;
+            }
+        }
+
+        return $set;
+    }
+
     /** Returns the installed WordPress version, or unknown if the runtime cannot provide it. */
     private static function wordpress_version() {
         if (function_exists('get_bloginfo')) {
@@ -987,6 +1214,39 @@ final class Simula_Security_Telemetry_Wordfence_Collector {
         }
 
         return self::text_search_where_sql_from_columns([$type_column], $terms);
+    }
+
+    /** Builds SQL conditions matching the bounded authentication-failure classifier. */
+    private static function authentication_failure_method_sql($action_identifier) {
+        $action = "LOWER(COALESCE(CAST($action_identifier AS CHAR), ''))";
+
+        $passkey = "$action = 'loginfailpasskey'";
+        $passkey_required = "$action = 'loginfailpasskeyrequired'";
+        $two_factor = self::combine_where_any([
+            "$action LIKE '%twofactor%'",
+            "$action LIKE '%two_factor%'",
+            "$action LIKE '%2fa%'",
+        ]);
+        $password_base = self::combine_where_any([
+            "$action LIKE 'loginfail%'",
+            "$action LIKE '%invalid username%'",
+            "$action LIKE '%invalidusername%'",
+            "$action LIKE '%incorrect password%'",
+            "$action LIKE '%incorrectpassword%'",
+            "$action LIKE '%failed password%'",
+            "$action LIKE '%failedpassword%'",
+        ]);
+        $non_password = self::combine_where_any([$passkey, $passkey_required, $two_factor]);
+        $password = "($password_base AND NOT $non_password)";
+        $known = self::combine_where_any([$passkey, $passkey_required, $two_factor, $password]);
+
+        return [
+            'password'         => $password,
+            'passkey'          => $passkey,
+            'passkey_required' => $passkey_required,
+            'two_factor'       => $two_factor,
+            'other'            => "NOT $known",
+        ];
     }
 
     /** Builds a text-search SQL condition from a specific list of columns and terms. */

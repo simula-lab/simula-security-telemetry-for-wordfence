@@ -157,6 +157,8 @@ final class Simula_Security_Telemetry_Service {
             'lockout_counts'     => [],
             'firewall_blocks'     => [],
             'two_factor_metrics' => [],
+            'passkey_metrics'    => [],
+            'login_protection_metrics' => [],
             'scan_issue_metrics' => [],
             'source_freshness'   => [],
             'wordfence_posture'  => [],
@@ -195,8 +197,15 @@ final class Simula_Security_Telemetry_Service {
                 }
             }
 
+            if (!empty($flags['authentication_failures_window'])) {
+                $authentication_counts = Simula_Security_Telemetry_Wordfence_Collector::collect_authentication_failure_window_counts($data['windows']);
+                if (is_array($authentication_counts) && $authentication_counts !== []) {
+                    $data['window_counts'] = array_merge($data['window_counts'], $authentication_counts);
+                }
+            }
+
             if (!empty($flags['brute_force_events_window'])) {
-                $login_counts = Simula_Security_Telemetry_Wordfence_Collector::collect_failed_login_window_counts($data['windows'], 'brute_username');
+                $login_counts = Simula_Security_Telemetry_Wordfence_Collector::collect_password_failure_window_counts($data['windows'], 'brute_username');
                 if (is_array($login_counts) && $login_counts !== []) {
                     $data['window_counts'] = array_merge($data['window_counts'], $login_counts);
                 }
@@ -242,6 +251,11 @@ final class Simula_Security_Telemetry_Service {
         } else {
             if ($flags['needs_two_factor_metrics']) {
                 $data['two_factor_metrics'] = Simula_Security_Telemetry_Wordfence_Collector::collect_two_factor_metrics();
+            }
+
+            if ($flags['needs_login_protection_metrics']) {
+                $data['passkey_metrics'] = Simula_Security_Telemetry_Wordfence_Collector::collect_passkey_metrics();
+                $data['login_protection_metrics'] = Simula_Security_Telemetry_Wordfence_Collector::collect_login_protection_metrics();
             }
 
             if ($flags['needs_scan_metrics']) {
@@ -305,6 +319,7 @@ final class Simula_Security_Telemetry_Service {
             $flags['blocked_events_window'] ||
             $flags['blocked_hit_rows_window'] ||
             $flags['failed_login_attempts_window'] ||
+            $flags['authentication_failures_window'] ||
             $flags['rate_limited_events_window'] ||
             $flags['brute_force_events_window'];
         $flags['needs_firewall_block_metrics'] =
@@ -320,11 +335,16 @@ final class Simula_Security_Telemetry_Service {
         $flags['needs_two_factor_metrics'] =
             $flags['two_factor_enabled'] ||
             $flags['two_factor_protected_users_total'];
+        $flags['needs_login_protection_metrics'] =
+            $flags['passkey_enabled'] ||
+            $flags['passkey_protected_users_total'] ||
+            $flags['login_protected_users_total'];
         $flags['needs_source_freshness'] =
             $flags['latest_hit_timestamp_seconds'] ||
             $flags['latest_blocked_hit_timestamp_seconds'] ||
             $flags['latest_scan_timestamp_seconds'] ||
-            $flags['scan_age_seconds'];
+            $flags['scan_age_seconds'] ||
+            $flags['scan_issue_update_age_seconds'];
         $flags['needs_wordfence_posture'] =
             $flags['installed'] ||
             $flags['version_info'] ||
@@ -345,6 +365,8 @@ final class Simula_Security_Telemetry_Service {
             $flags['theme_update_available_total'] ||
             $flags['admin_users_total'] ||
             $flags['admin_users_without_2fa_total'] ||
+            $flags['admin_users_without_passkey_total'] ||
+            $flags['admin_users_without_login_protection_total'] ||
             $flags['admin_user_info'];
         $flags['needs_plugin_inventory'] =
             $flags['plugins_installed_total'] ||
@@ -460,6 +482,10 @@ final class Simula_Security_Telemetry_Service {
                 $time_identifier,
                 $windows
             );
+        }
+
+        if ($window_selects === []) {
+            return [];
         }
 
         return Simula_Security_Telemetry_Util::db_get_row(
@@ -800,6 +826,29 @@ final class Simula_Security_Telemetry_Service {
             );
         }
 
+        if (!empty($flags['authentication_failures_window'])) {
+            $samples = [];
+            foreach (Simula_Security_Telemetry_Wordfence_Collector::authentication_failure_methods() as $method) {
+                $samples = array_merge(
+                    $samples,
+                    self::build_window_metric_samples(
+                        $site,
+                        $data['window_counts'],
+                        'authentication_failure_' . $method,
+                        ['method' => $method]
+                    )
+                );
+            }
+
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_authentication_failures_window',
+                'gauge',
+                'Failed Wordfence authentication attempts grouped by bounded method and recent window.',
+                $samples
+            );
+        }
+
         if (!empty($flags['rate_limited_events_window'])) {
             Simula_Security_Telemetry_Output::append_metric_family(
                 $metrics,
@@ -815,7 +864,7 @@ final class Simula_Security_Telemetry_Service {
                 $metrics,
                 $prefix . '_brute_force_events_window',
                 'gauge',
-                'Brute-force activity observed within recent windows. Username values use failed Wordfence login attempts when the login-attempt table is available; XML-RPC values use retained hit/live-traffic rows.',
+                'Brute-force activity observed within recent windows. Username values use password-classified Wordfence login failures when the login-attempt table is available; XML-RPC values use retained hit/live-traffic rows.',
                 array_merge(
                     self::build_window_metric_samples($site, $data['window_counts'], 'brute_username', ['vector' => 'username']),
                     self::build_window_metric_samples($site, $data['window_counts'], 'brute_xmlrpc', ['vector' => 'xmlrpc'])
@@ -867,6 +916,48 @@ final class Simula_Security_Telemetry_Service {
                 [
                     ['labels' => ['site' => $site], 'value' => (int) ($data['two_factor_metrics']['protected_users'] ?? 0)],
                 ]
+            );
+        }
+
+        if (!empty($flags['passkey_enabled'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_passkey_enabled',
+                'gauge',
+                'Whether Wordfence passkeys appear to be configured.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($data['passkey_metrics']['enabled'] ?? 0)],
+                ]
+            );
+        }
+
+        if (!empty($flags['passkey_protected_users_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_passkey_protected_users_total',
+                'gauge',
+                'Count of users with Wordfence passkeys configured.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($data['passkey_metrics']['protected_users'] ?? 0)],
+                ]
+            );
+        }
+
+        if (!empty($flags['login_protected_users_total'])) {
+            $samples = [];
+            foreach (['2fa', 'passkey', 'either', 'both'] as $method) {
+                $samples[] = [
+                    'labels' => ['site' => $site, 'method' => $method],
+                    'value'  => (int) ($data['login_protection_metrics'][$method] ?? 0),
+                ];
+            }
+
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_login_protected_users_total',
+                'gauge',
+                'Count of users protected by Wordfence 2FA, passkeys, either method, or both methods.',
+                $samples
             );
         }
 
@@ -979,9 +1070,21 @@ final class Simula_Security_Telemetry_Service {
                 $metrics,
                 $prefix . '_scan_age_seconds',
                 'gauge',
-                'Age in seconds of the latest observed Wordfence scan issue update.',
+                'Age in seconds since the latest successful Wordfence scan completed.',
                 [
                     ['labels' => ['site' => $site], 'value' => (int) ($freshness['scan_age'] ?? 0)],
+                ]
+            );
+        }
+
+        if (!empty($flags['scan_issue_update_age_seconds'])) {
+            Simula_Security_Telemetry_Output::append_metric_family(
+                $metrics,
+                $prefix . '_scan_issue_update_age_seconds',
+                'gauge',
+                'Age in seconds of the latest observed Wordfence scan issue update.',
+                [
+                    ['labels' => ['site' => $site], 'value' => (int) ($freshness['scan_issue_update_age'] ?? 0)],
                 ]
             );
         }
@@ -1087,6 +1190,14 @@ final class Simula_Security_Telemetry_Service {
 
         if (!empty($flags['admin_users_without_2fa_total'])) {
             Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_admin_users_without_2fa_total', 'gauge', 'Number of administrator users without Wordfence two-factor secrets.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['admin_users_without_2fa_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['admin_users_without_passkey_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_admin_users_without_passkey_total', 'gauge', 'Number of administrator users without Wordfence passkeys.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['admin_users_without_passkey_total'] ?? 0)]]);
+        }
+
+        if (!empty($flags['admin_users_without_login_protection_total'])) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_admin_users_without_login_protection_total', 'gauge', 'Number of administrator users without Wordfence two-factor secrets or passkeys.', [['labels' => ['site' => $site], 'value' => (int) ($wordpress_posture['admin_users_without_login_protection_total'] ?? 0)]]);
         }
 
         if (!empty($flags['admin_user_info']) && $admin_identity_mode !== 'disabled') {
@@ -1502,7 +1613,7 @@ final class Simula_Security_Telemetry_Service {
     private static function apply_cached_slow_metrics($data, $state) {
         $cache = isset($state['slow_metric_cache']) && is_array($state['slow_metric_cache']) ? $state['slow_metric_cache'] : [];
 
-        foreach (['two_factor_metrics', 'scan_issue_metrics', 'wordfence_posture', 'wordpress_posture', 'wordpress_drift', 'account_metrics', 'cron_option_metrics', 'ioc_metrics'] as $key) {
+        foreach (['two_factor_metrics', 'passkey_metrics', 'login_protection_metrics', 'scan_issue_metrics', 'wordfence_posture', 'wordpress_posture', 'wordpress_drift', 'account_metrics', 'cron_option_metrics', 'ioc_metrics'] as $key) {
             if (isset($cache[$key]) && is_array($cache[$key])) {
                 $data[$key] = $cache[$key];
             }
@@ -1510,7 +1621,13 @@ final class Simula_Security_Telemetry_Service {
 
         if (isset($cache['source_freshness']) && is_array($cache['source_freshness'])) {
             $cached_freshness = $cache['source_freshness'];
-            foreach (['latest_scan', 'scan_age'] as $key) {
+            $source_freshness_cache_keys = ['latest_scan', 'scan_issue_update_age'];
+            if (array_key_exists('latest_successful_scan', $cached_freshness)) {
+                $source_freshness_cache_keys[] = 'latest_successful_scan';
+                $source_freshness_cache_keys[] = 'scan_age';
+            }
+
+            foreach ($source_freshness_cache_keys as $key) {
                 if (array_key_exists($key, $cached_freshness)) {
                     $data['source_freshness'][$key] = $cached_freshness[$key];
                 }
@@ -1524,10 +1641,14 @@ final class Simula_Security_Telemetry_Service {
     private static function slow_metric_cache_from_data($data) {
         return [
             'two_factor_metrics' => is_array($data['two_factor_metrics'] ?? null) ? $data['two_factor_metrics'] : [],
+            'passkey_metrics' => is_array($data['passkey_metrics'] ?? null) ? $data['passkey_metrics'] : [],
+            'login_protection_metrics' => is_array($data['login_protection_metrics'] ?? null) ? $data['login_protection_metrics'] : [],
             'scan_issue_metrics' => is_array($data['scan_issue_metrics'] ?? null) ? $data['scan_issue_metrics'] : [],
             'source_freshness'   => is_array($data['source_freshness'] ?? null) ? [
-                'latest_scan' => (int) ($data['source_freshness']['latest_scan'] ?? 0),
-                'scan_age'    => (int) ($data['source_freshness']['scan_age'] ?? 0),
+                'latest_scan'            => (int) ($data['source_freshness']['latest_scan'] ?? 0),
+                'latest_successful_scan' => (int) ($data['source_freshness']['latest_successful_scan'] ?? 0),
+                'scan_age'               => (int) ($data['source_freshness']['scan_age'] ?? 0),
+                'scan_issue_update_age'  => (int) ($data['source_freshness']['scan_issue_update_age'] ?? 0),
             ] : [],
             'wordfence_posture' => is_array($data['wordfence_posture'] ?? null) ? $data['wordfence_posture'] : [],
             'wordpress_posture' => is_array($data['wordpress_posture'] ?? null) ? $data['wordpress_posture'] : [],

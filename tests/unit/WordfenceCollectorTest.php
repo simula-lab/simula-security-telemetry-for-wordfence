@@ -35,6 +35,25 @@ return [
     'firewall block windows are the supported bounded labels' => function () {
         sstfw_assert_same(['24h' => 1, '7d' => 7, '30d' => 30], Simula_Security_Telemetry_Wordfence_Collector::firewall_block_windows());
     },
+    'authentication failure method mapping is bounded' => function () {
+        sstfw_assert_same(['password', 'passkey', 'passkey_required', 'two_factor', 'other'], Simula_Security_Telemetry_Wordfence_Collector::authentication_failure_methods());
+
+        foreach ([
+            ['loginFailValidUsername', 'password'],
+            ['loginFailInvalidUsername', 'password'],
+            ['loginFailPasskey', 'passkey'],
+            ['loginFailPasskeyRequired', 'passkey_required'],
+            ['twofactor_invalid', 'two_factor'],
+            ['wfls_twofactor_failed', 'two_factor'],
+            ['wfls_twofactor_blocked', 'two_factor'],
+            ['wfls_2fa_invalid', 'two_factor'],
+            ['newWordfenceFailureAction', 'other'],
+            ['', 'other'],
+            [null, 'other'],
+        ] as $case) {
+            sstfw_assert_same($case[1], Simula_Security_Telemetry_Wordfence_Collector::authentication_failure_method($case[0]));
+        }
+    },
     'normalize_ip_range bounds ipv4 ipv6 and integer addresses' => function () {
         sstfw_assert_same('203.0.113.0/24', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'normalize_ip_range', ['203.0.113.44']));
         sstfw_assert_same('203.0.113.0/24', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'normalize_ip_range', ['3405803820']));
@@ -49,6 +68,19 @@ return [
 
         $wp_version = '';
         sstfw_assert_same('unknown', sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'wordpress_version'));
+    },
+    'latest successful scan timestamp requires ok completion status' => function () {
+        wfConfig::$values = [
+            'lastScanCompleted' => 'ok',
+            'scanTime' => 1700000123.456,
+        ];
+        sstfw_assert_same(1700000123, sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_latest_successful_scan_timestamp'));
+
+        wfConfig::$values = [
+            'lastScanCompleted' => 'Scan terminated with error',
+            'scanTime' => 1700000123,
+        ];
+        sstfw_assert_same(0, sstfw_invoke_private_static('Simula_Security_Telemetry_Wordfence_Collector', 'collect_latest_successful_scan_timestamp'));
     },
     'collect_plugin_inventory returns exclusive states and update availability' => function () {
         $updates = new stdClass();
