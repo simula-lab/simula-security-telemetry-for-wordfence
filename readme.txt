@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.1.3
+Stable tag: 3.2.3
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -118,12 +118,16 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_firewall_blocks_latest_timestamp_seconds
 * wordpress_wordfence_blocked_events_by_status_24h
 * wordpress_wordfence_failed_login_attempts_window
+* wordpress_wordfence_authentication_failures_window
 * wordpress_wordfence_rate_limited_events_window
 * wordpress_wordfence_brute_force_events_window
 * wordpress_wordfence_top_attack_sources_24h
 * wordpress_wordfence_locked_out_total
 * wordpress_wordfence_two_factor_enabled
 * wordpress_wordfence_two_factor_protected_users_total
+* wordpress_wordfence_passkey_enabled
+* wordpress_wordfence_passkey_protected_users_total
+* wordpress_wordfence_login_protected_users_total
 * wordpress_wordfence_scan_issues_by_severity
 * wordpress_wordfence_scan_findings_total
 * wordpress_wordfence_vulnerability_findings_total
@@ -150,6 +154,8 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_theme_update_available_total
 * wordpress_wordfence_admin_users_total
 * wordpress_wordfence_admin_users_without_2fa_total
+* wordpress_wordfence_admin_users_without_passkey_total
+* wordpress_wordfence_admin_users_without_login_protection_total
 * wordpress_wordfence_admin_user_info
 * wordpress_wordfence_users_total
 * wordpress_wordfence_users_created_window
@@ -212,6 +218,10 @@ Each metric family can be enabled or disabled independently from the settings sc
 
 blocked_events_total and blocked_events_window are deprecated ambiguous aliases for hit/live-traffic row counts. blocked_hit_rows_total and blocked_hit_rows_window are the explicit names for that same low-level data model. firewall_blocks_window is the Wordfence Firewall Summary-compatible aggregate metric; it reads wfBlockedIPLog/wfblockediplog with unixday, blockType, and SUM(blockCount), maps known block types to complex, brute_force, and blocklist, and bounds all other values to other. If the aggregate source is unavailable, the availability metric is 0 and category/window series are omitted instead of fabricated.
 
+The two_factor_* and admin_users_without_2fa_total metrics remain strict Wordfence TOTP/2FA metrics. Wordfence 9.0.0 passkeys are exported through passkey_enabled, passkey_protected_users_total, admin_users_without_passkey_total, admin_users_without_login_protection_total, and login_protected_users_total. For Wordfence 9.0.0+ login-protection alerts, prefer admin_users_without_login_protection_total over overloading the 2FA-only admin metric.
+
+failed_login_attempts_window remains the aggregate failed-login metric and counts Wordfence wfLogins rows where fail is greater than 0, including passkey-related failures in Wordfence 9.0.0. authentication_failures_window adds bounded method labels for password, passkey, passkey_required, two_factor, and other failures. brute_force_events_window username values use password-classified login failures when wfLogins is available, so passkey-required policy blocks are not counted as password brute force.
+
 = What does the incident log export do? =
 
 It appends newly observed blocked Wordfence hits to a local .log or .jsonl path. The default text format preserves the original plain-text log line. The JSON Lines format emits one structured JSON object per blocked event for Loki, ELK, OpenSearch, and similar tooling. The exported incident timestamp is taken from the Wordfence hit row, falling back across known timestamp columns before using export time. The exporter tracks the last processed hit ID, and you can reset the incident cursor from the admin UI or WP-CLI to backfill retained history up to the configured per-run limit.
@@ -234,7 +244,7 @@ If WP-CLI is available, the plugin registers:
 
 = Does the project provide Grafana and Prometheus examples? =
 
-Yes. The source repository provides repository-only examples under examples/grafana/ and examples/prometheus/. They are intentionally not included in the WordPress.org plugin zip. The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator 2FA coverage, and incident logs. Inventory-based alert examples require the matching opt-in inventory metric to be enabled.
+Yes. The source repository provides repository-only examples under examples/grafana/ and examples/prometheus/. They are intentionally not included in the WordPress.org plugin zip. The dashboard includes exporter health, activity, scan posture, WordPress version, plugin posture, opt-in plugin inventory, opt-in admin inventory, administrator login-protection coverage, and incident logs. Inventory-based alert examples require the matching opt-in inventory metric to be enabled.
 
 = What permissions are required? =
 
@@ -245,6 +255,14 @@ The directory that will contain the .prom file must already exist and be writabl
 1. Settings screen showing Prometheus metric controls, incident log settings, manual actions, and current exporter state.
 
 == Changelog ==
+
+= 3.2.3 =
+
+* Added Wordfence 9.0.0 passkey metrics while keeping existing two-factor metrics strict to TOTP/2FA secrets.
+* Added combined login-protection metrics for administrators and users protected by 2FA, passkeys, either method, or both methods.
+* Added authentication_failures_window with bounded password, passkey, passkey_required, two_factor, and other labels.
+* Kept the aggregate failed-login metric compatible while preventing passkey-required failures from being counted as password brute force.
+* Added Wordfence-version pinning support to Docker smoke scripts for current-version and 8.x compatibility checks.
 
 = 3.1.3 =
 
@@ -318,6 +336,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 3.2.3 =
+
+Wordfence 9.0.0 passkeys are reported separately from strict 2FA metrics; use wordpress_wordfence_admin_users_without_login_protection_total for combined admin login-protection alerts.
 
 = 3.1.3 =
 

@@ -116,7 +116,16 @@ groups:
           severity: warning
         annotations:
           summary: WordPress administrators without 2FA on {{ $labels.site }}
-          description: One or more administrator users do not have a Wordfence two-factor secret.
+          description: One or more administrator users do not have a Wordfence TOTP two-factor secret. Wordfence passkeys are reported separately.
+
+      - alert: WordPressAdminsWithoutLoginProtection
+        expr: wordpress_wordfence_admin_users_without_login_protection_total > 0
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: WordPress administrators without login protection on {{ $labels.site }}
+          description: One or more administrator users have neither a Wordfence TOTP two-factor secret nor a Wordfence passkey.
 
       - alert: WordfenceSourceDataStale
         expr: time() - wordpress_wordfence_latest_hit_timestamp_seconds > 86400
