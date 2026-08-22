@@ -9,13 +9,13 @@ License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
 
-Export metrics from Wordfence into a node_exporter textfile collector .prom file and append incidents detected by wordfence to a local log file.
+Export Wordfence-generated telemetry into a node_exporter textfile collector .prom file and append incidents detected by Wordfence to a local log file.
 
 == Description ==
 Simula Security Telemetry for Wordfence exports Wordfence security telemetry in two forms:
 
 * Prometheus metrics for the node_exporter textfile collector that can be scraped by Prometheus
-* A local incident log containing blocked Wordfence requests that can be shipped with Grafana-Alloy
+* A local incident log containing blocked Wordfence requests that can be shipped with Grafana Alloy
 
 This plugin is intended for WordPress sites that already use Wordfence and Prometheus-based infrastructure. Instead of exposing a public metrics endpoint from WordPress, the plugin writes local files that node_exporter and log-based tooling can consume.
 
@@ -25,7 +25,7 @@ By default, the plugin runs a fast collector every 15 minutes and a slow collect
 * Configurable cron interval
 * Separate fast and slow collector intervals
 * Per-metric-family enable or disable controls
-* Wordfence Firewall Summary-compatible aggregate block counts
+* Aggregate firewall block counts derived from locally stored Wordfence block-log data
 * Blocked hit-row counters and recent activity windows
 * Blocked event counts by HTTP status code over the last 24 hours
 * Failed login, rate-limited, and brute-force activity windows
@@ -43,9 +43,9 @@ By default, the plugin runs a fast collector every 15 minutes and a slow collect
 * Source freshness and WordPress/Wordfence posture metrics
 * A ready-to-import Grafana dashboard and sample Prometheus alert rules
 
-Simula exposes two distinct Wordfence blocking measurements. blocked_hit_rows_* counts retained hit/live-traffic records matching a blocked-request predicate. firewall_blocks_* reports Wordfence's aggregate Firewall Summary counts by category. The values are not expected to be equal because they have different sources, units, retention behavior, and categorization.
+The plugin exposes two distinct Wordfence blocking measurements. blocked_hit_rows_* counts retained hit/live-traffic records matching a blocked-request predicate. firewall_blocks_* derives aggregate block counts from locally stored Wordfence block-log data and groups them into bounded categories and reporting windows. The values are not expected to be equal because the two metric families use different sources, units, retention behavior, and categorization.
 
-The legacy blocked_events_* names are deprecated aliases for the hit/live-traffic row model. They are still emitted for compatibility, but they must not be treated as the Wordfence Firewall Summary "Attacks Blocked" statistic.
+The legacy blocked_events_* names are deprecated aliases for the hit/live-traffic row model. They are still emitted for compatibility, but they represent retained blocked hit rows rather than the aggregate block-log data exposed through firewall_blocks_*.
 
 Blocked hit rows are currently identified from the Wordfence hits table where:
 
@@ -70,6 +70,10 @@ The plugin includes an admin settings screen under Settings > Security Telemetry
 * Trigger a manual export
 * Reset the incident cursor for backfill
 * Review current exporter and incident state
+
+Simula Security Telemetry for Wordfence is an independent open-source project and is not affiliated with, endorsed by, sponsored by, or otherwise associated with Defiant, Inc. or Wordfence.
+
+Wordfence and related names and marks are the property of their respective owners.
 
 == Installation ==
 
@@ -216,9 +220,13 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 
 Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory and per-admin inventory are disabled by default because plugin names, versions, active state, and administrator identities can expose sensitive operational details. Admin inventory uses hashed identity labels by default when enabled.
 
-blocked_events_total and blocked_events_window are deprecated ambiguous aliases for hit/live-traffic row counts. blocked_hit_rows_total and blocked_hit_rows_window are the explicit names for that same low-level data model. firewall_blocks_window is the Wordfence Firewall Summary-compatible aggregate metric; it reads wfBlockedIPLog/wfblockediplog with unixday, blockType, and SUM(blockCount), maps known block types to complex, brute_force, and blocklist, and bounds all other values to other. If the aggregate source is unavailable, the availability metric is 0 and category/window series are omitted instead of fabricated.
+blocked_events_total and blocked_events_window are deprecated ambiguous aliases for hit/live-traffic row counts. blocked_hit_rows_total and blocked_hit_rows_window are the explicit names for that same low-level data model. 
 
-The two_factor_* and admin_users_without_2fa_total metrics remain strict Wordfence TOTP/2FA metrics. Wordfence 9.0.0 passkeys are exported through passkey_enabled, passkey_protected_users_total, admin_users_without_passkey_total, admin_users_without_login_protection_total, and login_protected_users_total. For Wordfence 9.0.0+ login-protection alerts, prefer admin_users_without_login_protection_total over overloading the 2FA-only admin metric.
+firewall_blocks_window derives aggregate firewall block counts from the locally stored wfBlockedIPLog/wfblockediplog table when the required fields are available. It uses locally available day-bucket, block-type, and block-count data, groups recognized block types into the bounded categories complex, brute_force, and blocklist, and groups all other values under other.
+
+This metric has different source and retention semantics from blocked_hit_rows_* and should not be expected to match retained hit-row counts. If the aggregate source is unavailable, firewall_blocks_available is 0 and category/window series are omitted rather than fabricated.
+
+The two_factor_* and admin_users_without_2fa_total metrics remain strict Wordfence TOTP/2FA metrics. Wordfence 9.0.0 passkeys are exported through passkey_enabled, passkey_protected_users_total, admin_users_without_passkey_total, admin_users_without_login_protection_total, and login_protected_users_total. For Wordfence 9.0.0+ login-protection alerts, prefer admin_users_without_login_protection_total overloading the 2FA-only admin metric.
 
 failed_login_attempts_window remains the aggregate failed-login metric and counts Wordfence wfLogins rows where fail is greater than 0, including passkey-related failures in Wordfence 9.0.0. authentication_failures_window adds bounded method labels for password, passkey, passkey_required, two_factor, and other failures. brute_force_events_window username values use password-classified login failures when wfLogins is available, so passkey-required policy blocks are not counted as password brute force.
 
@@ -272,10 +280,10 @@ The directory that will contain the .prom file must already exist and be writabl
 
 = 3.1.2 =
 
-* Added Wordfence Firewall Summary-compatible aggregate block metrics by category and 24h, 7d, and 30d reporting window.
+* Added aggregate firewall block metrics derived from locally stored Wordfence block-log data by category and 24h, 7d, and 30d reporting window.
 * Added explicit blocked_hit_rows aliases for the existing hit/live-traffic row metrics while keeping blocked_events metrics for compatibility.
-* Added Firewall Summary source availability, collection-success, source-info, and latest-bucket diagnostics.
-* Updated admin and WP-CLI status output to distinguish hit-row metrics from aggregate Firewall Summary metrics.
+* Added aggregate firewall block-source availability, collection-success, source-info, and latest-bucket diagnostics.
+* Updated admin and WP-CLI status output to distinguish hit-row metrics from aggregate Firewall summary metrics.
 * Updated Prometheus rules, Grafana dashboard examples, Docker fixtures, and documentation for source-model comparison and migration.
 * Marked ambiguous blocked_events metric names as deprecated aliases in documentation.
 * Count failed-login windows from Wordfence's wfLogins table when available, with the previous hit/live-traffic text heuristic retained as a fallback.
@@ -351,7 +359,7 @@ Uses Wordfence's wfLogins table for failed-login and username brute-force window
 
 = 3.1.0 =
 
-Adds Wordfence Firewall Summary-compatible aggregate block metrics and explicit blocked_hit_rows aliases. Existing blocked_events metrics remain available but are now documented as deprecated hit/live-traffic row aliases, not Wordfence Firewall Summary totals.
+Adds Wordfence Firewall summary aggregate block metrics and explicit blocked_hit_rows aliases. Existing blocked_events metrics remain available but are now documented as deprecated hit/live-traffic row aliases, not Wordfence Firewall summary totals.
 
 = 2.3.3 =
 
