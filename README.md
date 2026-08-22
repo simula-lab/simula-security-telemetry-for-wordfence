@@ -13,6 +13,12 @@ It is designed for WordPress sites that already run:
 
 The plugin writes local files on a schedule, so Prometheus and log-based tooling can ingest Wordfence activity without exposing a public metrics endpoint from WordPress.
 
+## Disclaimer
+
+**Simula Security Telemetry for Wordfence** is an independent open-source project and is not affiliated with, endorsed by, sponsored by, or otherwise associated with Defiant, Inc. or Wordfence.
+
+Wordfence and related names and marks are the property of their respective owners.
+
 ## What It Does
 
 The plugin reads data from available Wordfence tables and can write:
@@ -26,7 +32,7 @@ By default, it runs a fast collector every 15 minutes and a slow collector hourl
 - Configurable cron interval
 - Separate fast and slow collector intervals
 - Per-metric-family enable or disable controls
-- Wordfence Firewall Summary-compatible aggregate block counts
+- Wordfence Firewall summary aggregate block counts
 - Blocked hit-row counters and recent activity windows
 - Blocked event counts by HTTP status code
 - Failed login, rate-limited, and brute-force activity windows
@@ -207,8 +213,8 @@ All metrics include a `site` label.
   Cumulative counter of newly observed Wordfence hit/live-traffic rows matching the blocked-hit predicate. This is not the Wordfence Firewall Summary "Attacks Blocked" statistic.
 - `wordpress_wordfence_blocked_hit_rows_window{window="5m|1h|24h|7d"}`
   Retained Wordfence hit/live-traffic rows matching the blocked-hit predicate in recent rolling windows.
-- `wordpress_wordfence_firewall_blocks_window{category="complex|brute_force|blocklist|other",window="24h|7d|30d"}`
-  Wordfence aggregate Firewall Summary block counts from `wfBlockedIPLog`/`wfblockediplog` using `unixday`, `blockType`, and `SUM(blockCount)`. Known mappings are `fakegoogle`, `badpost`, `country`, `advanced`, and `waf` to `complex`; `throttle` and `brute` to `brute_force`; `blacklist` and `manual` to `blocklist`; all other values to `other`. The current implementation follows Wordfence's documented 24-hour, 7-day, and 30-day statistics and its observed unixday bucket query shape.
+- `wordpress*wordfence_firewall_blocks_window{category="complex|brute_force|blocklist|other",window="24h|7d|30d"}`
+  Aggregated Wordfence firewall block counts derived from the local wfBlockedIPLog/wfblockediplog table using available day-bucket, block-type, and block-count fields. Results are grouped into bounded categories and rolling reporting windows. This metric has different source and retention semantics from blocked_hit_rows\*\* and should not be expected to match retained hit-row counts.
 - `wordpress_wordfence_firewall_blocks_available`
   `1` when the supported aggregate source table and columns are detected; `0` otherwise.
 - `wordpress_wordfence_firewall_blocks_collection_success`
@@ -451,7 +457,7 @@ For production scheduling, prefer system cron invoking WP-CLI over relying only 
 - The alert examples include stale or failed exports, blocked request spikes, source divergence diagnostics, failed login bursts, malware and vulnerability findings, WordPress core updates, plugin updates, inactive Wordfence inventory, and administrator 2FA coverage.
 - Adjust alert thresholds to match site traffic. The defaults are intentionally conservative starting points and inventory-based alerts require the matching opt-in inventory metric to be enabled.
 
-Use this recording rule for a Wordfence Firewall Summary-compatible total:
+Use this recording rule for a Wordfence Firewall summary total:
 
 ```promql
 sum by (site, window) (
