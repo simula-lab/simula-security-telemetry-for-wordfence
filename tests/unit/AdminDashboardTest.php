@@ -1,0 +1,78 @@
+<?php
+/**
+ * Admin dashboard unit tests.
+ *
+ * @package Simula_Security_Telemetry_for_Wordfence
+ */
+
+return [
+    'admin dashboard registers a separate top-level page with the configured capability' => function () {
+        Simula_Security_Telemetry_Admin::admin_menu();
+        $menu = $GLOBALS['sstfw_admin_menu'][Simula_Security_Telemetry_Config::DASHBOARD_SLUG] ?? [];
+
+        sstfw_assert_same(Simula_Security_Telemetry_Config::CAPABILITY, $menu['capability'] ?? null);
+        sstfw_assert_same(['Simula_Security_Telemetry_Admin', 'dashboard_page'], $menu['callback'] ?? null);
+        sstfw_assert_true(isset($GLOBALS['sstfw_options_menu'][Simula_Security_Telemetry_Config::SLUG]));
+    },
+    'admin dashboard denies rendering to users without the configured capability' => function () {
+        $GLOBALS['sstfw_test_current_user_can'] = false;
+        ob_start();
+        Simula_Security_Telemetry_Admin::dashboard_page();
+        $output = ob_get_clean();
+        $GLOBALS['sstfw_test_current_user_can'] = true;
+
+        sstfw_assert_same('', $output);
+    },
+    'admin dashboard allowlists cached WordPress and PHP data while excluding Wordfence data' => function () {
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $options['enabled_metrics']['php_runtime_posture'] = 1;
+        $options['grafana_dashboard_url'] = 'https://grafana.example.test/d/security';
+        $state = [
+            'last_export' => 990,
+            'slow_metric_cache_at' => 980,
+            'slow_metric_cache' => [
+                'php_runtime_posture' => ['version' => '8.3.27', 'version_supported' => 1, 'sapi' => 'fpm-fcgi', 'architecture' => '64', 'display_errors_enabled' => 0, 'expose_php_enabled' => 0, 'allow_url_fopen_enabled' => 1, 'opcache' => ['enabled' => 1]],
+                'wordpress_posture' => ['wordpress_version' => '6.9', 'core_update_available' => 0, 'plugin_update_available_total' => 1, 'theme_update_available_total' => 0, 'admin_users_without_2fa_total' => 99],
+                'wordpress_drift' => ['settings' => ['debug_enabled' => 0, 'file_edit_allowed' => 0, 'file_mods_allowed' => 0], 'asset_drift_windows' => ['plugins_added' => ['24h' => 1], 'plugins_removed' => ['24h' => 0]], 'wordfence_posture' => ['version' => 'sensitive']],
+                'ioc_metrics' => ['content' => ['script_tags' => ['post' => 1]], 'files' => ['upload_php_files_total' => 1, 'upload_executable_files_total' => 1, 'theme_files_modified' => ['24h' => 1]]],
+                'wordfence_posture' => ['version' => 'sensitive'],
+            ],
+        ];
+
+        $model = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state, 1000);
+        $serialized = serialize($model);
+
+        sstfw_assert_same('healthy', $model['runtime']['status']);
+        sstfw_assert_same(1, $model['changes']['data']['upload_php_files']);
+        sstfw_assert_same('https://grafana.example.test/d/security', $model['grafana_url']);
+        sstfw_assert_same('success', $model['exporter']['last_result']);
+        sstfw_assert_true(strpos($serialized, 'wordfence') === false);
+        sstfw_assert_true(strpos($serialized, 'sensitive') === false);
+        sstfw_assert_true(strpos($serialized, 'admin_users_without_2fa_total') === false);
+    },
+    'admin dashboard represents disabled and unavailable sources explicitly' => function () {
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $options['enabled_metrics']['php_runtime_posture'] = 0;
+        $model = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, [], 1000);
+
+        sstfw_assert_same('unavailable', $model['runtime']['status']);
+        sstfw_assert_same('opt_in_disabled', $model['runtime']['reason']);
+        sstfw_assert_same('unavailable', $model['wordpress']['status']);
+        sstfw_assert_same('unavailable', $model['changes']['status']);
+    },
+    'admin dashboard marks unsupported PHP as action required' => function () {
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $options['enabled_metrics']['php_runtime_posture'] = 1;
+        $state = ['last_export' => 1000, 'slow_metric_cache' => ['php_runtime_posture' => ['version' => '8.2.0', 'version_supported' => 0]]];
+        $model = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state, 1000);
+
+        sstfw_assert_same('action_required', $model['runtime']['status']);
+        sstfw_assert_same('action_required', $model['overall_status']);
+    },
+    'grafana handoff permits only absolute HTTPS URLs' => function () {
+        sstfw_assert_same('https://grafana.example.test/d/abc', Simula_Security_Telemetry_Admin_Dashboard::grafana_url('https://grafana.example.test/d/abc'));
+        sstfw_assert_same('', Simula_Security_Telemetry_Admin_Dashboard::grafana_url('http://grafana.example.test/d/abc'));
+        sstfw_assert_same('', Simula_Security_Telemetry_Admin_Dashboard::grafana_url('javascript:alert(1)'));
+        sstfw_assert_same('', sstfw_invoke_private_static('Simula_Security_Telemetry_Settings', 'sanitize_grafana_dashboard_url', ['http://grafana.example.test/d/abc']));
+    },
+];

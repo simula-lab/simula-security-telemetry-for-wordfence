@@ -10,8 +10,18 @@ if (!defined('ABSPATH')) {
 }
 
 final class Simula_Security_Telemetry_Admin {
-    /** Registers the plugin settings page under the WordPress Settings menu. */
+    /** Registers the operator dashboard and settings page. */
     public static function admin_menu() {
+        add_menu_page(
+            __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
+            __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
+            Simula_Security_Telemetry_Config::CAPABILITY,
+            Simula_Security_Telemetry_Config::DASHBOARD_SLUG,
+            [__CLASS__, 'dashboard_page'],
+            'dashicons-shield',
+            80
+        );
+
         add_options_page(
             __('Simula Security Telemetry for Wordfence', 'simula-security-telemetry-for-wordfence'),
             __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
@@ -19,6 +29,36 @@ final class Simula_Security_Telemetry_Admin {
             Simula_Security_Telemetry_Config::SLUG,
             [__CLASS__, 'settings_page']
         );
+    }
+
+    /** Renders the current-state, non-Wordfence operator dashboard. */
+    public static function dashboard_page() {
+        if (!current_user_can(Simula_Security_Telemetry_Config::CAPABILITY)) {
+            return;
+        }
+
+        $options = Simula_Security_Telemetry_Settings::get_options();
+        $state   = Simula_Security_Telemetry_Settings::get_state();
+        $model   = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state);
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Security Telemetry', 'simula-security-telemetry-for-wordfence'); ?></h1>
+            <p><?php echo esc_html__('Current WordPress and PHP posture collected by this plugin. Wordfence activity, scan, incident, and configuration data are not shown here.', 'simula-security-telemetry-for-wordfence'); ?></p>
+            <p><strong><?php echo esc_html__('Overall status:', 'simula-security-telemetry-for-wordfence'); ?></strong> <?php echo esc_html(self::dashboard_status_label($model['overall_status'])); ?></p>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; max-width:1200px;">
+                <?php self::render_dashboard_card(__('Exporter health', 'simula-security-telemetry-for-wordfence'), $model['exporter']['status'], self::dashboard_exporter_rows($model['exporter'])); ?>
+                <?php self::render_dashboard_card(__('PHP runtime posture', 'simula-security-telemetry-for-wordfence'), $model['runtime']['status'], self::dashboard_runtime_rows($model['runtime'])); ?>
+                <?php self::render_dashboard_card(__('WordPress posture', 'simula-security-telemetry-for-wordfence'), $model['wordpress']['status'], self::dashboard_wordpress_rows($model['wordpress'])); ?>
+                <?php self::render_dashboard_card(__('Change signals', 'simula-security-telemetry-for-wordfence'), $model['changes']['status'], self::dashboard_change_rows($model['changes'])); ?>
+            </div>
+
+            <?php if ($model['grafana_url'] !== '') : ?>
+                <p style="margin-top:20px;"><a class="button button-secondary" href="<?php echo esc_url($model['grafana_url']); ?>"><?php echo esc_html__('View historical telemetry in Grafana', 'simula-security-telemetry-for-wordfence'); ?></a></p>
+            <?php endif; ?>
+            <p><a href="<?php echo esc_url(admin_url('options-general.php?page=' . Simula_Security_Telemetry_Config::SLUG)); ?>"><?php echo esc_html__('Configure Security Telemetry', 'simula-security-telemetry-for-wordfence'); ?></a></p>
+        </div>
+        <?php
     }
 
     /** Adds a Settings shortcut link on the plugins screen. */
@@ -167,6 +207,15 @@ final class Simula_Security_Telemetry_Admin {
                 <td>
                     <input id="sstfw-site-label" class="regular-text" type="text" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[site_label]" value="<?php echo esc_attr($options['site_label']); ?>" />
                     <p class="description"><?php echo esc_html__('Added to every exported metric as the site label value.', 'simula-security-telemetry-for-wordfence'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="sstfw-grafana-dashboard-url"><?php echo esc_html__('Grafana dashboard URL', 'simula-security-telemetry-for-wordfence'); ?></label>
+                </th>
+                <td>
+                    <input id="sstfw-grafana-dashboard-url" class="regular-text code" type="url" inputmode="url" name="<?php echo esc_attr(Simula_Security_Telemetry_Config::OPTION); ?>[grafana_dashboard_url]" value="<?php echo esc_attr($options['grafana_dashboard_url']); ?>" placeholder="https://grafana.example.test/d/..." />
+                    <p class="description"><?php echo esc_html__('Optional HTTPS link shown on the Security Telemetry dashboard. The plugin does not query or embed Grafana.', 'simula-security-telemetry-for-wordfence'); ?></p>
                 </td>
             </tr>
             <tr>
@@ -373,5 +422,104 @@ final class Simula_Security_Telemetry_Admin {
             <td><?php echo esc_html((string) $value); ?></td>
         </tr>
         <?php
+    }
+
+    /** Renders an accessible current-state dashboard card. */
+    private static function render_dashboard_card($title, $status, $rows) {
+        ?>
+        <section class="card" style="margin:0; padding:16px; max-width:none;">
+            <h2 style="margin-top:0;"><?php echo esc_html($title); ?></h2>
+            <p><strong><?php echo esc_html__('Status:', 'simula-security-telemetry-for-wordfence'); ?></strong> <?php echo esc_html(self::dashboard_status_label($status)); ?></p>
+            <table class="widefat striped"><tbody>
+                <?php foreach ($rows as $label => $value) : ?>
+                    <?php self::render_state_row($label, $value); ?>
+                <?php endforeach; ?>
+            </tbody></table>
+        </section>
+        <?php
+    }
+
+    /** Returns a text equivalent for every dashboard status. */
+    private static function dashboard_status_label($status) {
+        $labels = [
+            'healthy' => __('Healthy', 'simula-security-telemetry-for-wordfence'),
+            'review' => __('Review needed', 'simula-security-telemetry-for-wordfence'),
+            'action_required' => __('Action required', 'simula-security-telemetry-for-wordfence'),
+            'unavailable' => __('Data unavailable', 'simula-security-telemetry-for-wordfence'),
+        ];
+
+        return $labels[$status] ?? $labels['unavailable'];
+    }
+
+    /** Formats exporter-health rows without Wordfence-derived state. */
+    private static function dashboard_exporter_rows($card) {
+        return [
+            __('Last export', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['last_export'] ?? 0),
+            __('Most recent exporter result', 'simula-security-telemetry-for-wordfence') => self::dashboard_exporter_result_label($card['last_result'] ?? 'not_run'),
+            __('Last slow refresh', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['slow_refresh'] ?? 0),
+            __('Next export', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['next_export'] ?? 0),
+        ];
+    }
+
+    /** Formats the cached PHP runtime allowlist for display. */
+    private static function dashboard_runtime_rows($card) {
+        if (($card['reason'] ?? '') === 'opt_in_disabled') {
+            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Disabled until PHP runtime posture metrics are enabled in settings.', 'simula-security-telemetry-for-wordfence')];
+        }
+        if (($card['reason'] ?? '') === 'not_collected') {
+            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Awaiting the next slow collector run.', 'simula-security-telemetry-for-wordfence')];
+        }
+
+        $data = (array) ($card['data'] ?? []);
+        return [
+            __('PHP version', 'simula-security-telemetry-for-wordfence') => (string) ($data['version'] ?? __('Unknown', 'simula-security-telemetry-for-wordfence')),
+            __('Supported version', 'simula-security-telemetry-for-wordfence') => !empty($data['version_supported']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
+            __('SAPI', 'simula-security-telemetry-for-wordfence') => (string) ($data['sapi'] ?? __('Unknown', 'simula-security-telemetry-for-wordfence')),
+            __('Display errors enabled', 'simula-security-telemetry-for-wordfence') => !empty($data['display_errors_enabled']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
+            __('OPcache enabled', 'simula-security-telemetry-for-wordfence') => !empty($data['opcache_enabled']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No or unavailable', 'simula-security-telemetry-for-wordfence'),
+        ];
+    }
+
+    /** Converts bounded exporter result codes into display text. */
+    private static function dashboard_exporter_result_label($result) {
+        $labels = [
+            'success' => __('Successful', 'simula-security-telemetry-for-wordfence'),
+            'failed' => __('Failed; review exporter settings and status.', 'simula-security-telemetry-for-wordfence'),
+            'not_run' => __('No exports yet.', 'simula-security-telemetry-for-wordfence'),
+        ];
+
+        return $labels[$result] ?? $labels['not_run'];
+    }
+
+    /** Formats the WordPress-only posture allowlist for display. */
+    private static function dashboard_wordpress_rows($card) {
+        $data = (array) ($card['data'] ?? []);
+        if ($data === []) {
+            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Awaiting the next slow collector run.', 'simula-security-telemetry-for-wordfence')];
+        }
+
+        return [
+            __('WordPress version', 'simula-security-telemetry-for-wordfence') => (string) ($data['wordpress_version'] ?? __('Unknown', 'simula-security-telemetry-for-wordfence')),
+            __('Core update available', 'simula-security-telemetry-for-wordfence') => !empty($data['core_update_available']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
+            __('Plugin updates', 'simula-security-telemetry-for-wordfence') => (string) ($data['plugin_update_available_total'] ?? 0),
+            __('Theme updates', 'simula-security-telemetry-for-wordfence') => (string) ($data['theme_update_available_total'] ?? 0),
+            __('Debug enabled', 'simula-security-telemetry-for-wordfence') => !empty($data['debug_enabled']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
+        ];
+    }
+
+    /** Formats WordPress-side drift and IoC totals for display. */
+    private static function dashboard_change_rows($card) {
+        $data = (array) ($card['data'] ?? []);
+        if ($data === []) {
+            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Awaiting the next slow collector run.', 'simula-security-telemetry-for-wordfence')];
+        }
+
+        return [
+            __('Plugins added or removed', 'simula-security-telemetry-for-wordfence') => (string) ((int) ($data['plugins_added'] ?? 0) + (int) ($data['plugins_removed'] ?? 0)),
+            __('Theme files modified', 'simula-security-telemetry-for-wordfence') => (string) ($data['theme_files_modified'] ?? 0),
+            __('PHP files in uploads', 'simula-security-telemetry-for-wordfence') => (string) ($data['upload_php_files'] ?? 0),
+            __('Executable files in uploads', 'simula-security-telemetry-for-wordfence') => (string) ($data['upload_executable_files'] ?? 0),
+            __('Suspicious content signals', 'simula-security-telemetry-for-wordfence') => (string) ($data['suspicious_content'] ?? 0),
+        ];
     }
 }

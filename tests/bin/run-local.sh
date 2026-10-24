@@ -95,6 +95,7 @@ php tests/bin/assert-prom-samples.php \
 
 wp eval-file /tests/wp-cli/enable-plugin-inventory.php
 wp eval-file /tests/wp-cli/enable-admin-inventory.php
+wp eval-file /tests/wp-cli/enable-php-runtime-posture.php
 wp simula-security-telemetry export --metrics-only --scope=slow
 
 php tests/bin/assert-prom.php \
@@ -103,5 +104,7 @@ php tests/bin/assert-prom.php \
 php tests/bin/assert-prom-patterns.php \
   tests/runtime/output/wordfence.prom \
   tests/golden/local-fixture.opt-in-required-patterns.txt
+
+wp eval-file /tests/wp-cli/assert-admin-dashboard.php
 
 echo "Local WordPress fixture smoke test passed."

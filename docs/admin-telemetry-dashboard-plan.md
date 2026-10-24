@@ -37,7 +37,7 @@ and explanation for each degraded result:
 | Card | Current-state data |
 | --- | --- |
 | Runtime posture | PHP version/support status, SAPI, selected safe settings, allowlisted extensions, and OPcache posture when available. |
-| WordPress posture | Core/update posture, plugin and theme update counts, debug/file-edit controls, and administrator security posture. |
+| WordPress posture | Core/update posture, plugin and theme update counts, and debug/file-edit controls. Administrator login-protection posture remains Wordfence-derived and is excluded. |
 | Change signals | WordPress-side drift and IoC metrics already collected by the plugin, such as plugin/theme changes, administrator changes, suspicious content signals, and executable files in uploads. |
 | Exporter health | Last fast/slow export, success state, freshness, scheduled runs, and output/write failures. |
 

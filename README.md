@@ -102,6 +102,8 @@ Settings > Security Telemetry
   Each metric family can be enabled or disabled independently.
 - `Admin identity labels`
   Controls labels for the opt-in per-admin inventory metric.
+- `Grafana dashboard URL`
+  Optional HTTPS handoff link shown on the top-level Security Telemetry admin dashboard. The plugin does not query or embed Grafana.
 
 ### Incident log settings
 
@@ -392,6 +394,18 @@ The following metrics run during slow collection and are cached for fast exports
 - `wordpress_wordfence_wp_content_recently_modified_files_total{area="plugins|themes|uploads|mu_plugins"}`
 
 These metrics avoid raw usernames, emails, option names, cron hook names, session tokens, application password names, and file paths in labels.
+
+## Security Telemetry Dashboard
+
+The top-level **Security Telemetry** wp-admin page is a read-only, current-state
+overview. It shows exporter health plus cached PHP and WordPress posture and
+change signals. It does not display Wordfence firewall activity, scan data,
+incidents, login activity, configuration, or any other Wordfence-derived data.
+
+The page does not run collectors, query Wordfence tables, store time-series
+data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS
+Grafana dashboard URL in Settings to display a handoff link for historical
+telemetry.
 
 ## Incident Log Export
 

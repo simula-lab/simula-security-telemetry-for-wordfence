@@ -24,6 +24,7 @@ $GLOBALS['sstfw_test_user_meta'] = [];
 $GLOBALS['sstfw_test_roles'] = [];
 $GLOBALS['sstfw_test_options']['users_can_register'] = 0;
 $GLOBALS['sstfw_test_options']['default_role'] = 'subscriber';
+$GLOBALS['sstfw_test_current_user_can'] = true;
 
 if (!function_exists('__')) {
     function __($text, $domain = 'default') {
@@ -64,6 +65,32 @@ if (!function_exists('add_settings_error')) {
 if (!function_exists('wp_parse_url')) {
     function wp_parse_url($url, $component = -1) {
         return parse_url($url, $component);
+    }
+}
+
+if (!function_exists('esc_url_raw')) {
+    function esc_url_raw($url, $protocols = null) {
+        return filter_var((string) $url, FILTER_VALIDATE_URL) ? (string) $url : '';
+    }
+}
+
+if (!function_exists('add_menu_page')) {
+    function add_menu_page($page_title, $menu_title, $capability, $menu_slug, $callback = '', $icon_url = '', $position = null) {
+        $GLOBALS['sstfw_admin_menu'][$menu_slug] = compact('page_title', 'menu_title', 'capability', 'callback', 'icon_url', 'position');
+        return $menu_slug;
+    }
+}
+
+if (!function_exists('add_options_page')) {
+    function add_options_page($page_title, $menu_title, $capability, $menu_slug, $callback = '') {
+        $GLOBALS['sstfw_options_menu'][$menu_slug] = compact('page_title', 'menu_title', 'capability', 'callback');
+        return $menu_slug;
+    }
+}
+
+if (!function_exists('current_user_can')) {
+    function current_user_can($capability) {
+        return !empty($GLOBALS['sstfw_test_current_user_can']);
     }
 }
 
@@ -236,6 +263,8 @@ if (!class_exists('Simula_Security_Telemetry_Config')) {
     require_once dirname(__DIR__, 2) . '/includes/class-wordpress-collector.php';
     require_once dirname(__DIR__, 2) . '/includes/class-php-runtime-collector.php';
     require_once dirname(__DIR__, 2) . '/includes/class-metrics-service.php';
+    require_once dirname(__DIR__, 2) . '/includes/class-admin-dashboard.php';
+    require_once dirname(__DIR__, 2) . '/includes/class-admin.php';
 }
 
 function sstfw_assert_same($expected, $actual, $message = '') {

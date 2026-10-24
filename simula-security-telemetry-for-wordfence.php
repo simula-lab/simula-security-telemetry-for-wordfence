@@ -35,6 +35,7 @@ require_once SSTFW_PLUGIN_DIR . 'includes/class-php-runtime-collector.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-incident-exporter.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-metrics-service.php';
+require_once SSTFW_PLUGIN_DIR . 'includes/class-admin-dashboard.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-admin.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-cli.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-metrics.php';

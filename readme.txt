@@ -60,6 +60,7 @@ The plugin includes an admin settings screen under Settings > Security Telemetry
 * Set the .prom output path
 * Set a custom metric prefix
 * Set a custom site label
+* Set an optional HTTPS Grafana dashboard URL for the separate Security Telemetry admin dashboard
 * Enable or disable individual metric families
 * Enable or disable incident log export
 * Set the incident log path
@@ -246,6 +247,10 @@ firewall_blocks_window derives aggregate firewall block counts from the locally 
 This metric has different source and retention semantics from blocked_hit_rows_* and should not be expected to match retained hit-row counts. If the aggregate source is unavailable, firewall_blocks_available is 0 and category/window series are omitted rather than fabricated.
 
 The two_factor_* and admin_users_without_2fa_total metrics remain strict Wordfence TOTP/2FA metrics. Wordfence 9.0.0 passkeys are exported through passkey_enabled, passkey_protected_users_total, admin_users_without_passkey_total, admin_users_without_login_protection_total, and login_protected_users_total. For Wordfence 9.0.0+ login-protection alerts, prefer admin_users_without_login_protection_total overloading the 2FA-only admin metric.
+
+= What does the Security Telemetry dashboard show? =
+
+The top-level Security Telemetry wp-admin page is a read-only, current-state overview of exporter health and cached PHP and WordPress posture and change signals. It does not display Wordfence firewall activity, scan data, incidents, login activity, configuration, or other Wordfence-derived data. It does not run collectors, query Wordfence tables, store time-series data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS Grafana dashboard URL in Settings to show a handoff link for historical telemetry.
 
 failed_login_attempts_window remains the aggregate failed-login metric and counts Wordfence wfLogins rows where fail is greater than 0, including passkey-related failures in Wordfence 9.0.0. authentication_failures_window adds bounded method labels for password, passkey, passkey_required, two_factor, and other failures. brute_force_events_window username values use password-classified login failures when wfLogins is available, so passkey-required policy blocks are not counted as password brute force.
 

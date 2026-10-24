@@ -15,6 +15,7 @@ final class Simula_Security_Telemetry_Config {
     public const CRON_HOOK      = 'sstfw_metrics_export_event';
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
+    public const DASHBOARD_SLUG = 'simula-security-telemetry-dashboard';
     public const CAPABILITY     = 'manage_options';
     public const VERSION        = '4.0.0';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
@@ -34,6 +35,7 @@ final class Simula_Security_Telemetry_Config {
             'prom_file'            => '/var/lib/node_exporter/textfile_collector/wordfence.prom',
             'metric_prefix'        => 'wordpress_wordfence',
             'site_label'           => (string) wp_parse_url(home_url('/'), PHP_URL_HOST),
+            'grafana_dashboard_url' => '',
             'incident_log_enabled' => 1,
             'incident_log_file'    => '/var/log/wordpress-wordfence-incidents.log',
             'incident_log_format'  => 'text',
