@@ -285,6 +285,24 @@ All metrics include a `site` label.
   Wordfence license type metadata.
 - `wordpress_wordfence_wordpress_version_info{version="..."}`
   WordPress core version metadata. Emits `version="unknown"` if the runtime cannot provide a version.
+- `wordpress_wordfence_php_runtime_posture`
+  Opt-in settings control for the PHP runtime posture metrics below. Disabled by default because the metrics expose bounded operational metadata to metrics readers.
+- `wordpress_wordfence_php_runtime_info{version="...",sapi="...",architecture="32|64"}`
+  Bounded PHP runtime metadata.
+- `wordpress_wordfence_php_version_supported`
+  `1` when the PHP version is included in the plugin's maintained support policy; the policy is local and does not make outbound requests.
+- `wordpress_wordfence_php_extension_info{extension="curl|mbstring|mysqli|openssl|pdo_mysql|sodium|xml|zip|opcache"}`
+  Loaded extensions from a fixed allowlist only.
+- `wordpress_wordfence_php_display_errors_enabled`, `wordpress_wordfence_php_expose_php_enabled`, `wordpress_wordfence_php_allow_url_fopen_enabled`, `wordpress_wordfence_php_session_cookie_secure_enabled`, `wordpress_wordfence_php_session_cookie_httponly_enabled`
+  Effective, normalized PHP security settings.
+- `wordpress_wordfence_php_session_cookie_samesite_info{value="lax|strict|none|empty|unknown"}`
+  Normalized PHP session cookie SameSite setting.
+- `wordpress_wordfence_php_memory_limit_bytes`, `wordpress_wordfence_php_max_execution_time_seconds`, `wordpress_wordfence_php_upload_max_filesize_bytes`, `wordpress_wordfence_php_post_max_size_bytes`
+  Effective resource limits. A metric is omitted if its value is unlimited or unreadable.
+- `wordpress_wordfence_php_opcache_enabled`, `wordpress_wordfence_php_opcache_jit_enabled`, `wordpress_wordfence_php_opcache_memory_usage_ratio`
+  Limited OPcache posture, emitted only if the OPcache status API is safely available.
+
+PHP runtime posture never exports raw `phpinfo()` output, PHP environment variables, paths, arbitrary INI values, extension configuration, or cached-script inventories.
 - `wordpress_wordfence_core_update_available`
   Whether a WordPress core update is available.
 - `wordpress_wordfence_plugin_update_available_total`

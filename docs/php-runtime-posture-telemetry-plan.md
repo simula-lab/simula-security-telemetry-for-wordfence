@@ -2,10 +2,11 @@
 
 ## Context
 
-This is a follow-up action from the PHP2Shell incident post-mortem. The next
-release should help operators identify PHP runtimes that are old, unexpectedly
-configured, or missing security-relevant capabilities, without turning the
-exporter into a `phpinfo()` dump.
+This is a follow-up action from the PHP2Shell incident post-mortem. It is
+planned for the next **major release**. That release should help operators
+identify PHP runtimes that are old, unexpectedly configured, or missing
+security-relevant capabilities, without turning the exporter into a `phpinfo()`
+dump.
 
 The exporter writes local Prometheus textfile metrics. That is still a
 meaningful disclosure boundary: anyone with access to Prometheus, a dashboard,
@@ -105,17 +106,20 @@ configuration.
 
 ## Implementation plan
 
-1. Add `php_runtime_posture` to the metric definitions and set its default to
+1. Ship this work in the next major release. Document the new metric group,
+   opt-in default, disclosure boundary, and any dashboard or alert migration
+   guidance in the upgrade notes before release.
+2. Add `php_runtime_posture` to the metric definitions and set its default to
    disabled, with admin copy that explains the operational-information
    disclosure trade-off.
-2. Add a dedicated collector with compatibility guards for PHP 7.4 and for
+3. Add a dedicated collector with compatibility guards for PHP 7.4 and for
    disabled or unavailable functions. A missing source must yield a safe,
    documented result rather than fail the whole export.
-3. Keep collection local and read-only. Use native constants and a narrowly
+4. Keep collection local and read-only. Use native constants and a narrowly
    scoped allowlist of `ini_get()` keys; never call `phpinfo()`.
-4. Add a renderer that emits the metric families above with bounded labels and
+5. Add a renderer that emits the metric families above with bounded labels and
    Prometheus-safe numeric values.
-5. Document each metric, its source, default state, and interpretation in the
+6. Document each metric, its source, default state, and interpretation in the
    plugin README/readme and release notes.
 
 ## Acceptance criteria
@@ -131,8 +135,9 @@ configuration.
   SameSite normalization, the extension allowlist, unavailable OPcache, and
   label escaping.
 - Prometheus output validation covers both enabled and disabled states.
-- The release notes identify this as a PHP2Shell post-mortem action and state
-  the telemetry disclosure boundary clearly.
+- Major-release upgrade notes identify this as a PHP2Shell post-mortem action,
+  state the telemetry disclosure boundary clearly, and explain that the group
+  is opt-in rather than enabled automatically for existing installations.
 
 ## Follow-up alerting guidance
 

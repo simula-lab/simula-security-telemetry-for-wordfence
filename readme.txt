@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.2.3
+Stable tag: 4.0.0
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -148,6 +148,23 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_scan_enabled
 * wordpress_wordfence_license_type
 * wordpress_wordfence_wordpress_version_info
+* wordpress_wordfence_php_runtime_posture
+* wordpress_wordfence_php_runtime_info
+* wordpress_wordfence_php_version_supported
+* wordpress_wordfence_php_extension_info
+* wordpress_wordfence_php_display_errors_enabled
+* wordpress_wordfence_php_expose_php_enabled
+* wordpress_wordfence_php_allow_url_fopen_enabled
+* wordpress_wordfence_php_session_cookie_secure_enabled
+* wordpress_wordfence_php_session_cookie_httponly_enabled
+* wordpress_wordfence_php_session_cookie_samesite_info
+* wordpress_wordfence_php_memory_limit_bytes
+* wordpress_wordfence_php_max_execution_time_seconds
+* wordpress_wordfence_php_upload_max_filesize_bytes
+* wordpress_wordfence_php_post_max_size_bytes
+* wordpress_wordfence_php_opcache_enabled
+* wordpress_wordfence_php_opcache_jit_enabled
+* wordpress_wordfence_php_opcache_memory_usage_ratio
 * wordpress_wordfence_core_update_available
 * wordpress_wordfence_plugin_update_available_total
 * wordpress_wordfence_plugins_installed_total
@@ -220,6 +237,8 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 
 Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory and per-admin inventory are disabled by default because plugin names, versions, active state, and administrator identities can expose sensitive operational details. Admin inventory uses hashed identity labels by default when enabled.
 
+The wordpress_wordfence_php_runtime_posture control is disabled by default. When enabled, it exports a bounded PHP runtime posture allowlist: PHP version, SAPI, architecture, maintained-version status, selected loaded extensions, safe effective settings, and limited OPcache status. It never exports raw phpinfo output, PHP environment variables, paths, arbitrary INI values, extension configuration, or cached-script inventories. Size metrics are omitted when their source is unlimited or unreadable.
+
 blocked_events_total and blocked_events_window are deprecated ambiguous aliases for hit/live-traffic row counts. blocked_hit_rows_total and blocked_hit_rows_window are the explicit names for that same low-level data model. 
 
 firewall_blocks_window derives aggregate firewall block counts from the locally stored wfBlockedIPLog/wfblockediplog table when the required fields are available. It uses locally available day-bucket, block-type, and block-count data, groups recognized block types into the bounded categories complex, brute_force, and blocklist, and groups all other values under other.
@@ -263,6 +282,12 @@ The directory that will contain the .prom file must already exist and be writabl
 1. Settings screen showing Prometheus metric controls, incident log settings, manual actions, and current exporter state.
 
 == Changelog ==
+
+= 4.0.0 =
+
+* Added opt-in PHP runtime posture metrics as a PHP2Shell incident post-mortem action.
+* Added bounded PHP version, SAPI, architecture, extension, effective-setting, and OPcache metrics without exporting raw phpinfo data, paths, environment variables, arbitrary INI values, or cached-script inventories.
+* Added optional PHP posture alert examples for unsupported PHP versions, display_errors, session cookie flags, and missing OPcache posture telemetry.
 
 = 3.2.3 =
 
@@ -344,6 +369,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 4.0.0 =
+
+This major release adds an opt-in PHP runtime posture metric group. Existing installations keep it disabled; enable it only after confirming that readers of your Prometheus metrics may view the documented PHP operational metadata.
 
 = 3.2.3 =
 

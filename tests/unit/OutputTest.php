@@ -6,6 +6,51 @@
  */
 
 return [
+    'php runtime posture rendering is opt-in and exports only bounded values' => function () {
+        $data = [
+            'flags' => ['php_runtime_posture' => true],
+            'prefix' => 'wordpress_wordfence',
+            'site' => 'example.test',
+            'php_runtime_posture' => [
+                'version' => '8.3.27',
+                'sapi' => 'fpm-fcgi',
+                'architecture' => '64',
+                'version_supported' => 1,
+                'display_errors_enabled' => 0,
+                'expose_php_enabled' => 0,
+                'allow_url_fopen_enabled' => 1,
+                'session_cookie_secure_enabled' => 1,
+                'session_cookie_httponly_enabled' => 1,
+                'session_cookie_samesite' => 'lax',
+                'memory_limit_bytes' => 134217728,
+                'max_execution_time_seconds' => 30,
+                'upload_max_filesize_bytes' => null,
+                'post_max_size_bytes' => 8388608,
+                'extensions' => ['openssl', 'unapproved_extension'],
+                'opcache' => ['enabled' => 1, 'jit_enabled' => 0, 'memory_usage_ratio' => 0.25],
+            ],
+        ];
+
+        $lines = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'render_php_runtime_posture_metrics', [$data]);
+        $body = implode("\n", $lines);
+
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_runtime_info{site="example.test",version="8.3.27",sapi="fpm-fcgi",architecture="64"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_version_supported{site="example.test"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_session_cookie_samesite_info{site="example.test",value="lax"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_extension_info{site="example.test",extension="openssl"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'unapproved_extension') === false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_upload_max_filesize_bytes') === false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_opcache_memory_usage_ratio{site="example.test"} 0.25') !== false);
+    },
+    'php runtime posture emits nothing while disabled' => function () {
+        $lines = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'render_php_runtime_posture_metrics', [[
+            'flags' => ['php_runtime_posture' => false],
+            'prefix' => 'wordpress_wordfence',
+            'site' => 'example.test',
+        ]]);
+
+        sstfw_assert_same([], $lines);
+    },
     'escape_label escapes prometheus label special characters' => function () {
         sstfw_assert_same('path\\\\with\\n\\"quote\\"', Simula_Security_Telemetry_Output::escape_label("path\\with\n\"quote\""));
     },
