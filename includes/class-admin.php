@@ -14,12 +14,12 @@ final class Simula_Security_Telemetry_Admin {
     public static function admin_menu() {
         add_menu_page(
             __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
-            __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
+            __('Telemetry', 'simula-security-telemetry-for-wordfence'),
             Simula_Security_Telemetry_Config::CAPABILITY,
             Simula_Security_Telemetry_Config::DASHBOARD_SLUG,
             [__CLASS__, 'dashboard_page'],
-            'dashicons-shield',
-            80
+            '',
+            76
         );
 
         add_options_page(
@@ -29,6 +29,53 @@ final class Simula_Security_Telemetry_Admin {
             Simula_Security_Telemetry_Config::SLUG,
             [__CLASS__, 'settings_page']
         );
+    }
+
+    /** Registers the compact current-state widget for the main WordPress dashboard. */
+    public static function register_dashboard_widget() {
+        if (!current_user_can(Simula_Security_Telemetry_Config::CAPABILITY)) {
+            return;
+        }
+
+        wp_add_dashboard_widget(
+            'sstfw_security_telemetry',
+            __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
+            [__CLASS__, 'dashboard_widget']
+        );
+    }
+
+    /** Renders the read-only current-state summary on the main WordPress dashboard. */
+    public static function dashboard_widget() {
+        if (!current_user_can(Simula_Security_Telemetry_Config::CAPABILITY)) {
+            return;
+        }
+
+        $options = Simula_Security_Telemetry_Settings::get_options();
+        $state   = Simula_Security_Telemetry_Settings::get_state();
+        $model   = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state);
+        $cards   = [
+            __('Exporter health', 'simula-security-telemetry-for-wordfence') => $model['exporter']['status'],
+            __('PHP runtime posture', 'simula-security-telemetry-for-wordfence') => $model['runtime']['status'],
+            __('WordPress posture', 'simula-security-telemetry-for-wordfence') => $model['wordpress']['status'],
+            __('Change signals', 'simula-security-telemetry-for-wordfence') => $model['changes']['status'],
+        ];
+        ?>
+        <p><strong><?php echo esc_html__('Overall status:', 'simula-security-telemetry-for-wordfence'); ?></strong> <?php echo esc_html(self::dashboard_status_label($model['overall_status'])); ?></p>
+        <table class="widefat striped"><tbody>
+            <?php foreach ($cards as $title => $status) : ?>
+                <tr>
+                    <td><?php echo esc_html($title); ?></td>
+                    <td><strong><?php echo esc_html(self::dashboard_status_label($status)); ?></strong></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody></table>
+        <p>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=' . Simula_Security_Telemetry_Config::DASHBOARD_SLUG)); ?>"><?php echo esc_html__('View Security Telemetry dashboard', 'simula-security-telemetry-for-wordfence'); ?></a>
+            <?php if ($model['grafana_url'] !== '') : ?>
+                <span aria-hidden="true">&nbsp;|&nbsp;</span><a href="<?php echo esc_url($model['grafana_url']); ?>"><?php echo esc_html__('View Grafana', 'simula-security-telemetry-for-wordfence'); ?></a>
+            <?php endif; ?>
+        </p>
+        <?php
     }
 
     /** Renders the current-state, non-Wordfence operator dashboard. */

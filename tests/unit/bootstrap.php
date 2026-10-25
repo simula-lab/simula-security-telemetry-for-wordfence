@@ -11,6 +11,7 @@ define('DAY_IN_SECONDS', 86400);
 define('OBJECT', 'OBJECT');
 define('ARRAY_A', 'ARRAY_A');
 define('FS_CHMOD_FILE', 0644);
+define('SSTFW_PLUGIN_URL', 'https://example.test/wp-content/plugins/simula-security-telemetry-for-wordfence/');
 
 $GLOBALS['sstfw_settings_errors'] = [];
 $GLOBALS['sstfw_options'] = [];
@@ -25,6 +26,7 @@ $GLOBALS['sstfw_test_roles'] = [];
 $GLOBALS['sstfw_test_options']['users_can_register'] = 0;
 $GLOBALS['sstfw_test_options']['default_role'] = 'subscriber';
 $GLOBALS['sstfw_test_current_user_can'] = true;
+$GLOBALS['sstfw_dashboard_widgets'] = [];
 
 if (!function_exists('__')) {
     function __($text, $domain = 'default') {
@@ -81,6 +83,12 @@ if (!function_exists('add_menu_page')) {
     }
 }
 
+if (!function_exists('wp_add_dashboard_widget')) {
+    function wp_add_dashboard_widget($widget_id, $widget_name, $callback) {
+        $GLOBALS['sstfw_dashboard_widgets'][$widget_id] = compact('widget_name', 'callback');
+    }
+}
+
 if (!function_exists('add_options_page')) {
     function add_options_page($page_title, $menu_title, $capability, $menu_slug, $callback = '') {
         $GLOBALS['sstfw_options_menu'][$menu_slug] = compact('page_title', 'menu_title', 'capability', 'callback');
@@ -91,6 +99,30 @@ if (!function_exists('add_options_page')) {
 if (!function_exists('current_user_can')) {
     function current_user_can($capability) {
         return !empty($GLOBALS['sstfw_test_current_user_can']);
+    }
+}
+
+if (!function_exists('admin_url')) {
+    function admin_url($path = '') {
+        return 'https://example.test/wp-admin/' . ltrim((string) $path, '/');
+    }
+}
+
+if (!function_exists('esc_html')) {
+    function esc_html($value) {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('esc_html__')) {
+    function esc_html__($text, $domain = 'default') {
+        return esc_html(__($text, $domain));
+    }
+}
+
+if (!function_exists('esc_url')) {
+    function esc_url($value) {
+        return (string) $value;
     }
 }
 

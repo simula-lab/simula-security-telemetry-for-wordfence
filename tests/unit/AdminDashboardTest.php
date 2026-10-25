@@ -11,7 +11,10 @@ return [
         $menu = $GLOBALS['sstfw_admin_menu'][Simula_Security_Telemetry_Config::DASHBOARD_SLUG] ?? [];
 
         sstfw_assert_same(Simula_Security_Telemetry_Config::CAPABILITY, $menu['capability'] ?? null);
+        sstfw_assert_same('Telemetry', $menu['menu_title'] ?? null);
         sstfw_assert_same(['Simula_Security_Telemetry_Admin', 'dashboard_page'], $menu['callback'] ?? null);
+        sstfw_assert_same('', $menu['icon_url'] ?? null);
+        sstfw_assert_same(76, $menu['position'] ?? null);
         sstfw_assert_true(isset($GLOBALS['sstfw_options_menu'][Simula_Security_Telemetry_Config::SLUG]));
     },
     'admin dashboard denies rendering to users without the configured capability' => function () {
@@ -22,6 +25,31 @@ return [
         $GLOBALS['sstfw_test_current_user_can'] = true;
 
         sstfw_assert_same('', $output);
+    },
+    'dashboard widget registers and renders the safe telemetry summary' => function () {
+        $GLOBALS['sstfw_dashboard_widgets'] = [];
+        Simula_Security_Telemetry_Admin::register_dashboard_widget();
+        $widget = $GLOBALS['sstfw_dashboard_widgets']['sstfw_security_telemetry'] ?? [];
+        sstfw_assert_same('Security Telemetry', $widget['widget_name'] ?? null);
+        sstfw_assert_same(['Simula_Security_Telemetry_Admin', 'dashboard_widget'], $widget['callback'] ?? null);
+
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $options['grafana_dashboard_url'] = 'https://grafana.example.test/d/security';
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::OPTION] = $options;
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::STATE] = [
+            'last_export' => time(),
+            'slow_metric_cache' => ['wordfence_posture' => ['marker' => 'DO_NOT_DISPLAY_WORDFENCE_DATA']],
+        ];
+
+        ob_start();
+        Simula_Security_Telemetry_Admin::dashboard_widget();
+        $output = ob_get_clean();
+
+        sstfw_assert_true(strpos($output, 'Overall status:') !== false);
+        sstfw_assert_true(strpos($output, 'Exporter health') !== false);
+        sstfw_assert_true(strpos($output, 'View Security Telemetry dashboard') !== false);
+        sstfw_assert_true(strpos($output, 'https://grafana.example.test/d/security') !== false);
+        sstfw_assert_true(strpos($output, 'DO_NOT_DISPLAY_WORDFENCE_DATA') === false);
     },
     'admin dashboard allowlists cached WordPress and PHP data while excluding Wordfence data' => function () {
         $options = Simula_Security_Telemetry_Config::defaults();

@@ -15,6 +15,7 @@ final class Simula_Security_Telemetry_Metrics {
         // Simula_Security_Telemetry_Settings::migrate_legacy_storage();
 
         add_action('admin_menu', ['Simula_Security_Telemetry_Admin', 'admin_menu']);
+        add_action('wp_dashboard_setup', ['Simula_Security_Telemetry_Admin', 'register_dashboard_widget']);
         add_action('admin_init', ['Simula_Security_Telemetry_Settings', 'register_settings']);
         add_action(Simula_Security_Telemetry_Config::CRON_HOOK, ['Simula_Security_Telemetry_Service', 'export_fast']);
         add_action(Simula_Security_Telemetry_Config::SLOW_CRON_HOOK, ['Simula_Security_Telemetry_Service', 'export_slow']);
