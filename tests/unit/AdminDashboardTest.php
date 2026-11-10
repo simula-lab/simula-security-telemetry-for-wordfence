@@ -6,6 +6,58 @@
  */
 
 return [
+    'dashboard displays cached platform versions and additional runtime settings' => function () {
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $options['enabled_metrics']['platform_info'] = 1;
+        $options['enabled_metrics']['php_runtime_posture'] = 1;
+        $state = ['slow_metric_cache' => [
+            'platform_info' => [
+                'database' => ['name' => 'mariadb', 'version' => '10.11.6-MariaDB'],
+                'web_server' => ['name' => 'nginx', 'version' => '1.26.3'],
+                'os' => ['id' => 'debian', 'version' => '12'],
+                'kernel' => ['name' => 'Linux', 'version' => '6.1.0-18-amd64'],
+                'hostname' => 'DO_NOT_DISPLAY_HOSTNAME',
+            ],
+            'php_runtime_posture' => ['version' => '8.3.27', 'version_supported' => 1, 'architecture' => '64', 'expose_php_enabled' => 1, 'allow_url_fopen_enabled' => 1],
+        ]];
+        $model = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state, 1000);
+        sstfw_assert_same('available', $model['platform']['status']);
+        sstfw_assert_same(['name' => 'debian', 'version' => '12'], $model['platform']['data']['os']);
+        sstfw_assert_true(strpos(serialize($model), 'DO_NOT_DISPLAY_HOSTNAME') === false);
+
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::OPTION] = $options;
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::STATE] = $state;
+        ob_start();
+        Simula_Security_Telemetry_Admin::dashboard_page();
+        $html = ob_get_clean();
+        foreach (['Platform information', 'mariadb / 10.11.6-MariaDB', 'nginx / 1.26.3', 'debian / 12', 'Linux / 6.1.0-18-amd64', 'Architecture (bits)', 'PHP version exposure enabled', 'URL file access enabled', 'Exporter version'] as $expected) {
+            sstfw_assert_true(strpos($html, $expected) !== false, 'Missing dashboard content: ' . $expected);
+        }
+        sstfw_assert_true(strpos($html, 'DO_NOT_DISPLAY_HOSTNAME') === false);
+    },
+    'dashboard respects disabled platform collection even when an old snapshot exists' => function () {
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $options['enabled_metrics']['platform_info'] = 0;
+        $state = ['slow_metric_cache' => ['platform_info' => ['os' => ['id' => 'debian', 'version' => '12']]]];
+        $model = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state, 1000);
+        sstfw_assert_same('opt_in_disabled', $model['platform']['reason']);
+        sstfw_assert_same([], $model['platform']['data']);
+    },
+    'dashboard distinguishes missing partial and undetectable platform snapshots' => function () {
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $options['enabled_metrics']['platform_info'] = 1;
+        $empty = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, [], 1000);
+        sstfw_assert_same('not_collected', $empty['platform']['reason']);
+        $state = ['slow_metric_cache' => ['platform_info' => ['database' => ['name' => 'mysql', 'version' => '8.0.40']]]];
+        $partial = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state, 1000);
+        sstfw_assert_same('available', $partial['platform']['status']);
+        sstfw_assert_same(['name' => 'unknown', 'version' => 'unknown'], $partial['platform']['data']['os']);
+        sstfw_assert_same($empty['overall_status'], $partial['overall_status']);
+        $state['slow_metric_cache']['platform_info'] = ['database' => ['name' => '<script>bad</script>', 'version' => ['bad']]];
+        $unknown = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state, 1000);
+        sstfw_assert_same('unavailable', $unknown['platform']['status']);
+        sstfw_assert_same(['name' => 'unknown', 'version' => 'unknown'], $unknown['platform']['data']['database']);
+    },
     'admin dashboard registers a separate top-level page with the configured capability' => function () {
         Simula_Security_Telemetry_Admin::admin_menu();
         $menu = $GLOBALS['sstfw_admin_menu'][Simula_Security_Telemetry_Config::DASHBOARD_SLUG] ?? [];

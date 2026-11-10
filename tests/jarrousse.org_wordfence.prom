@@ -3,7 +3,7 @@
 wordpress_wordfence_export_success{site="blog.jarrousse.org"} 1
 # HELP wordpress_wordfence_plugin_info Plugin metadata for the exporter.
 # TYPE wordpress_wordfence_plugin_info gauge
-wordpress_wordfence_plugin_info{site="blog.jarrousse.org",version="4.0.1"} 1
+wordpress_wordfence_plugin_info{site="blog.jarrousse.org",version="4.1.1"} 1
 # HELP wordpress_wordfence_last_export_timestamp_seconds Unix timestamp of the last successful export.
 # TYPE wordpress_wordfence_last_export_timestamp_seconds gauge
 wordpress_wordfence_last_export_timestamp_seconds{site="blog.jarrousse.org"} 1794315602
@@ -210,7 +210,7 @@ wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file=
 wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="redis-cache/redis-cache.php",name="Redis Object Cache",version="3.0.0",state="active",update_available="0"} 1
 wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="simula-friendly-slugs-for-arabic-sites/simula-friendly-slugs-for-arabic-sites.php",name="Simula Friendly Slugs for Arabic Sites",version="1.2.4",state="active",update_available="0"} 1
 wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="simula-levantine-dates-for-arabic-sites/simula-levantine-dates.php",name="Simula Levantine Dates for Arabic Sites",version="1.1.1",state="active",update_available="0"} 1
-wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="simula-security-telemetry-for-wordfence/simula-security-telemetry-for-wordfence.php",name="Simula Security Telemetry for Wordfence",version="4.0.1",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="simula-security-telemetry-for-wordfence/simula-security-telemetry-for-wordfence.php",name="Simula Security Telemetry for Wordfence",version="4.1.1",state="active",update_available="0"} 1
 wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="google-site-kit/google-site-kit.php",name="Site Kit by Google",version="1.191.0",state="active",update_available="0"} 1
 wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="wordfence/wordfence.php",name="Wordfence Security",version="9.1.0",state="active",update_available="0"} 1
 wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="wp-consent-api/wp-consent-api.php",name="WP Consent API",version="2.1.0",state="active",update_available="0"} 1

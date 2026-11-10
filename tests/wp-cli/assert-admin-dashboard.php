@@ -22,6 +22,7 @@ $html = ob_get_clean();
 
 foreach ([
     'Security Telemetry',
+    'Platform information',
     'PHP runtime posture',
     'WordPress posture',
     'Change signals',

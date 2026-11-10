@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 4.0.1
+Stable tag: 4.1.1
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -250,7 +250,7 @@ The two_factor_* and admin_users_without_2fa_total metrics remain strict Wordfen
 
 = What does the Security Telemetry dashboard show? =
 
-The top-level Security Telemetry wp-admin page is a read-only, current-state overview of exporter health and cached PHP and WordPress posture and change signals. It does not display Wordfence firewall activity, scan data, incidents, login activity, configuration, or other Wordfence-derived data. It does not run collectors, query Wordfence tables, store time-series data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS Grafana dashboard URL in Settings to show a handoff link for historical telemetry.
+The top-level Security Telemetry wp-admin page is a read-only, current-state overview of exporter health and version, cached platform versions, PHP and WordPress posture, and change signals. Platform information shows the connected MySQL/MariaDB server, web server, OS distribution and kernel versions when Platform version info is enabled, after a slow collector run. Undetectable values are shown as unknown. In containers, the OS distribution may describe the container image. These versions are informational, not a security support assessment. The opt-in PHP card also shows architecture, PHP version exposure and URL file access settings. The page does not display Wordfence firewall activity, scan data, incidents, login activity, configuration, or other Wordfence-derived data. It does not run collectors, query Wordfence tables, store time-series data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS Grafana dashboard URL in Settings to show a handoff link for historical telemetry.
 
 failed_login_attempts_window remains the aggregate failed-login metric and counts Wordfence wfLogins rows where fail is greater than 0, including passkey-related failures in Wordfence 9.0.0. authentication_failures_window adds bounded method labels for password, passkey, passkey_required, two_factor, and other failures. brute_force_events_window username values use password-classified login failures when wfLogins is available, so passkey-required policy blocks are not counted as password brute force.
 
@@ -299,7 +299,7 @@ These info metrics have value 1 and use unknown labels for unavailable values. T
 
 == Changelog ==
 
-= 4.0.1 =
+= 4.1.1 =
 
 * Added opt-in PHP runtime posture metrics as a PHP2Shell incident post-mortem action.
 * Added bounded PHP version, SAPI, architecture, extension, effective-setting, and OPcache metrics without exporting raw phpinfo data, paths, environment variables, arbitrary INI values, or cached-script inventories.
@@ -386,7 +386,7 @@ These info metrics have value 1 and use unknown labels for unavailable values. T
 
 == Upgrade Notice ==
 
-= 4.0.1 =
+= 4.1.1 =
 
 This major release adds an opt-in PHP runtime posture metric group. Existing installations keep it disabled; enable it only after confirming that readers of your Prometheus metrics may view the documented PHP operational metadata.
 

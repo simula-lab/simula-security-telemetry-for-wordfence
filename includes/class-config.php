@@ -17,7 +17,7 @@ final class Simula_Security_Telemetry_Config {
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
     public const DASHBOARD_SLUG = 'simula-security-telemetry-dashboard';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '4.0.1';
+    public const VERSION        = '4.1.1';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
