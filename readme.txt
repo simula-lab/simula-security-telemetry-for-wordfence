@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 4.0.0
+Stable tag: 4.0.1
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -286,9 +286,20 @@ The directory that will contain the .prom file must already exist and be writabl
 
 1. Settings screen showing Prometheus metric controls, incident log settings, manual actions, and current exporter state.
 
+= Platform version metadata =
+
+wordpress_wordfence_platform_info controls best-effort platform version collection and is enabled by default. Disable Platform version info in settings to stop collecting and exporting this metadata.
+
+* wordpress_wordfence_web_server_info: web server name and version from the Apache API or PHP server software banner.
+* wordpress_wordfence_database_info: MySQL/MariaDB server name and version through WordPress's existing database connection.
+* wordpress_wordfence_os_info: distribution ID and version from readable /etc/os-release or /usr/lib/os-release files.
+* wordpress_wordfence_kernel_info: kernel name and release visible to PHP.
+
+These info metrics have value 1 and use unknown labels for unavailable values. They refresh on the slow collector schedule (hourly by default) and are reused by fast exports. No shell commands or new network connections are used, and no hostnames or full banners are exported. Container OS metadata describes the container, which may differ from the host; CLI exports may lack web server information. Redis is not collected.
+
 == Changelog ==
 
-= 4.0.0 =
+= 4.0.1 =
 
 * Added opt-in PHP runtime posture metrics as a PHP2Shell incident post-mortem action.
 * Added bounded PHP version, SAPI, architecture, extension, effective-setting, and OPcache metrics without exporting raw phpinfo data, paths, environment variables, arbitrary INI values, or cached-script inventories.
@@ -375,7 +386,7 @@ The directory that will contain the .prom file must already exist and be writabl
 
 == Upgrade Notice ==
 
-= 4.0.0 =
+= 4.0.1 =
 
 This major release adds an opt-in PHP runtime posture metric group. Existing installations keep it disabled; enable it only after confirming that readers of your Prometheus metrics may view the documented PHP operational metadata.
 

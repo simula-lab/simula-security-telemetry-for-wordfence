@@ -22,6 +22,7 @@ Load order is explicit and dependency-oriented:
 - `includes/class-wordfence-schema.php` detects Wordfence tables and columns.
 - `includes/class-wordfence-collector.php` collects Wordfence and current WordPress posture values.
 - `includes/class-wordpress-collector.php` collects WordPress settings, drift, account, cron, option, content, and filesystem IoC signals.
+- `includes/class-platform-collector.php` collects best-effort web server, database, distribution, and kernel versions visible to PHP.
 - `includes/class-php-runtime-collector.php` collects the opt-in, bounded PHP runtime posture snapshot.
 - `includes/class-admin-dashboard.php` builds the read-only, non-Wordfence dashboard view model.
 - `includes/class-wordfence.php` preserves the existing compatibility facade for Wordfence helper calls.

@@ -3,7 +3,7 @@
  * Plugin Name: Simula Security Telemetry for Wordfence
  * Plugin URI:  https://wordpress.org/plugins/simula-security-telemetry-for-wordfence
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
- * Version:     4.0.0
+ * Version:     4.0.1
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author:      Simula
@@ -33,6 +33,7 @@ require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence-schema.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence-collector.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordpress-collector.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-php-runtime-collector.php';
+require_once SSTFW_PLUGIN_DIR . 'includes/class-platform-collector.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-incident-exporter.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-metrics-service.php';

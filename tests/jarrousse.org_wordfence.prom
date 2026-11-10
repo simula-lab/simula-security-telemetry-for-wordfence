@@ -1,0 +1,614 @@
+# HELP wordpress_wordfence_export_success Whether the last Wordfence metrics export succeeded.
+# TYPE wordpress_wordfence_export_success gauge
+wordpress_wordfence_export_success{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_plugin_info Plugin metadata for the exporter.
+# TYPE wordpress_wordfence_plugin_info gauge
+wordpress_wordfence_plugin_info{site="blog.jarrousse.org",version="4.0.1"} 1
+# HELP wordpress_wordfence_last_export_timestamp_seconds Unix timestamp of the last successful export.
+# TYPE wordpress_wordfence_last_export_timestamp_seconds gauge
+wordpress_wordfence_last_export_timestamp_seconds{site="blog.jarrousse.org"} 1794315602
+# HELP wordpress_wordfence_next_export_timestamp_seconds Unix timestamp of the next scheduled fast exporter run.
+# TYPE wordpress_wordfence_next_export_timestamp_seconds gauge
+wordpress_wordfence_next_export_timestamp_seconds{site="blog.jarrousse.org"} 1794316378
+# HELP wordpress_wordfence_next_slow_export_timestamp_seconds Unix timestamp of the next scheduled slow collector run.
+# TYPE wordpress_wordfence_next_slow_export_timestamp_seconds gauge
+wordpress_wordfence_next_slow_export_timestamp_seconds{site="blog.jarrousse.org"} 1794317278
+# HELP wordpress_wordfence_enabled Whether the exporter master switch is enabled.
+# TYPE wordpress_wordfence_enabled gauge
+wordpress_wordfence_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_blocked_events_total Deprecated ambiguous alias: cumulative count of newly observed blocked Wordfence hit/live-traffic rows; not the Wordfence Firewall Summary.
+# TYPE wordpress_wordfence_blocked_events_total counter
+wordpress_wordfence_blocked_events_total{site="blog.jarrousse.org"} 73265
+# HELP wordpress_wordfence_blocked_hit_rows_total Cumulative count of newly observed Wordfence hit/live-traffic rows matching the blocked-hit predicate.
+# TYPE wordpress_wordfence_blocked_hit_rows_total counter
+wordpress_wordfence_blocked_hit_rows_total{site="blog.jarrousse.org"} 73265
+# HELP wordpress_wordfence_blocked_events_window Deprecated ambiguous alias: blocked Wordfence hit/live-traffic rows seen within recent windows.
+# TYPE wordpress_wordfence_blocked_events_window gauge
+wordpress_wordfence_blocked_events_window{site="blog.jarrousse.org",window="5m"} 0
+wordpress_wordfence_blocked_events_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_blocked_events_window{site="blog.jarrousse.org",window="24h"} 30
+wordpress_wordfence_blocked_events_window{site="blog.jarrousse.org",window="7d"} 753
+# HELP wordpress_wordfence_blocked_hit_rows_window Wordfence hit/live-traffic rows matching the blocked-hit predicate seen within recent windows.
+# TYPE wordpress_wordfence_blocked_hit_rows_window gauge
+wordpress_wordfence_blocked_hit_rows_window{site="blog.jarrousse.org",window="5m"} 0
+wordpress_wordfence_blocked_hit_rows_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_blocked_hit_rows_window{site="blog.jarrousse.org",window="24h"} 30
+wordpress_wordfence_blocked_hit_rows_window{site="blog.jarrousse.org",window="7d"} 753
+# HELP wordpress_wordfence_blocked_events_by_status_24h Blocked Wordfence hits in the last 24 hours grouped by HTTP status code.
+# TYPE wordpress_wordfence_blocked_events_by_status_24h gauge
+wordpress_wordfence_blocked_events_by_status_24h{site="blog.jarrousse.org",status="403"} 26
+wordpress_wordfence_blocked_events_by_status_24h{site="blog.jarrousse.org",status="503"} 4
+# HELP wordpress_wordfence_top_attack_sources_24h Top blocked attack sources over the last 24 hours.
+# TYPE wordpress_wordfence_top_attack_sources_24h gauge
+# HELP wordpress_wordfence_firewall_blocks_available Whether the supported Wordfence aggregate Firewall Summary block source is available.
+# TYPE wordpress_wordfence_firewall_blocks_available gauge
+wordpress_wordfence_firewall_blocks_available{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_firewall_blocks_collection_success Whether the latest Wordfence Firewall Summary aggregate collection completed successfully.
+# TYPE wordpress_wordfence_firewall_blocks_collection_success gauge
+wordpress_wordfence_firewall_blocks_collection_success{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_firewall_blocks_source_info Bounded metadata for the detected Wordfence Firewall Summary aggregate source.
+# TYPE wordpress_wordfence_firewall_blocks_source_info gauge
+wordpress_wordfence_firewall_blocks_source_info{site="blog.jarrousse.org",source="wfBlockedIPLog",schema="wfblockediplog-unixday-blocktype-blockcount"} 1
+# HELP wordpress_wordfence_firewall_blocks_latest_timestamp_seconds Unix timestamp for the latest Wordfence aggregate Firewall Summary day bucket.
+# TYPE wordpress_wordfence_firewall_blocks_latest_timestamp_seconds gauge
+wordpress_wordfence_firewall_blocks_latest_timestamp_seconds{site="blog.jarrousse.org"} 1794268800
+# HELP wordpress_wordfence_firewall_blocks_window Wordfence aggregate Firewall Summary block counts by bounded category and reporting window.
+# TYPE wordpress_wordfence_firewall_blocks_window gauge
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="complex",window="24h"} 36
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="brute_force",window="24h"} 37
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="blocklist",window="24h"} 0
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="other",window="24h"} 0
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="complex",window="7d"} 469
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="brute_force",window="7d"} 698
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="blocklist",window="7d"} 0
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="other",window="7d"} 0
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="complex",window="30d"} 1956
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="brute_force",window="30d"} 5923
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="blocklist",window="30d"} 4
+wordpress_wordfence_firewall_blocks_window{site="blog.jarrousse.org",category="other",window="30d"} 0
+# HELP wordpress_wordfence_failed_login_attempts_window Failed Wordfence login attempts observed within recent windows.
+# TYPE wordpress_wordfence_failed_login_attempts_window gauge
+wordpress_wordfence_failed_login_attempts_window{site="blog.jarrousse.org",window="5m"} 0
+wordpress_wordfence_failed_login_attempts_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_failed_login_attempts_window{site="blog.jarrousse.org",window="24h"} 51
+wordpress_wordfence_failed_login_attempts_window{site="blog.jarrousse.org",window="7d"} 141
+# HELP wordpress_wordfence_authentication_failures_window Failed Wordfence authentication attempts grouped by bounded method and recent window.
+# TYPE wordpress_wordfence_authentication_failures_window gauge
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="password",window="5m"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="password",window="1h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="password",window="24h"} 51
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="password",window="7d"} 141
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey",window="5m"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey",window="1h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey",window="24h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey",window="7d"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey_required",window="5m"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey_required",window="1h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey_required",window="24h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="passkey_required",window="7d"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="two_factor",window="5m"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="two_factor",window="1h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="two_factor",window="24h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="two_factor",window="7d"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="other",window="5m"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="other",window="1h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="other",window="24h"} 0
+wordpress_wordfence_authentication_failures_window{site="blog.jarrousse.org",method="other",window="7d"} 0
+# HELP wordpress_wordfence_rate_limited_events_window Rate-limited or throttled requests observed within recent windows.
+# TYPE wordpress_wordfence_rate_limited_events_window gauge
+wordpress_wordfence_rate_limited_events_window{site="blog.jarrousse.org",window="5m"} 0
+wordpress_wordfence_rate_limited_events_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_rate_limited_events_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_rate_limited_events_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_brute_force_events_window Brute-force activity observed within recent windows. Username values use password-classified Wordfence login failures when the login-attempt table is available; XML-RPC values use retained hit/live-traffic rows.
+# TYPE wordpress_wordfence_brute_force_events_window gauge
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="username",window="5m"} 0
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="username",window="1h"} 0
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="username",window="24h"} 51
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="username",window="7d"} 141
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="xmlrpc",window="5m"} 0
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="xmlrpc",window="1h"} 0
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="xmlrpc",window="24h"} 0
+wordpress_wordfence_brute_force_events_window{site="blog.jarrousse.org",vector="xmlrpc",window="7d"} 0
+# HELP wordpress_wordfence_locked_out_total Current Wordfence lockout totals by target type when available.
+# TYPE wordpress_wordfence_locked_out_total gauge
+wordpress_wordfence_locked_out_total{site="blog.jarrousse.org",target="ip"} 778
+wordpress_wordfence_locked_out_total{site="blog.jarrousse.org",target="user"} 0
+# HELP wordpress_wordfence_two_factor_enabled Whether Wordfence two-factor authentication appears to be configured.
+# TYPE wordpress_wordfence_two_factor_enabled gauge
+wordpress_wordfence_two_factor_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_two_factor_protected_users_total Count of users with Wordfence two-factor secrets configured.
+# TYPE wordpress_wordfence_two_factor_protected_users_total gauge
+wordpress_wordfence_two_factor_protected_users_total{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_passkey_enabled Whether Wordfence passkeys appear to be configured.
+# TYPE wordpress_wordfence_passkey_enabled gauge
+wordpress_wordfence_passkey_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_passkey_protected_users_total Count of users with Wordfence passkeys configured.
+# TYPE wordpress_wordfence_passkey_protected_users_total gauge
+wordpress_wordfence_passkey_protected_users_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_login_protected_users_total Count of users protected by Wordfence 2FA, passkeys, either method, or both methods.
+# TYPE wordpress_wordfence_login_protected_users_total gauge
+wordpress_wordfence_login_protected_users_total{site="blog.jarrousse.org",method="2fa"} 1
+wordpress_wordfence_login_protected_users_total{site="blog.jarrousse.org",method="passkey"} 0
+wordpress_wordfence_login_protected_users_total{site="blog.jarrousse.org",method="either"} 1
+wordpress_wordfence_login_protected_users_total{site="blog.jarrousse.org",method="both"} 0
+# HELP wordpress_wordfence_scan_issues_by_severity Current Wordfence scan issues grouped by severity.
+# TYPE wordpress_wordfence_scan_issues_by_severity gauge
+# HELP wordpress_wordfence_scan_findings_total Current Wordfence scan findings for selected categories.
+# TYPE wordpress_wordfence_scan_findings_total gauge
+wordpress_wordfence_scan_findings_total{site="blog.jarrousse.org",category="malware"} 0
+wordpress_wordfence_scan_findings_total{site="blog.jarrousse.org",category="file_change"} 0
+# HELP wordpress_wordfence_vulnerability_findings_total Current Wordfence scan findings indicating outdated or vulnerable components.
+# TYPE wordpress_wordfence_vulnerability_findings_total gauge
+wordpress_wordfence_vulnerability_findings_total{site="blog.jarrousse.org",component="core"} 0
+wordpress_wordfence_vulnerability_findings_total{site="blog.jarrousse.org",component="plugin"} 0
+wordpress_wordfence_vulnerability_findings_total{site="blog.jarrousse.org",component="theme"} 0
+# HELP wordpress_wordfence_latest_hit_timestamp_seconds Unix timestamp of the latest observed Wordfence hit.
+# TYPE wordpress_wordfence_latest_hit_timestamp_seconds gauge
+wordpress_wordfence_latest_hit_timestamp_seconds{site="blog.jarrousse.org"} 1794311071
+# HELP wordpress_wordfence_latest_blocked_hit_timestamp_seconds Unix timestamp of the latest observed blocked Wordfence hit.
+# TYPE wordpress_wordfence_latest_blocked_hit_timestamp_seconds gauge
+wordpress_wordfence_latest_blocked_hit_timestamp_seconds{site="blog.jarrousse.org"} 1794311045
+# HELP wordpress_wordfence_latest_scan_timestamp_seconds Unix timestamp of the latest observed Wordfence scan issue update.
+# TYPE wordpress_wordfence_latest_scan_timestamp_seconds gauge
+wordpress_wordfence_latest_scan_timestamp_seconds{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_scan_age_seconds Age in seconds since the latest successful Wordfence scan completed.
+# TYPE wordpress_wordfence_scan_age_seconds gauge
+wordpress_wordfence_scan_age_seconds{site="blog.jarrousse.org"} 20998
+# HELP wordpress_wordfence_scan_issue_update_age_seconds Age in seconds of the latest observed Wordfence scan issue update.
+# TYPE wordpress_wordfence_scan_issue_update_age_seconds gauge
+wordpress_wordfence_scan_issue_update_age_seconds{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_installed Whether Wordfence appears installed.
+# TYPE wordpress_wordfence_installed gauge
+wordpress_wordfence_installed{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_version_info Wordfence version metadata.
+# TYPE wordpress_wordfence_version_info gauge
+wordpress_wordfence_version_info{site="blog.jarrousse.org",version="9.1.0"} 1
+# HELP wordpress_wordfence_firewall_enabled Whether the Wordfence firewall appears enabled.
+# TYPE wordpress_wordfence_firewall_enabled gauge
+wordpress_wordfence_firewall_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_firewall_optimized Whether the Wordfence firewall appears optimized.
+# TYPE wordpress_wordfence_firewall_optimized gauge
+wordpress_wordfence_firewall_optimized{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_live_traffic_enabled Whether Wordfence live traffic appears enabled.
+# TYPE wordpress_wordfence_live_traffic_enabled gauge
+wordpress_wordfence_live_traffic_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_scan_enabled Whether Wordfence scanning appears enabled.
+# TYPE wordpress_wordfence_scan_enabled gauge
+wordpress_wordfence_scan_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_license_type Wordfence license type metadata.
+# TYPE wordpress_wordfence_license_type gauge
+wordpress_wordfence_license_type{site="blog.jarrousse.org",type="unknown"} 1
+# HELP wordpress_wordfence_wordpress_version_info WordPress core version metadata.
+# TYPE wordpress_wordfence_wordpress_version_info gauge
+wordpress_wordfence_wordpress_version_info{site="blog.jarrousse.org",version="7.1.4"} 1
+# HELP wordpress_wordfence_core_update_available Whether a WordPress core update is available.
+# TYPE wordpress_wordfence_core_update_available gauge
+wordpress_wordfence_core_update_available{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_plugin_update_available_total Number of plugin updates available.
+# TYPE wordpress_wordfence_plugin_update_available_total gauge
+wordpress_wordfence_plugin_update_available_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_plugins_installed_total Number of installed WordPress plugins.
+# TYPE wordpress_wordfence_plugins_installed_total gauge
+wordpress_wordfence_plugins_installed_total{site="blog.jarrousse.org"} 15
+# HELP wordpress_wordfence_plugins_active_total Number of site-active WordPress plugins.
+# TYPE wordpress_wordfence_plugins_active_total gauge
+wordpress_wordfence_plugins_active_total{site="blog.jarrousse.org"} 15
+# HELP wordpress_wordfence_plugins_inactive_total Number of inactive WordPress plugins.
+# TYPE wordpress_wordfence_plugins_inactive_total gauge
+wordpress_wordfence_plugins_inactive_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_plugins_network_active_total Number of network-active WordPress plugins.
+# TYPE wordpress_wordfence_plugins_network_active_total gauge
+wordpress_wordfence_plugins_network_active_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_plugin_inventory_info Installed WordPress plugin inventory metadata.
+# TYPE wordpress_wordfence_plugin_inventory_info gauge
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="all-in-one-seo-pack/all_in_one_seo_pack.php",name="All in One SEO",version="5.0.5",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="atr-inline-rtl-ltr/atr-inline-rtl-ltr.php",name="Atr Inline Rtl Ltr",version="1.0.1",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="complianz-gdpr/complianz-gpdr.php",name="Complianz | GDPR/CCPA Cookie Consent",version="7.5.7",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="gallery-block-lightbox/gallery-block-lightbox.php",name="Lightbox for Gallery & Image Block",version="1.16.1",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="host-webfonts-local/host-webfonts-local.php",name="OMGF",version="6.4.1",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="redis-cache/redis-cache.php",name="Redis Object Cache",version="3.0.0",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="simula-friendly-slugs-for-arabic-sites/simula-friendly-slugs-for-arabic-sites.php",name="Simula Friendly Slugs for Arabic Sites",version="1.2.4",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="simula-levantine-dates-for-arabic-sites/simula-levantine-dates.php",name="Simula Levantine Dates for Arabic Sites",version="1.1.1",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="simula-security-telemetry-for-wordfence/simula-security-telemetry-for-wordfence.php",name="Simula Security Telemetry for Wordfence",version="4.0.1",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="google-site-kit/google-site-kit.php",name="Site Kit by Google",version="1.191.0",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="wordfence/wordfence.php",name="Wordfence Security",version="9.1.0",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="wp-consent-api/wp-consent-api.php",name="WP Consent API",version="2.1.0",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="wp-fail2ban/wp-fail2ban.php",name="WP fail2ban",version="5.5.0",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="wpf2b-addon-blocklist/addon.php",name="WP fail2ban Blocklist",version="2.2.2",state="active",update_available="0"} 1
+wordpress_wordfence_plugin_inventory_info{site="blog.jarrousse.org",plugin_file="wp-super-cache/wp-cache.php",name="WP Super Cache",version="3.1.5",state="active",update_available="0"} 1
+# HELP wordpress_wordfence_theme_update_available_total Number of theme updates available.
+# TYPE wordpress_wordfence_theme_update_available_total gauge
+wordpress_wordfence_theme_update_available_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_admin_users_total Number of WordPress administrator users.
+# TYPE wordpress_wordfence_admin_users_total gauge
+wordpress_wordfence_admin_users_total{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_admin_users_without_2fa_total Number of administrator users without Wordfence two-factor secrets.
+# TYPE wordpress_wordfence_admin_users_without_2fa_total gauge
+wordpress_wordfence_admin_users_without_2fa_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_admin_users_without_passkey_total Number of administrator users without Wordfence passkeys.
+# TYPE wordpress_wordfence_admin_users_without_passkey_total gauge
+wordpress_wordfence_admin_users_without_passkey_total{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_admin_users_without_login_protection_total Number of administrator users without Wordfence two-factor secrets or passkeys.
+# TYPE wordpress_wordfence_admin_users_without_login_protection_total gauge
+wordpress_wordfence_admin_users_without_login_protection_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_php_runtime_info Bounded PHP runtime metadata.
+# TYPE wordpress_wordfence_php_runtime_info gauge
+wordpress_wordfence_php_runtime_info{site="blog.jarrousse.org",version="8.5.4",sapi="cli",architecture="64"} 1
+# HELP wordpress_wordfence_php_version_supported Whether the PHP version is in the exporter support policy.
+# TYPE wordpress_wordfence_php_version_supported gauge
+wordpress_wordfence_php_version_supported{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_php_display_errors_enabled Effective PHP security setting.
+# TYPE wordpress_wordfence_php_display_errors_enabled gauge
+wordpress_wordfence_php_display_errors_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_php_expose_php_enabled Effective PHP security setting.
+# TYPE wordpress_wordfence_php_expose_php_enabled gauge
+wordpress_wordfence_php_expose_php_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_php_allow_url_fopen_enabled Effective PHP security setting.
+# TYPE wordpress_wordfence_php_allow_url_fopen_enabled gauge
+wordpress_wordfence_php_allow_url_fopen_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_php_session_cookie_secure_enabled Effective PHP security setting.
+# TYPE wordpress_wordfence_php_session_cookie_secure_enabled gauge
+wordpress_wordfence_php_session_cookie_secure_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_php_session_cookie_httponly_enabled Effective PHP security setting.
+# TYPE wordpress_wordfence_php_session_cookie_httponly_enabled gauge
+wordpress_wordfence_php_session_cookie_httponly_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_php_session_cookie_samesite_info Normalized PHP session cookie SameSite setting.
+# TYPE wordpress_wordfence_php_session_cookie_samesite_info gauge
+wordpress_wordfence_php_session_cookie_samesite_info{site="blog.jarrousse.org",value="empty"} 1
+# HELP wordpress_wordfence_php_max_execution_time_seconds Effective PHP resource limit; omitted when unlimited or unreadable.
+# TYPE wordpress_wordfence_php_max_execution_time_seconds gauge
+wordpress_wordfence_php_max_execution_time_seconds{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_php_upload_max_filesize_bytes Effective PHP resource limit; omitted when unlimited or unreadable.
+# TYPE wordpress_wordfence_php_upload_max_filesize_bytes gauge
+wordpress_wordfence_php_upload_max_filesize_bytes{site="blog.jarrousse.org"} 2097152
+# HELP wordpress_wordfence_php_post_max_size_bytes Effective PHP resource limit; omitted when unlimited or unreadable.
+# TYPE wordpress_wordfence_php_post_max_size_bytes gauge
+wordpress_wordfence_php_post_max_size_bytes{site="blog.jarrousse.org"} 8388608
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="curl"} 1
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="mbstring"} 1
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="mysqli"} 1
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="openssl"} 1
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="pdo_mysql"} 1
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="sodium"} 1
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="xml"} 1
+# HELP wordpress_wordfence_php_extension_info Allowed loaded PHP extension metadata.
+# TYPE wordpress_wordfence_php_extension_info gauge
+wordpress_wordfence_php_extension_info{site="blog.jarrousse.org",extension="zip"} 1
+# HELP wordpress_wordfence_users_total WordPress users grouped by bounded role.
+# TYPE wordpress_wordfence_users_total gauge
+wordpress_wordfence_users_total{site="blog.jarrousse.org",role="administrator"} 1
+wordpress_wordfence_users_total{site="blog.jarrousse.org",role="editor"} 2
+wordpress_wordfence_users_total{site="blog.jarrousse.org",role="author"} 0
+wordpress_wordfence_users_total{site="blog.jarrousse.org",role="contributor"} 0
+wordpress_wordfence_users_total{site="blog.jarrousse.org",role="subscriber"} 0
+wordpress_wordfence_users_total{site="blog.jarrousse.org",role="other"} 0
+# HELP wordpress_wordfence_users_created_window Recently created WordPress users grouped by bounded role and window.
+# TYPE wordpress_wordfence_users_created_window gauge
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="administrator",window="1h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="administrator",window="24h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="administrator",window="7d"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="editor",window="1h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="editor",window="24h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="editor",window="7d"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="author",window="1h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="author",window="24h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="author",window="7d"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="contributor",window="1h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="contributor",window="24h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="contributor",window="7d"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="subscriber",window="1h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="subscriber",window="24h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="subscriber",window="7d"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="other",window="1h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="other",window="24h"} 0
+wordpress_wordfence_users_created_window{site="blog.jarrousse.org",role="other",window="7d"} 0
+# HELP wordpress_wordfence_admin_users_created_window Recently created administrator users grouped by window.
+# TYPE wordpress_wordfence_admin_users_created_window gauge
+wordpress_wordfence_admin_users_created_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_admin_users_created_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_admin_users_created_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_admin_users_modified_window Administrator profile modifications observed by plugin hooks grouped by window.
+# TYPE wordpress_wordfence_admin_users_modified_window gauge
+wordpress_wordfence_admin_users_modified_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_admin_users_modified_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_admin_users_modified_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_roles_total Number of registered WordPress roles.
+# TYPE wordpress_wordfence_roles_total gauge
+wordpress_wordfence_roles_total{site="blog.jarrousse.org"} 5
+# HELP wordpress_wordfence_role_capabilities_total Role capability counts grouped by bounded role.
+# TYPE wordpress_wordfence_role_capabilities_total gauge
+wordpress_wordfence_role_capabilities_total{site="blog.jarrousse.org",role="administrator"} 75
+wordpress_wordfence_role_capabilities_total{site="blog.jarrousse.org",role="editor"} 43
+wordpress_wordfence_role_capabilities_total{site="blog.jarrousse.org",role="author"} 19
+wordpress_wordfence_role_capabilities_total{site="blog.jarrousse.org",role="contributor"} 14
+wordpress_wordfence_role_capabilities_total{site="blog.jarrousse.org",role="subscriber"} 70
+wordpress_wordfence_role_capabilities_total{site="blog.jarrousse.org",role="other"} 0
+# HELP wordpress_wordfence_unexpected_admin_capabilities_total Administrator-level capabilities assigned to non-administrator roles.
+# TYPE wordpress_wordfence_unexpected_admin_capabilities_total gauge
+wordpress_wordfence_unexpected_admin_capabilities_total{site="blog.jarrousse.org"} 10
+# HELP wordpress_wordfence_users_can_register_enabled Whether public user registration is enabled.
+# TYPE wordpress_wordfence_users_can_register_enabled gauge
+wordpress_wordfence_users_can_register_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_file_edit_allowed Whether WordPress file editing appears allowed.
+# TYPE wordpress_wordfence_file_edit_allowed gauge
+wordpress_wordfence_file_edit_allowed{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_file_mods_allowed Whether WordPress file modifications appear allowed.
+# TYPE wordpress_wordfence_file_mods_allowed gauge
+wordpress_wordfence_file_mods_allowed{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_debug_enabled Whether WP_DEBUG is enabled.
+# TYPE wordpress_wordfence_debug_enabled gauge
+wordpress_wordfence_debug_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_debug_display_enabled Whether WP_DEBUG_DISPLAY is enabled.
+# TYPE wordpress_wordfence_debug_display_enabled gauge
+wordpress_wordfence_debug_display_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_xmlrpc_enabled Whether XML-RPC appears enabled.
+# TYPE wordpress_wordfence_xmlrpc_enabled gauge
+wordpress_wordfence_xmlrpc_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_rest_api_enabled Whether the WordPress REST API appears enabled.
+# TYPE wordpress_wordfence_rest_api_enabled gauge
+wordpress_wordfence_rest_api_enabled{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_search_engine_visibility_enabled Whether search engine visibility is discouraged.
+# TYPE wordpress_wordfence_search_engine_visibility_enabled gauge
+wordpress_wordfence_search_engine_visibility_enabled{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_default_role_info Default new-user role metadata.
+# TYPE wordpress_wordfence_default_role_info gauge
+wordpress_wordfence_default_role_info{site="blog.jarrousse.org",role="subscriber"} 1
+# HELP wordpress_wordfence_home_url_info Hashed WordPress home URL metadata.
+# TYPE wordpress_wordfence_home_url_info gauge
+wordpress_wordfence_home_url_info{site="blog.jarrousse.org",hash="0ec9b239f80ed3cbeb5d97d97f5491b97e8fbd2ffd7d3e39b90b16f7b89792c8"} 1
+# HELP wordpress_wordfence_site_url_info Hashed WordPress site URL metadata.
+# TYPE wordpress_wordfence_site_url_info gauge
+wordpress_wordfence_site_url_info{site="blog.jarrousse.org",hash="416df4c76b682b4e709bafb621cc88d03e768b00b81c91b981b72ec32057222e"} 1
+# HELP wordpress_wordfence_plugins_added_window Plugin state changes detected by slow-snapshot comparison.
+# TYPE wordpress_wordfence_plugins_added_window gauge
+wordpress_wordfence_plugins_added_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_plugins_added_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_plugins_added_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_plugins_removed_window Plugin state changes detected by slow-snapshot comparison.
+# TYPE wordpress_wordfence_plugins_removed_window gauge
+wordpress_wordfence_plugins_removed_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_plugins_removed_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_plugins_removed_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_plugins_activated_window Plugin state changes detected by slow-snapshot comparison.
+# TYPE wordpress_wordfence_plugins_activated_window gauge
+wordpress_wordfence_plugins_activated_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_plugins_activated_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_plugins_activated_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_plugins_deactivated_window Plugin state changes detected by slow-snapshot comparison.
+# TYPE wordpress_wordfence_plugins_deactivated_window gauge
+wordpress_wordfence_plugins_deactivated_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_plugins_deactivated_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_plugins_deactivated_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_mu_plugins_total Number of must-use plugins.
+# TYPE wordpress_wordfence_mu_plugins_total gauge
+wordpress_wordfence_mu_plugins_total{site="blog.jarrousse.org"} 1
+# HELP wordpress_wordfence_dropins_total Number of WordPress drop-ins.
+# TYPE wordpress_wordfence_dropins_total gauge
+wordpress_wordfence_dropins_total{site="blog.jarrousse.org"} 2
+# HELP wordpress_wordfence_themes_installed_total Number of installed WordPress themes.
+# TYPE wordpress_wordfence_themes_installed_total gauge
+wordpress_wordfence_themes_installed_total{site="blog.jarrousse.org"} 2
+# HELP wordpress_wordfence_themes_update_available_total Number of available WordPress theme updates.
+# TYPE wordpress_wordfence_themes_update_available_total gauge
+wordpress_wordfence_themes_update_available_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_active_theme_info Active theme metadata.
+# TYPE wordpress_wordfence_active_theme_info gauge
+wordpress_wordfence_active_theme_info{site="blog.jarrousse.org",theme="Decode",version="3.15.3"} 1
+# HELP wordpress_wordfence_successful_logins_window Account events observed by plugin hooks grouped by bounded role and window.
+# TYPE wordpress_wordfence_successful_logins_window gauge
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="administrator",window="1h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="administrator",window="24h"} 1
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="administrator",window="7d"} 2
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="editor",window="1h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="editor",window="24h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="editor",window="7d"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="author",window="1h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="author",window="24h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="author",window="7d"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="contributor",window="1h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="contributor",window="24h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="contributor",window="7d"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="subscriber",window="1h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="subscriber",window="24h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="subscriber",window="7d"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="other",window="1h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="other",window="24h"} 0
+wordpress_wordfence_successful_logins_window{site="blog.jarrousse.org",role="other",window="7d"} 0
+# HELP wordpress_wordfence_password_resets_window Account events observed by plugin hooks grouped by bounded role and window.
+# TYPE wordpress_wordfence_password_resets_window gauge
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="administrator",window="1h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="administrator",window="24h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="administrator",window="7d"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="editor",window="1h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="editor",window="24h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="editor",window="7d"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="author",window="1h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="author",window="24h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="author",window="7d"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="contributor",window="1h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="contributor",window="24h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="contributor",window="7d"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="subscriber",window="1h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="subscriber",window="24h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="subscriber",window="7d"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="other",window="1h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="other",window="24h"} 0
+wordpress_wordfence_password_resets_window{site="blog.jarrousse.org",role="other",window="7d"} 0
+# HELP wordpress_wordfence_user_email_changes_window Account events observed by plugin hooks grouped by bounded role and window.
+# TYPE wordpress_wordfence_user_email_changes_window gauge
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="administrator",window="1h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="administrator",window="24h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="administrator",window="7d"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="editor",window="1h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="editor",window="24h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="editor",window="7d"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="author",window="1h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="author",window="24h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="author",window="7d"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="contributor",window="1h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="contributor",window="24h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="contributor",window="7d"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="subscriber",window="1h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="subscriber",window="24h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="subscriber",window="7d"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="other",window="1h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="other",window="24h"} 0
+wordpress_wordfence_user_email_changes_window{site="blog.jarrousse.org",role="other",window="7d"} 0
+# HELP wordpress_wordfence_application_passwords_total Total stored WordPress application passwords.
+# TYPE wordpress_wordfence_application_passwords_total gauge
+wordpress_wordfence_application_passwords_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_admin_application_passwords_total Stored WordPress application passwords owned by administrator users.
+# TYPE wordpress_wordfence_admin_application_passwords_total gauge
+wordpress_wordfence_admin_application_passwords_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_sessions_total Stored WordPress session-token counts grouped by bounded role.
+# TYPE wordpress_wordfence_sessions_total gauge
+wordpress_wordfence_sessions_total{site="blog.jarrousse.org",role="administrator"} 2
+wordpress_wordfence_sessions_total{site="blog.jarrousse.org",role="editor"} 2
+wordpress_wordfence_sessions_total{site="blog.jarrousse.org",role="author"} 0
+wordpress_wordfence_sessions_total{site="blog.jarrousse.org",role="contributor"} 0
+wordpress_wordfence_sessions_total{site="blog.jarrousse.org",role="subscriber"} 0
+wordpress_wordfence_sessions_total{site="blog.jarrousse.org",role="other"} 0
+# HELP wordpress_wordfence_cron_events_total Total scheduled WordPress cron events.
+# TYPE wordpress_wordfence_cron_events_total gauge
+wordpress_wordfence_cron_events_total{site="blog.jarrousse.org"} 42
+# HELP wordpress_wordfence_cron_hooks_total Number of distinct scheduled WordPress cron hooks.
+# TYPE wordpress_wordfence_cron_hooks_total gauge
+wordpress_wordfence_cron_hooks_total{site="blog.jarrousse.org"} 38
+# HELP wordpress_wordfence_cron_suspicious_hooks_total Count of cron hooks matching suspicious persistence-oriented names.
+# TYPE wordpress_wordfence_cron_suspicious_hooks_total gauge
+wordpress_wordfence_cron_suspicious_hooks_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_options_total Total rows in the WordPress options table.
+# TYPE wordpress_wordfence_options_total gauge
+wordpress_wordfence_options_total{site="blog.jarrousse.org"} 442
+# HELP wordpress_wordfence_autoload_options_total Total autoloaded WordPress options.
+# TYPE wordpress_wordfence_autoload_options_total gauge
+wordpress_wordfence_autoload_options_total{site="blog.jarrousse.org"} 286
+# HELP wordpress_wordfence_autoload_options_bytes Approximate byte size of autoloaded WordPress option values.
+# TYPE wordpress_wordfence_autoload_options_bytes gauge
+wordpress_wordfence_autoload_options_bytes{site="blog.jarrousse.org"} 217209
+# HELP wordpress_wordfence_cron_new_hooks_window New cron hooks detected by slow-snapshot comparison.
+# TYPE wordpress_wordfence_cron_new_hooks_window gauge
+wordpress_wordfence_cron_new_hooks_window{site="blog.jarrousse.org",window="1h"} 1
+wordpress_wordfence_cron_new_hooks_window{site="blog.jarrousse.org",window="24h"} 12
+wordpress_wordfence_cron_new_hooks_window{site="blog.jarrousse.org",window="7d"} 55
+# HELP wordpress_wordfence_cron_scheduled_events_total Scheduled cron events grouped by bounded recurrence label.
+# TYPE wordpress_wordfence_cron_scheduled_events_total gauge
+wordpress_wordfence_cron_scheduled_events_total{site="blog.jarrousse.org",recurrence="single"} 9
+wordpress_wordfence_cron_scheduled_events_total{site="blog.jarrousse.org",recurrence="hourly"} 5
+wordpress_wordfence_cron_scheduled_events_total{site="blog.jarrousse.org",recurrence="twicedaily"} 6
+wordpress_wordfence_cron_scheduled_events_total{site="blog.jarrousse.org",recurrence="daily"} 10
+wordpress_wordfence_cron_scheduled_events_total{site="blog.jarrousse.org",recurrence="custom"} 12
+# HELP wordpress_wordfence_options_changed_window Sensitive option changes detected by slow-snapshot comparison.
+# TYPE wordpress_wordfence_options_changed_window gauge
+wordpress_wordfence_options_changed_window{site="blog.jarrousse.org",window="1h"} 3
+wordpress_wordfence_options_changed_window{site="blog.jarrousse.org",window="24h"} 26
+wordpress_wordfence_options_changed_window{site="blog.jarrousse.org",window="7d"} 169
+# HELP wordpress_wordfence_new_autoload_options_window New autoloaded options detected by slow-snapshot comparison.
+# TYPE wordpress_wordfence_new_autoload_options_window gauge
+wordpress_wordfence_new_autoload_options_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_new_autoload_options_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_new_autoload_options_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_sensitive_options_changed_window Sensitive option changes grouped by bounded option group and window.
+# TYPE wordpress_wordfence_sensitive_options_changed_window gauge
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="site_url",window="1h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="site_url",window="24h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="site_url",window="7d"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="users",window="1h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="users",window="24h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="users",window="7d"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="mail",window="1h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="mail",window="24h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="mail",window="7d"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="auth",window="1h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="auth",window="24h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="auth",window="7d"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="cron",window="1h"} 3
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="cron",window="24h"} 26
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="cron",window="7d"} 169
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="plugins",window="1h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="plugins",window="24h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="plugins",window="7d"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="other",window="1h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="other",window="24h"} 0
+wordpress_wordfence_sensitive_options_changed_window{site="blog.jarrousse.org",option_group="other",window="7d"} 0
+# HELP wordpress_wordfence_posts_modified_window Recently modified content grouped by bounded post type and window.
+# TYPE wordpress_wordfence_posts_modified_window gauge
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="post",window="1h"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="post",window="24h"} 1
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="post",window="7d"} 1
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="page",window="1h"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="page",window="24h"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="page",window="7d"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="attachment",window="1h"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="attachment",window="24h"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="attachment",window="7d"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="other",window="1h"} 0
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="other",window="24h"} 1
+wordpress_wordfence_posts_modified_window{site="blog.jarrousse.org",post_type="other",window="7d"} 1
+# HELP wordpress_wordfence_pages_modified_window Recently modified WordPress pages grouped by window.
+# TYPE wordpress_wordfence_pages_modified_window gauge
+wordpress_wordfence_pages_modified_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_pages_modified_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_pages_modified_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_recent_admin_post_edits_window Recent content modifications by administrator users grouped by window.
+# TYPE wordpress_wordfence_recent_admin_post_edits_window gauge
+wordpress_wordfence_recent_admin_post_edits_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_recent_admin_post_edits_window{site="blog.jarrousse.org",window="24h"} 2
+wordpress_wordfence_recent_admin_post_edits_window{site="blog.jarrousse.org",window="7d"} 2
+# HELP wordpress_wordfence_recent_upload_php_files_window Recently modified PHP-like files under uploads grouped by window.
+# TYPE wordpress_wordfence_recent_upload_php_files_window gauge
+wordpress_wordfence_recent_upload_php_files_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_recent_upload_php_files_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_recent_upload_php_files_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_plugin_files_modified_window Recently modified files under plugins grouped by window.
+# TYPE wordpress_wordfence_plugin_files_modified_window gauge
+wordpress_wordfence_plugin_files_modified_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_plugin_files_modified_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_plugin_files_modified_window{site="blog.jarrousse.org",window="7d"} 2672
+# HELP wordpress_wordfence_theme_files_modified_window Recently modified files under themes grouped by window.
+# TYPE wordpress_wordfence_theme_files_modified_window gauge
+wordpress_wordfence_theme_files_modified_window{site="blog.jarrousse.org",window="1h"} 0
+wordpress_wordfence_theme_files_modified_window{site="blog.jarrousse.org",window="24h"} 0
+wordpress_wordfence_theme_files_modified_window{site="blog.jarrousse.org",window="7d"} 0
+# HELP wordpress_wordfence_posts_with_script_tags_total Published content containing script tags grouped by bounded post type.
+# TYPE wordpress_wordfence_posts_with_script_tags_total gauge
+wordpress_wordfence_posts_with_script_tags_total{site="blog.jarrousse.org",post_type="post"} 0
+wordpress_wordfence_posts_with_script_tags_total{site="blog.jarrousse.org",post_type="page"} 0
+wordpress_wordfence_posts_with_script_tags_total{site="blog.jarrousse.org",post_type="other"} 1
+# HELP wordpress_wordfence_posts_with_iframe_tags_total Published content containing iframe tags grouped by bounded post type.
+# TYPE wordpress_wordfence_posts_with_iframe_tags_total gauge
+wordpress_wordfence_posts_with_iframe_tags_total{site="blog.jarrousse.org",post_type="post"} 0
+wordpress_wordfence_posts_with_iframe_tags_total{site="blog.jarrousse.org",post_type="page"} 0
+wordpress_wordfence_posts_with_iframe_tags_total{site="blog.jarrousse.org",post_type="other"} 0
+# HELP wordpress_wordfence_posts_with_suspicious_redirects_total Published content containing simple suspicious redirect indicators grouped by bounded post type.
+# TYPE wordpress_wordfence_posts_with_suspicious_redirects_total gauge
+wordpress_wordfence_posts_with_suspicious_redirects_total{site="blog.jarrousse.org",post_type="post"} 0
+wordpress_wordfence_posts_with_suspicious_redirects_total{site="blog.jarrousse.org",post_type="page"} 0
+wordpress_wordfence_posts_with_suspicious_redirects_total{site="blog.jarrousse.org",post_type="other"} 0
+# HELP wordpress_wordfence_upload_php_files_total PHP-like files found under uploads.
+# TYPE wordpress_wordfence_upload_php_files_total gauge
+wordpress_wordfence_upload_php_files_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_upload_executable_files_total Executable-like files found under uploads.
+# TYPE wordpress_wordfence_upload_executable_files_total gauge
+wordpress_wordfence_upload_executable_files_total{site="blog.jarrousse.org"} 0
+# HELP wordpress_wordfence_wp_content_recently_modified_files_total Recently modified files under bounded wp-content areas.
+# TYPE wordpress_wordfence_wp_content_recently_modified_files_total gauge
+wordpress_wordfence_wp_content_recently_modified_files_total{site="blog.jarrousse.org",area="plugins"} 0
+wordpress_wordfence_wp_content_recently_modified_files_total{site="blog.jarrousse.org",area="themes"} 0
+wordpress_wordfence_wp_content_recently_modified_files_total{site="blog.jarrousse.org",area="uploads"} 0
+wordpress_wordfence_wp_content_recently_modified_files_total{site="blog.jarrousse.org",area="mu_plugins"} 0

@@ -287,6 +287,19 @@ All metrics include a `site` label.
   Wordfence license type metadata.
 - `wordpress_wordfence_wordpress_version_info{version="..."}`
   WordPress core version metadata. Emits `version="unknown"` if the runtime cannot provide a version.
+- `wordpress_wordfence_platform_info`
+  Settings control for the platform version group below, enabled by default. Disable **Platform version info** to stop collecting and exporting this operational metadata.
+- `wordpress_wordfence_web_server_info{name="apache|nginx|microsoft-iis|litespeed|openlitespeed|caddy|unknown",version="..."}`
+  Web server product/version from the Apache API when available, otherwise PHP's server software banner. Hidden versions remain `unknown`; CLI exports may have no web server information.
+- `wordpress_wordfence_database_info{name="mysql|mariadb|unknown",version="..."}`
+  Connected database server version from WordPress's existing database connection, including package suffixes when supplied by the server.
+- `wordpress_wordfence_os_info{id="...",version="..."}`
+  Distribution ID and VERSION_ID from readable `/etc/os-release` or `/usr/lib/os-release` files (for example `ubuntu`, `24.04`).
+- `wordpress_wordfence_kernel_info{name="...",version="..."}`
+  Kernel name and release from PHP's `php_uname()` API.
+
+Platform versions refresh with the slow collector (hourly by default) and are reused by fast exports. Each info metric has value `1`; missing or restricted information uses `unknown` labels without failing the export. Collection runs with PHP's permissions, executes no shell commands, and makes no new network connections. Only bounded product/version identifiers are exported, excluding hostnames and full server banners. In containers, the distribution describes the container filesystem and the kernel describes the kernel visible to PHP; these are not necessarily the host distribution or the public-facing proxy. Redis is not collected.
+
 - `wordpress_wordfence_php_runtime_posture`
   Opt-in settings control for the PHP runtime posture metrics below. Disabled by default because the metrics expose bounded operational metadata to metrics readers.
 - `wordpress_wordfence_php_runtime_info{version="...",sapi="...",architecture="32|64"}`

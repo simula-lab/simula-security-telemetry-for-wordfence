@@ -26,7 +26,7 @@ return [
                 'max_execution_time_seconds' => 30,
                 'upload_max_filesize_bytes' => null,
                 'post_max_size_bytes' => 8388608,
-                'extensions' => ['openssl', 'unapproved_extension'],
+                'extensions' => ['openssl', 'curl', 'mbstring', 'unapproved_extension'],
                 'opcache' => ['enabled' => 1, 'jit_enabled' => 0, 'memory_usage_ratio' => 0.25],
             ],
         ];
@@ -38,6 +38,10 @@ return [
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_version_supported{site="example.test"} 1') !== false);
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_session_cookie_samesite_info{site="example.test",value="lax"} 1') !== false);
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_extension_info{site="example.test",extension="openssl"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_extension_info{site="example.test",extension="curl"} 1') !== false);
+        sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_extension_info{site="example.test",extension="mbstring"} 1') !== false);
+        sstfw_assert_same(1, substr_count($body, '# HELP wordpress_wordfence_php_extension_info '));
+        sstfw_assert_same(1, substr_count($body, '# TYPE wordpress_wordfence_php_extension_info '));
         sstfw_assert_true(strpos($body, 'unapproved_extension') === false);
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_upload_max_filesize_bytes') === false);
         sstfw_assert_true(strpos($body, 'wordpress_wordfence_php_opcache_memory_usage_ratio{site="example.test"} 0.25') !== false);

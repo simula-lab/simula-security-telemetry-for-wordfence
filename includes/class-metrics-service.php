@@ -274,6 +274,10 @@ final class Simula_Security_Telemetry_Service {
                 );
             }
 
+            if ($flags['platform_info']) {
+                $data['platform_info'] = Simula_Security_Telemetry_Platform_Collector::collect();
+            }
+
             if ($flags['php_runtime_posture']) {
                 $data['php_runtime_posture'] = Simula_Security_Telemetry_PHP_Runtime_Collector::collect();
             }
@@ -536,6 +540,7 @@ final class Simula_Security_Telemetry_Service {
         $metrics = array_merge($metrics, self::render_source_freshness_metrics($data));
         $metrics = array_merge($metrics, self::render_posture_metrics($data));
         $metrics = array_merge($metrics, self::render_php_runtime_posture_metrics($data));
+        $metrics = array_merge($metrics, self::render_platform_metrics($data));
         $metrics = array_merge($metrics, self::render_wordpress_drift_metrics($data));
         $metrics = array_merge($metrics, self::render_account_metrics($data));
         $metrics = array_merge($metrics, self::render_cron_option_metrics($data));
@@ -1236,6 +1241,29 @@ final class Simula_Security_Telemetry_Service {
         return $metrics;
     }
 
+    /** Renders the platform version group, including explicit unknown values. */
+    private static function render_platform_metrics($data) {
+        if (empty($data['flags']['platform_info'])) {
+            return [];
+        }
+
+        $metrics = [];
+        $platform = is_array($data['platform_info'] ?? null) ? $data['platform_info'] : [];
+        foreach (['web_server', 'database', 'os', 'kernel'] as $component) {
+            $info = is_array($platform[$component] ?? null) ? $platform[$component] : [];
+            $identity = $component === 'os' ? 'id' : 'name';
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $data['prefix'] . '_' . $component . '_info', 'gauge', 'Platform version metadata visible to PHP; unavailable values are unknown.', [[
+                'labels' => [
+                    'site' => $data['site'],
+                    $identity => Simula_Security_Telemetry_Output::escape_label((string) ($info[$identity] ?? 'unknown')),
+                    'version' => Simula_Security_Telemetry_Output::escape_label((string) ($info['version'] ?? 'unknown')),
+                ],
+                'value' => 1,
+            ]]);
+        }
+        return $metrics;
+    }
+
     /** Renders the opt-in, bounded PHP runtime posture metric group. */
     private static function render_php_runtime_posture_metrics($data) {
         if (empty($data['flags']['php_runtime_posture'])) {
@@ -1284,15 +1312,19 @@ final class Simula_Security_Telemetry_Service {
             }
         }
 
+        $extension_samples = [];
         foreach ((array) ($runtime['extensions'] ?? []) as $extension) {
             if (!in_array($extension, Simula_Security_Telemetry_PHP_Runtime_Collector::allowed_extensions(), true)) {
                 continue;
             }
 
-            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_extension_info', 'gauge', 'Allowed loaded PHP extension metadata.', [[
+            $extension_samples[] = [
                 'labels' => ['site' => $site, 'extension' => $extension],
                 'value' => 1,
-            ]]);
+            ];
+        }
+        if ($extension_samples !== []) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_extension_info', 'gauge', 'Allowed loaded PHP extension metadata.', $extension_samples);
         }
 
         $opcache = is_array($runtime['opcache'] ?? null) ? $runtime['opcache'] : [];
@@ -1689,7 +1721,7 @@ final class Simula_Security_Telemetry_Service {
     private static function apply_cached_slow_metrics($data, $state) {
         $cache = isset($state['slow_metric_cache']) && is_array($state['slow_metric_cache']) ? $state['slow_metric_cache'] : [];
 
-        foreach (['two_factor_metrics', 'passkey_metrics', 'login_protection_metrics', 'scan_issue_metrics', 'wordfence_posture', 'wordpress_posture', 'php_runtime_posture', 'wordpress_drift', 'account_metrics', 'cron_option_metrics', 'ioc_metrics'] as $key) {
+        foreach (['two_factor_metrics', 'passkey_metrics', 'login_protection_metrics', 'scan_issue_metrics', 'wordfence_posture', 'wordpress_posture', 'platform_info', 'php_runtime_posture', 'wordpress_drift', 'account_metrics', 'cron_option_metrics', 'ioc_metrics'] as $key) {
             if (isset($cache[$key]) && is_array($cache[$key])) {
                 $data[$key] = $cache[$key];
             }
@@ -1728,6 +1760,7 @@ final class Simula_Security_Telemetry_Service {
             ] : [],
             'wordfence_posture' => is_array($data['wordfence_posture'] ?? null) ? $data['wordfence_posture'] : [],
             'wordpress_posture' => is_array($data['wordpress_posture'] ?? null) ? $data['wordpress_posture'] : [],
+            'platform_info' => is_array($data['platform_info'] ?? null) ? $data['platform_info'] : [],
             'php_runtime_posture' => is_array($data['php_runtime_posture'] ?? null) ? $data['php_runtime_posture'] : [],
             'wordpress_drift' => is_array($data['wordpress_drift'] ?? null) ? $data['wordpress_drift'] : [],
             'account_metrics' => is_array($data['account_metrics'] ?? null) ? $data['account_metrics'] : [],

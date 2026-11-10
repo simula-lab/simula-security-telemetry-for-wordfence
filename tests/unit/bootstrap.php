@@ -294,6 +294,7 @@ if (!class_exists('Simula_Security_Telemetry_Config')) {
     require_once dirname(__DIR__, 2) . '/includes/class-wordfence-collector.php';
     require_once dirname(__DIR__, 2) . '/includes/class-wordpress-collector.php';
     require_once dirname(__DIR__, 2) . '/includes/class-php-runtime-collector.php';
+    require_once dirname(__DIR__, 2) . '/includes/class-platform-collector.php';
     require_once dirname(__DIR__, 2) . '/includes/class-metrics-service.php';
     require_once dirname(__DIR__, 2) . '/includes/class-admin-dashboard.php';
     require_once dirname(__DIR__, 2) . '/includes/class-admin.php';
