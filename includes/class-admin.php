@@ -55,8 +55,6 @@ final class Simula_Security_Telemetry_Admin {
         $model   = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state);
         $cards   = [
             __('Exporter health', 'simula-security-telemetry-for-wordfence') => $model['exporter']['status'],
-            __('Platform information', 'simula-security-telemetry-for-wordfence') => $model['platform']['status'],
-            __('PHP runtime posture', 'simula-security-telemetry-for-wordfence') => $model['runtime']['status'],
             __('WordPress posture', 'simula-security-telemetry-for-wordfence') => $model['wordpress']['status'],
             __('Change signals', 'simula-security-telemetry-for-wordfence') => $model['changes']['status'],
         ];
@@ -91,18 +89,14 @@ final class Simula_Security_Telemetry_Admin {
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Security Telemetry', 'simula-security-telemetry-for-wordfence'); ?></h1>
-            <p><?php echo esc_html__('Current platform information and WordPress and PHP posture collected by this plugin.', 'simula-security-telemetry-for-wordfence'); ?></p>
+            <p><?php echo esc_html__('Current exporter health, WordPress posture, and change signals collected by this plugin.', 'simula-security-telemetry-for-wordfence'); ?></p>
             <p><strong><?php echo esc_html__('Overall status:', 'simula-security-telemetry-for-wordfence'); ?></strong> <?php echo esc_html(self::dashboard_status_label($model['overall_status'])); ?></p>
 
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; max-width:1200px;">
                 <?php self::render_dashboard_card(__('Exporter health', 'simula-security-telemetry-for-wordfence'), $model['exporter']['status'], self::dashboard_exporter_rows($model['exporter'])); ?>
-                <?php self::render_dashboard_card(__('Platform information', 'simula-security-telemetry-for-wordfence'), $model['platform']['status'], self::dashboard_platform_rows($model['platform'])); ?>
-                <?php self::render_dashboard_card(__('PHP runtime posture', 'simula-security-telemetry-for-wordfence'), $model['runtime']['status'], self::dashboard_runtime_rows($model['runtime'])); ?>
                 <?php self::render_dashboard_card(__('WordPress posture', 'simula-security-telemetry-for-wordfence'), $model['wordpress']['status'], self::dashboard_wordpress_rows($model['wordpress'])); ?>
                 <?php self::render_dashboard_card(__('Change signals', 'simula-security-telemetry-for-wordfence'), $model['changes']['status'], self::dashboard_change_rows($model['changes'])); ?>
             </div>
-
-            <p class="description"><?php echo esc_html__('Platform versions reflect what the WordPress PHP process can detect. In containers, the distribution may describe the container image. Database details describe the connected database server. Unknown values were not detected; version information alone does not determine security support.', 'simula-security-telemetry-for-wordfence'); ?></p>
 
             <?php if ($model['grafana_url'] !== '') : ?>
                 <p style="margin-top:20px;"><a class="button button-secondary" href="<?php echo esc_url($model['grafana_url']); ?>"><?php echo esc_html__('View historical telemetry in Grafana', 'simula-security-telemetry-for-wordfence'); ?></a></p>
@@ -494,7 +488,6 @@ final class Simula_Security_Telemetry_Admin {
     private static function dashboard_status_label($status) {
         $labels = [
             'healthy' => __('Healthy', 'simula-security-telemetry-for-wordfence'),
-            'available' => __('Available', 'simula-security-telemetry-for-wordfence'),
             'review' => __('Review needed', 'simula-security-telemetry-for-wordfence'),
             'action_required' => __('Action required', 'simula-security-telemetry-for-wordfence'),
             'unavailable' => __('Data unavailable', 'simula-security-telemetry-for-wordfence'),
@@ -511,54 +504,6 @@ final class Simula_Security_Telemetry_Admin {
             __('Most recent exporter result', 'simula-security-telemetry-for-wordfence') => self::dashboard_exporter_result_label($card['last_result'] ?? 'not_run'),
             __('Last slow refresh', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['slow_refresh'] ?? 0),
             __('Next export', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['next_export'] ?? 0),
-        ];
-    }
-
-    /** Formats cached platform identifiers without probing the server on page loads. */
-    private static function dashboard_platform_rows($card) {
-        if (($card['reason'] ?? '') === 'opt_in_disabled') {
-            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Enable Platform version info in settings to collect this data.', 'simula-security-telemetry-for-wordfence')];
-        }
-        if (($card['reason'] ?? '') === 'not_collected') {
-            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Awaiting the next slow collector run.', 'simula-security-telemetry-for-wordfence')];
-        }
-
-        $rows = [];
-        $labels = [
-            'database' => __('Database server', 'simula-security-telemetry-for-wordfence'),
-            'web_server' => __('Web server', 'simula-security-telemetry-for-wordfence'),
-            'os' => __('OS distribution', 'simula-security-telemetry-for-wordfence'),
-            'kernel' => __('Kernel', 'simula-security-telemetry-for-wordfence'),
-        ];
-        foreach ($labels as $component => $label) {
-            $info = $card['data'][$component] ?? [];
-            $name = ($info['name'] ?? 'unknown') === 'unknown' ? __('Unknown', 'simula-security-telemetry-for-wordfence') : $info['name'];
-            $version = ($info['version'] ?? 'unknown') === 'unknown' ? __('Unknown', 'simula-security-telemetry-for-wordfence') : $info['version'];
-            $rows[$label] = $name . ' / ' . $version;
-        }
-
-        return $rows;
-    }
-
-    /** Formats the cached PHP runtime allowlist for display. */
-    private static function dashboard_runtime_rows($card) {
-        if (($card['reason'] ?? '') === 'opt_in_disabled') {
-            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Disabled until PHP runtime posture metrics are enabled in settings.', 'simula-security-telemetry-for-wordfence')];
-        }
-        if (($card['reason'] ?? '') === 'not_collected') {
-            return [__('Availability', 'simula-security-telemetry-for-wordfence') => __('Awaiting the next slow collector run.', 'simula-security-telemetry-for-wordfence')];
-        }
-
-        $data = (array) ($card['data'] ?? []);
-        return [
-            __('PHP version', 'simula-security-telemetry-for-wordfence') => (string) ($data['version'] ?? __('Unknown', 'simula-security-telemetry-for-wordfence')),
-            __('Supported version', 'simula-security-telemetry-for-wordfence') => !empty($data['version_supported']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
-            __('SAPI', 'simula-security-telemetry-for-wordfence') => (string) ($data['sapi'] ?? __('Unknown', 'simula-security-telemetry-for-wordfence')),
-            __('Architecture (bits)', 'simula-security-telemetry-for-wordfence') => (string) ($data['architecture'] ?? __('Unknown', 'simula-security-telemetry-for-wordfence')),
-            __('Display errors enabled', 'simula-security-telemetry-for-wordfence') => !empty($data['display_errors_enabled']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
-            __('PHP version exposure enabled', 'simula-security-telemetry-for-wordfence') => !empty($data['expose_php_enabled']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
-            __('URL file access enabled', 'simula-security-telemetry-for-wordfence') => !empty($data['allow_url_fopen_enabled']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No', 'simula-security-telemetry-for-wordfence'),
-            __('OPcache enabled', 'simula-security-telemetry-for-wordfence') => !empty($data['opcache_enabled']) ? __('Yes', 'simula-security-telemetry-for-wordfence') : __('No or unavailable', 'simula-security-telemetry-for-wordfence'),
         ];
     }
 

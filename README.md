@@ -415,18 +415,12 @@ These metrics avoid raw usernames, emails, option names, cron hook names, sessio
 ## Security Telemetry Dashboard
 
 The top-level **Security Telemetry** wp-admin page is a read-only, current-state
-overview. It shows exporter health and version, cached database server (MySQL or
-MariaDB), web server, OS distribution and kernel versions, plus PHP and WordPress posture and
-change signals. It does not display Wordfence firewall activity, scan data,
-incidents, login activity, configuration, or any other Wordfence-derived data.
-
-Platform information follows the **Platform version info** setting (enabled by
-default) and appears after a slow collector run. Missing values are shown as
-unknown. In containers, the OS distribution can describe the container image;
-database details describe the connected server. The PHP card also shows
-architecture, PHP version exposure and URL file access settings when **PHP
-runtime posture** is enabled. Detected platform versions are informational and
-do not receive a supported/unsupported security rating.
+overview of exporter health and version, WordPress posture, and change signals.
+Platform information and PHP runtime details are available under **Tools > Site
+Health > Info**. The telemetry page and WordPress dashboard widget omit those
+sections, and their overall status reflects only the displayed telemetry cards.
+It does not display Wordfence firewall activity, scan data, incidents, login
+activity, configuration, or any other Wordfence-derived data.
 
 The page does not run collectors, query Wordfence tables, store time-series
 data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS

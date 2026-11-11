@@ -22,8 +22,6 @@ $html = ob_get_clean();
 
 foreach ([
     'Security Telemetry',
-    'Platform information',
-    'PHP runtime posture',
     'WordPress posture',
     'Change signals',
     'https://grafana.example.test/d/sstfw-security',
@@ -33,9 +31,9 @@ foreach ([
     }
 }
 
-foreach (['DO_NOT_DISPLAY_WORDFENCE_ERROR', 'DO_NOT_DISPLAY_WORDFENCE_DATA'] as $forbidden) {
+foreach (['Platform information', 'PHP runtime posture', 'DO_NOT_DISPLAY_WORDFENCE_ERROR', 'DO_NOT_DISPLAY_WORDFENCE_DATA'] as $forbidden) {
     if (strpos($html, $forbidden) !== false) {
-        WP_CLI::error('Dashboard rendered excluded Wordfence-derived state.');
+        WP_CLI::error('Dashboard rendered excluded content: ' . $forbidden);
     }
 }
 

@@ -32,6 +32,12 @@ if (!function_exists('plugin_basename')) {
     }
 }
 
+if (!function_exists('plugin_dir_url')) {
+    function plugin_dir_url($file) {
+        return 'https://example.test/wp-content/plugins/' . basename(dirname($file)) . '/';
+    }
+}
+
 if (!function_exists('__')) {
     function __($text, $domain = 'default') {
         return $text;
