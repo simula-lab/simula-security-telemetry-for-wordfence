@@ -60,6 +60,8 @@ Blocked hit rows are currently identified as Wordfence hits where:
 - `action LIKE 'blocked:%'`
 - or `statusCode/status IN (403, 503)`
 
+Some of the metrics exported by this plugin (v4.0.0 and later) were added as follow-up actions from the PHP2Shell incident post-mortem. They help improve ongoing security monitoring and make relevant security signals available for alerting and investigation.
+
 ## Requirements
 
 - WordPress `6.0+`
@@ -322,6 +324,7 @@ Platform versions refresh with the slow collector (hourly by default) and are re
   Limited OPcache posture, emitted only if the OPcache status API is safely available.
 
 PHP runtime posture never exports raw `phpinfo()` output, PHP environment variables, paths, arbitrary INI values, extension configuration, or cached-script inventories.
+
 - `wordpress_wordfence_core_update_available`
   Whether a WordPress core update is available.
 - `wordpress_wordfence_plugin_update_available_total`
