@@ -3,7 +3,7 @@
  * Plugin Name: Simula Security Telemetry for Wordfence
  * Plugin URI:  https://wordpress.org/plugins/simula-security-telemetry-for-wordfence
  * Description: Export metrics and incidents from WordPress and Wordfence into a node_exporter textfile collector .prom file, and .log file
- * Version:     3.2.3
+ * Version:     4.1.1
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author:      Simula
@@ -23,6 +23,7 @@ if (!defined('ABSPATH')) {
 
 define('SSTFW_PLUGIN_FILE', __FILE__);
 define('SSTFW_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('SSTFW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 require_once SSTFW_PLUGIN_DIR . 'includes/class-config.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-util.php';
@@ -31,9 +32,12 @@ require_once SSTFW_PLUGIN_DIR . 'includes/class-output.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence-schema.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence-collector.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordpress-collector.php';
+require_once SSTFW_PLUGIN_DIR . 'includes/class-php-runtime-collector.php';
+require_once SSTFW_PLUGIN_DIR . 'includes/class-platform-collector.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-wordfence.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-incident-exporter.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-metrics-service.php';
+require_once SSTFW_PLUGIN_DIR . 'includes/class-admin-dashboard.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-admin.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-cli.php';
 require_once SSTFW_PLUGIN_DIR . 'includes/class-metrics.php';

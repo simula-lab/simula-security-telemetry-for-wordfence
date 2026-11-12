@@ -60,6 +60,8 @@ Blocked hit rows are currently identified as Wordfence hits where:
 - `action LIKE 'blocked:%'`
 - or `statusCode/status IN (403, 503)`
 
+Some of the metrics exported by this plugin (v4.0.0 and later) were added as follow-up actions from the PHP2Shell incident post-mortem. They help improve ongoing security monitoring and make relevant security signals available for alerting and investigation.
+
 ## Requirements
 
 - WordPress `6.0+`
@@ -82,6 +84,10 @@ simula-security-telemetry-for-wordfence.php
 4. Confirm that the PHP process can write to your textfile collector directory.
 5. If you want incident log export, confirm that the configured log directory already exists and is writable by PHP.
 
+For ZIP installation or upgrades, run `./build-zip.sh` and upload the generated `simula-security-telemetry-for-wordfence.zip` using **Plugins > Add New > Upload Plugin**. The archive contains a single `simula-security-telemetry-for-wordfence/` directory so WordPress uses the same installation path on every upload. When that directory already exists, choose **Replace current with uploaded**.
+
+If an older ZIP created a directory with a random suffix, deactivate that duplicate and remove its directory through your hosting file manager or SFTP, then activate the plugin in the canonical directory. The corrected ZIP does not automatically remove previously created duplicate directories.
+
 ## Configuration
 
 After activation, go to:
@@ -102,6 +108,8 @@ Settings > Security Telemetry
   Each metric family can be enabled or disabled independently.
 - `Admin identity labels`
   Controls labels for the opt-in per-admin inventory metric.
+- `Grafana dashboard URL`
+  Optional HTTPS handoff link shown on the top-level Security Telemetry admin dashboard. The plugin does not query or embed Grafana.
 
 ### Incident log settings
 
@@ -285,6 +293,38 @@ All metrics include a `site` label.
   Wordfence license type metadata.
 - `wordpress_wordfence_wordpress_version_info{version="..."}`
   WordPress core version metadata. Emits `version="unknown"` if the runtime cannot provide a version.
+- `wordpress_wordfence_platform_info`
+  Settings control for the platform version group below, enabled by default. Disable **Platform version info** to stop collecting and exporting this operational metadata.
+- `wordpress_wordfence_web_server_info{name="apache|nginx|microsoft-iis|litespeed|openlitespeed|caddy|unknown",version="..."}`
+  Web server product/version from the Apache API when available, otherwise PHP's server software banner. Hidden versions remain `unknown`; CLI exports may have no web server information.
+- `wordpress_wordfence_database_info{name="mysql|mariadb|unknown",version="..."}`
+  Connected database server version from WordPress's existing database connection, including package suffixes when supplied by the server.
+- `wordpress_wordfence_os_info{id="...",version="..."}`
+  Distribution ID and VERSION_ID from readable `/etc/os-release` or `/usr/lib/os-release` files (for example `ubuntu`, `24.04`).
+- `wordpress_wordfence_kernel_info{name="...",version="..."}`
+  Kernel name and release from PHP's `php_uname()` API.
+
+Platform versions refresh with the slow collector (hourly by default) and are reused by fast exports. Each info metric has value `1`; missing or restricted information uses `unknown` labels without failing the export. Collection runs with PHP's permissions, executes no shell commands, and makes no new network connections. Only bounded product/version identifiers are exported, excluding hostnames and full server banners. In containers, the distribution describes the container filesystem and the kernel describes the kernel visible to PHP; these are not necessarily the host distribution or the public-facing proxy. Redis is not collected.
+
+- `wordpress_wordfence_php_runtime_posture`
+  Opt-in settings control for the PHP runtime posture metrics below. Disabled by default because the metrics expose bounded operational metadata to metrics readers.
+- `wordpress_wordfence_php_runtime_info{version="...",sapi="...",architecture="32|64"}`
+  Bounded PHP runtime metadata.
+- `wordpress_wordfence_php_version_supported`
+  `1` when the PHP version is included in the plugin's maintained support policy; the policy is local and does not make outbound requests.
+- `wordpress_wordfence_php_extension_info{extension="curl|mbstring|mysqli|openssl|pdo_mysql|sodium|xml|zip|opcache"}`
+  Loaded extensions from a fixed allowlist only.
+- `wordpress_wordfence_php_display_errors_enabled`, `wordpress_wordfence_php_expose_php_enabled`, `wordpress_wordfence_php_allow_url_fopen_enabled`, `wordpress_wordfence_php_session_cookie_secure_enabled`, `wordpress_wordfence_php_session_cookie_httponly_enabled`
+  Effective, normalized PHP security settings.
+- `wordpress_wordfence_php_session_cookie_samesite_info{value="lax|strict|none|empty|unknown"}`
+  Normalized PHP session cookie SameSite setting.
+- `wordpress_wordfence_php_memory_limit_bytes`, `wordpress_wordfence_php_max_execution_time_seconds`, `wordpress_wordfence_php_upload_max_filesize_bytes`, `wordpress_wordfence_php_post_max_size_bytes`
+  Effective resource limits. A metric is omitted if its value is unlimited or unreadable.
+- `wordpress_wordfence_php_opcache_enabled`, `wordpress_wordfence_php_opcache_jit_enabled`, `wordpress_wordfence_php_opcache_memory_usage_ratio`
+  Limited OPcache posture, emitted only if the OPcache status API is safely available.
+
+PHP runtime posture never exports raw `phpinfo()` output, PHP environment variables, paths, arbitrary INI values, extension configuration, or cached-script inventories.
+
 - `wordpress_wordfence_core_update_available`
   Whether a WordPress core update is available.
 - `wordpress_wordfence_plugin_update_available_total`
@@ -374,6 +414,21 @@ The following metrics run during slow collection and are cached for fast exports
 - `wordpress_wordfence_wp_content_recently_modified_files_total{area="plugins|themes|uploads|mu_plugins"}`
 
 These metrics avoid raw usernames, emails, option names, cron hook names, session tokens, application password names, and file paths in labels.
+
+## Security Telemetry Dashboard
+
+The top-level **Security Telemetry** wp-admin page is a read-only, current-state
+overview of exporter health and version, WordPress posture, and change signals.
+Platform information and PHP runtime details are available under **Tools > Site
+Health > Info**. The telemetry page and WordPress dashboard widget omit those
+sections, and their overall status reflects only the displayed telemetry cards.
+It does not display Wordfence firewall activity, scan data, incidents, login
+activity, configuration, or any other Wordfence-derived data.
+
+The page does not run collectors, query Wordfence tables, store time-series
+data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS
+Grafana dashboard URL in Settings to display a handoff link for historical
+telemetry.
 
 ## Incident Log Export
 

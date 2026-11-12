@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 3.2.3
+Stable tag: 4.1.1
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -60,6 +60,7 @@ The plugin includes an admin settings screen under Settings > Security Telemetry
 * Set the .prom output path
 * Set a custom metric prefix
 * Set a custom site label
+* Set an optional HTTPS Grafana dashboard URL for the separate Security Telemetry admin dashboard
 * Enable or disable individual metric families
 * Enable or disable incident log export
 * Set the incident log path
@@ -148,6 +149,23 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 * wordpress_wordfence_scan_enabled
 * wordpress_wordfence_license_type
 * wordpress_wordfence_wordpress_version_info
+* wordpress_wordfence_php_runtime_posture
+* wordpress_wordfence_php_runtime_info
+* wordpress_wordfence_php_version_supported
+* wordpress_wordfence_php_extension_info
+* wordpress_wordfence_php_display_errors_enabled
+* wordpress_wordfence_php_expose_php_enabled
+* wordpress_wordfence_php_allow_url_fopen_enabled
+* wordpress_wordfence_php_session_cookie_secure_enabled
+* wordpress_wordfence_php_session_cookie_httponly_enabled
+* wordpress_wordfence_php_session_cookie_samesite_info
+* wordpress_wordfence_php_memory_limit_bytes
+* wordpress_wordfence_php_max_execution_time_seconds
+* wordpress_wordfence_php_upload_max_filesize_bytes
+* wordpress_wordfence_php_post_max_size_bytes
+* wordpress_wordfence_php_opcache_enabled
+* wordpress_wordfence_php_opcache_jit_enabled
+* wordpress_wordfence_php_opcache_memory_usage_ratio
 * wordpress_wordfence_core_update_available
 * wordpress_wordfence_plugin_update_available_total
 * wordpress_wordfence_plugins_installed_total
@@ -220,6 +238,8 @@ With the default metric prefix of wordpress_wordfence, the plugin can export:
 
 Each metric family can be enabled or disabled independently from the settings screen. Per-plugin inventory and per-admin inventory are disabled by default because plugin names, versions, active state, and administrator identities can expose sensitive operational details. Admin inventory uses hashed identity labels by default when enabled.
 
+The wordpress_wordfence_php_runtime_posture control is disabled by default. When enabled, it exports a bounded PHP runtime posture allowlist: PHP version, SAPI, architecture, maintained-version status, selected loaded extensions, safe effective settings, and limited OPcache status. It never exports raw phpinfo output, PHP environment variables, paths, arbitrary INI values, extension configuration, or cached-script inventories. Size metrics are omitted when their source is unlimited or unreadable.
+
 blocked_events_total and blocked_events_window are deprecated ambiguous aliases for hit/live-traffic row counts. blocked_hit_rows_total and blocked_hit_rows_window are the explicit names for that same low-level data model. 
 
 firewall_blocks_window derives aggregate firewall block counts from the locally stored wfBlockedIPLog/wfblockediplog table when the required fields are available. It uses locally available day-bucket, block-type, and block-count data, groups recognized block types into the bounded categories complex, brute_force, and blocklist, and groups all other values under other.
@@ -227,6 +247,10 @@ firewall_blocks_window derives aggregate firewall block counts from the locally 
 This metric has different source and retention semantics from blocked_hit_rows_* and should not be expected to match retained hit-row counts. If the aggregate source is unavailable, firewall_blocks_available is 0 and category/window series are omitted rather than fabricated.
 
 The two_factor_* and admin_users_without_2fa_total metrics remain strict Wordfence TOTP/2FA metrics. Wordfence 9.0.0 passkeys are exported through passkey_enabled, passkey_protected_users_total, admin_users_without_passkey_total, admin_users_without_login_protection_total, and login_protected_users_total. For Wordfence 9.0.0+ login-protection alerts, prefer admin_users_without_login_protection_total overloading the 2FA-only admin metric.
+
+= What does the Security Telemetry dashboard show? =
+
+The top-level Security Telemetry wp-admin page is a read-only, current-state overview of exporter health and version, WordPress posture, and change signals. Platform information and PHP runtime details are available under Tools > Site Health > Info. The telemetry page and WordPress dashboard widget omit those sections, and their overall status reflects only the displayed telemetry cards. The page does not display Wordfence firewall activity, scan data, incidents, login activity, configuration, or other Wordfence-derived data. It does not run collectors, query Wordfence tables, store time-series data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS Grafana dashboard URL in Settings to show a handoff link for historical telemetry.
 
 failed_login_attempts_window remains the aggregate failed-login metric and counts Wordfence wfLogins rows where fail is greater than 0, including passkey-related failures in Wordfence 9.0.0. authentication_failures_window adds bounded method labels for password, passkey, passkey_required, two_factor, and other failures. brute_force_events_window username values use password-classified login failures when wfLogins is available, so passkey-required policy blocks are not counted as password brute force.
 
@@ -262,7 +286,24 @@ The directory that will contain the .prom file must already exist and be writabl
 
 1. Settings screen showing Prometheus metric controls, incident log settings, manual actions, and current exporter state.
 
+= Platform version metadata =
+
+wordpress_wordfence_platform_info controls best-effort platform version collection and is enabled by default. Disable Platform version info in settings to stop collecting and exporting this metadata.
+
+* wordpress_wordfence_web_server_info: web server name and version from the Apache API or PHP server software banner.
+* wordpress_wordfence_database_info: MySQL/MariaDB server name and version through WordPress's existing database connection.
+* wordpress_wordfence_os_info: distribution ID and version from readable /etc/os-release or /usr/lib/os-release files.
+* wordpress_wordfence_kernel_info: kernel name and release visible to PHP.
+
+These info metrics have value 1 and use unknown labels for unavailable values. They refresh on the slow collector schedule (hourly by default) and are reused by fast exports. No shell commands or new network connections are used, and no hostnames or full banners are exported. Container OS metadata describes the container, which may differ from the host; CLI exports may lack web server information. Redis is not collected.
+
 == Changelog ==
+
+= 4.1.1 =
+
+* Added opt-in PHP runtime posture metrics as a PHP2Shell incident post-mortem action.
+* Added bounded PHP version, SAPI, architecture, extension, effective-setting, and OPcache metrics without exporting raw phpinfo data, paths, environment variables, arbitrary INI values, or cached-script inventories.
+* Added optional PHP posture alert examples for unsupported PHP versions, display_errors, session cookie flags, and missing OPcache posture telemetry.
 
 = 3.2.3 =
 
@@ -344,6 +385,10 @@ The directory that will contain the .prom file must already exist and be writabl
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 4.1.1 =
+
+This major release adds an opt-in PHP runtime posture metric group. Existing installations keep it disabled; enable it only after confirming that readers of your Prometheus metrics may view the documented PHP operational metadata.
 
 = 3.2.3 =
 

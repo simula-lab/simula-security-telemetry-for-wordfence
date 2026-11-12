@@ -15,8 +15,9 @@ final class Simula_Security_Telemetry_Config {
     public const CRON_HOOK      = 'sstfw_metrics_export_event';
     public const SLOW_CRON_HOOK = 'sstfw_metrics_slow_export_event';
     public const SLUG           = 'simula-security-telemetry-for-wordfence';
+    public const DASHBOARD_SLUG = 'simula-security-telemetry-dashboard';
     public const CAPABILITY     = 'manage_options';
-    public const VERSION        = '3.2.3';
+    public const VERSION        = '4.1.1';
     public const TEXT_DOMAIN    = 'simula-security-telemetry-for-wordfence';
     public const CLI_COMMAND    = 'simula-security-telemetry';
     // public const LEGACY_OPTION         = 'wfne_metrics_options';
@@ -34,6 +35,7 @@ final class Simula_Security_Telemetry_Config {
             'prom_file'            => '/var/lib/node_exporter/textfile_collector/wordfence.prom',
             'metric_prefix'        => 'wordpress_wordfence',
             'site_label'           => (string) wp_parse_url(home_url('/'), PHP_URL_HOST),
+            'grafana_dashboard_url' => '',
             'incident_log_enabled' => 1,
             'incident_log_file'    => '/var/log/wordpress-wordfence-incidents.log',
             'incident_log_format'  => 'text',
@@ -227,6 +229,14 @@ final class Simula_Security_Telemetry_Config {
             'wordpress_version_info' => [
                 'label'       => __('WordPress version info', 'simula-security-telemetry-for-wordfence'),
                 'description' => __('Static WordPress core version metadata.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'platform_info' => [
+                'label'       => __('Platform version info', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Best-effort web server, database server, OS distribution, and kernel versions visible to PHP. Exposes operational metadata; unavailable values are unknown.', 'simula-security-telemetry-for-wordfence'),
+            ],
+            'php_runtime_posture' => [
+                'label'       => __('PHP runtime posture', 'simula-security-telemetry-for-wordfence'),
+                'description' => __('Opt-in PHP version, bounded extension, and safe effective-setting posture metadata. This exposes operational details to metrics readers.', 'simula-security-telemetry-for-wordfence'),
             ],
             'core_update_available' => [
                 'label'       => __('WordPress core update available', 'simula-security-telemetry-for-wordfence'),
@@ -512,6 +522,7 @@ final class Simula_Security_Telemetry_Config {
         $defaults = array_fill_keys(array_keys(self::metric_definitions()), 1);
         $defaults['plugin_inventory_info'] = 0;
         $defaults['admin_user_info']       = 0;
+        $defaults['php_runtime_posture']   = 0;
 
         return $defaults;
     }

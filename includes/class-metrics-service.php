@@ -274,6 +274,14 @@ final class Simula_Security_Telemetry_Service {
                 );
             }
 
+            if ($flags['platform_info']) {
+                $data['platform_info'] = Simula_Security_Telemetry_Platform_Collector::collect();
+            }
+
+            if ($flags['php_runtime_posture']) {
+                $data['php_runtime_posture'] = Simula_Security_Telemetry_PHP_Runtime_Collector::collect();
+            }
+
             if ($flags['needs_wordpress_drift']) {
                 $result = Simula_Security_Telemetry_WordPress_Collector::collect_sprint6_metrics($state, $now, $data['windows']);
                 $data['wordpress_drift'] = is_array($result['metrics'] ?? null) ? $result['metrics'] : [];
@@ -531,6 +539,8 @@ final class Simula_Security_Telemetry_Service {
         $metrics = array_merge($metrics, self::render_scan_metrics($data));
         $metrics = array_merge($metrics, self::render_source_freshness_metrics($data));
         $metrics = array_merge($metrics, self::render_posture_metrics($data));
+        $metrics = array_merge($metrics, self::render_php_runtime_posture_metrics($data));
+        $metrics = array_merge($metrics, self::render_platform_metrics($data));
         $metrics = array_merge($metrics, self::render_wordpress_drift_metrics($data));
         $metrics = array_merge($metrics, self::render_account_metrics($data));
         $metrics = array_merge($metrics, self::render_cron_option_metrics($data));
@@ -1231,6 +1241,104 @@ final class Simula_Security_Telemetry_Service {
         return $metrics;
     }
 
+    /** Renders the platform version group, including explicit unknown values. */
+    private static function render_platform_metrics($data) {
+        if (empty($data['flags']['platform_info'])) {
+            return [];
+        }
+
+        $metrics = [];
+        $platform = is_array($data['platform_info'] ?? null) ? $data['platform_info'] : [];
+        foreach (['web_server', 'database', 'os', 'kernel'] as $component) {
+            $info = is_array($platform[$component] ?? null) ? $platform[$component] : [];
+            $identity = $component === 'os' ? 'id' : 'name';
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $data['prefix'] . '_' . $component . '_info', 'gauge', 'Platform version metadata visible to PHP; unavailable values are unknown.', [[
+                'labels' => [
+                    'site' => $data['site'],
+                    $identity => Simula_Security_Telemetry_Output::escape_label((string) ($info[$identity] ?? 'unknown')),
+                    'version' => Simula_Security_Telemetry_Output::escape_label((string) ($info['version'] ?? 'unknown')),
+                ],
+                'value' => 1,
+            ]]);
+        }
+        return $metrics;
+    }
+
+    /** Renders the opt-in, bounded PHP runtime posture metric group. */
+    private static function render_php_runtime_posture_metrics($data) {
+        if (empty($data['flags']['php_runtime_posture'])) {
+            return [];
+        }
+
+        $metrics = [];
+        $prefix  = $data['prefix'];
+        $site    = $data['site'];
+        $runtime = is_array($data['php_runtime_posture'] ?? null) ? $data['php_runtime_posture'] : [];
+
+        Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_runtime_info', 'gauge', 'Bounded PHP runtime metadata.', [[
+            'labels' => [
+                'site'         => $site,
+                'version'      => Simula_Security_Telemetry_Output::escape_label((string) ($runtime['version'] ?? 'unknown')),
+                'sapi'         => Simula_Security_Telemetry_Output::escape_label((string) ($runtime['sapi'] ?? 'unknown')),
+                'architecture' => Simula_Security_Telemetry_Output::escape_label((string) ($runtime['architecture'] ?? 'unknown')),
+            ],
+            'value' => 1,
+        ]]);
+        Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_version_supported', 'gauge', 'Whether the PHP version is in the exporter support policy.', [['labels' => ['site' => $site], 'value' => (int) !empty($runtime['version_supported'])]]);
+
+        foreach ([
+            'display_errors_enabled' => 'php_display_errors_enabled',
+            'expose_php_enabled' => 'php_expose_php_enabled',
+            'allow_url_fopen_enabled' => 'php_allow_url_fopen_enabled',
+            'session_cookie_secure_enabled' => 'php_session_cookie_secure_enabled',
+            'session_cookie_httponly_enabled' => 'php_session_cookie_httponly_enabled',
+        ] as $key => $metric) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_' . $metric, 'gauge', 'Effective PHP security setting.', [['labels' => ['site' => $site], 'value' => (int) !empty($runtime[$key])]]);
+        }
+
+        Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_session_cookie_samesite_info', 'gauge', 'Normalized PHP session cookie SameSite setting.', [[
+            'labels' => ['site' => $site, 'value' => Simula_Security_Telemetry_Output::escape_label((string) ($runtime['session_cookie_samesite'] ?? 'unknown'))],
+            'value' => 1,
+        ]]);
+
+        foreach ([
+            'memory_limit_bytes' => 'php_memory_limit_bytes',
+            'max_execution_time_seconds' => 'php_max_execution_time_seconds',
+            'upload_max_filesize_bytes' => 'php_upload_max_filesize_bytes',
+            'post_max_size_bytes' => 'php_post_max_size_bytes',
+        ] as $key => $metric) {
+            if (isset($runtime[$key]) && is_int($runtime[$key])) {
+                Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_' . $metric, 'gauge', 'Effective PHP resource limit; omitted when unlimited or unreadable.', [['labels' => ['site' => $site], 'value' => $runtime[$key]]]);
+            }
+        }
+
+        $extension_samples = [];
+        foreach ((array) ($runtime['extensions'] ?? []) as $extension) {
+            if (!in_array($extension, Simula_Security_Telemetry_PHP_Runtime_Collector::allowed_extensions(), true)) {
+                continue;
+            }
+
+            $extension_samples[] = [
+                'labels' => ['site' => $site, 'extension' => $extension],
+                'value' => 1,
+            ];
+        }
+        if ($extension_samples !== []) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_extension_info', 'gauge', 'Allowed loaded PHP extension metadata.', $extension_samples);
+        }
+
+        $opcache = is_array($runtime['opcache'] ?? null) ? $runtime['opcache'] : [];
+        if ($opcache !== []) {
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_opcache_enabled', 'gauge', 'Whether OPcache is enabled when its status API is available.', [['labels' => ['site' => $site], 'value' => (int) !empty($opcache['enabled'])]]);
+            Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_opcache_jit_enabled', 'gauge', 'Whether OPcache JIT is enabled when its status API is available.', [['labels' => ['site' => $site], 'value' => (int) !empty($opcache['jit_enabled'])]]);
+            if (isset($opcache['memory_usage_ratio']) && is_numeric($opcache['memory_usage_ratio'])) {
+                Simula_Security_Telemetry_Output::append_metric_family($metrics, $prefix . '_php_opcache_memory_usage_ratio', 'gauge', 'OPcache memory usage ratio when its status API is available.', [['labels' => ['site' => $site], 'value' => min(1, max(0, (float) $opcache['memory_usage_ratio']))]]);
+            }
+        }
+
+        return $metrics;
+    }
+
     /** Renders WordPress settings, role, user, plugin, and theme drift metric families. */
     private static function render_wordpress_drift_metrics($data) {
         $metrics = [];
@@ -1613,7 +1721,7 @@ final class Simula_Security_Telemetry_Service {
     private static function apply_cached_slow_metrics($data, $state) {
         $cache = isset($state['slow_metric_cache']) && is_array($state['slow_metric_cache']) ? $state['slow_metric_cache'] : [];
 
-        foreach (['two_factor_metrics', 'passkey_metrics', 'login_protection_metrics', 'scan_issue_metrics', 'wordfence_posture', 'wordpress_posture', 'wordpress_drift', 'account_metrics', 'cron_option_metrics', 'ioc_metrics'] as $key) {
+        foreach (['two_factor_metrics', 'passkey_metrics', 'login_protection_metrics', 'scan_issue_metrics', 'wordfence_posture', 'wordpress_posture', 'platform_info', 'php_runtime_posture', 'wordpress_drift', 'account_metrics', 'cron_option_metrics', 'ioc_metrics'] as $key) {
             if (isset($cache[$key]) && is_array($cache[$key])) {
                 $data[$key] = $cache[$key];
             }
@@ -1652,6 +1760,8 @@ final class Simula_Security_Telemetry_Service {
             ] : [],
             'wordfence_posture' => is_array($data['wordfence_posture'] ?? null) ? $data['wordfence_posture'] : [],
             'wordpress_posture' => is_array($data['wordpress_posture'] ?? null) ? $data['wordpress_posture'] : [],
+            'platform_info' => is_array($data['platform_info'] ?? null) ? $data['platform_info'] : [],
+            'php_runtime_posture' => is_array($data['php_runtime_posture'] ?? null) ? $data['php_runtime_posture'] : [],
             'wordpress_drift' => is_array($data['wordpress_drift'] ?? null) ? $data['wordpress_drift'] : [],
             'account_metrics' => is_array($data['account_metrics'] ?? null) ? $data['account_metrics'] : [],
             'cron_option_metrics' => is_array($data['cron_option_metrics'] ?? null) ? $data['cron_option_metrics'] : [],
