@@ -16,6 +16,7 @@ return [
         sstfw_assert_same(array_keys($definitions), array_keys($defaults['enabled_metrics']));
         sstfw_assert_same(0, $defaults['enabled_metrics']['plugin_inventory_info']);
         sstfw_assert_same(0, $defaults['enabled_metrics']['admin_user_info']);
+        sstfw_assert_same(0, $defaults['enabled_metrics']['php_runtime_posture']);
         sstfw_assert_same(1, $defaults['enabled_metrics']['plugins_installed_total']);
         sstfw_assert_same(1, $defaults['enabled_metrics']['plugins_active_total']);
         sstfw_assert_same(1, $defaults['enabled_metrics']['plugins_inactive_total']);

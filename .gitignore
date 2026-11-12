@@ -29,3 +29,5 @@ simula-security-telemetry-for-wordfence.zip
 
 # ignore disposable test harness output
 tests/runtime/
+
+plans/

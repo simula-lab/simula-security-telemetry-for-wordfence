@@ -32,6 +32,12 @@ if (!function_exists('plugin_basename')) {
     }
 }
 
+if (!function_exists('plugin_dir_url')) {
+    function plugin_dir_url($file) {
+        return 'https://example.test/wp-content/plugins/' . basename(dirname($file)) . '/';
+    }
+}
+
 if (!function_exists('__')) {
     function __($text, $domain = 'default') {
         return $text;
@@ -106,6 +112,7 @@ $required_classes = [
     'Simula_Security_Telemetry_Wordfence_Schema',
     'Simula_Security_Telemetry_Wordfence_Collector',
     'Simula_Security_Telemetry_WordPress_Collector',
+    'Simula_Security_Telemetry_Admin_Dashboard',
     'Simula_Security_Telemetry_Wordfence',
     'Simula_Security_Telemetry_Incidents',
     'Simula_Security_Telemetry_Service',

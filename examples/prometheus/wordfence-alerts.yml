@@ -136,6 +136,43 @@ groups:
           summary: Wordfence source data appears stale on {{ $labels.site }}
           description: No recent Wordfence hit data has been observed for more than 24 hours.
 
+      # These optional alerts require the opt-in PHP runtime posture metric group.
+      - alert: WordPressUnsupportedPHPVersion
+        expr: wordpress_wordfence_php_version_supported == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: Unsupported PHP version on {{ $labels.site }}
+          description: The opt-in PHP runtime posture metric reports a PHP version outside the plugin's maintained support policy. Review the release and PHP support policy before upgrading.
+
+      - alert: WordPressPHPDisplayErrorsEnabled
+        expr: wordpress_wordfence_php_display_errors_enabled == 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: PHP display_errors enabled on {{ $labels.site }}
+          description: The opt-in PHP runtime posture metric reports display_errors enabled. Confirm this is intended for the environment.
+
+      - alert: WordPressPHPSessionCookieFlagsMissing
+        expr: wordpress_wordfence_php_session_cookie_secure_enabled == 0 or wordpress_wordfence_php_session_cookie_httponly_enabled == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: PHP session cookie hardening flag missing on {{ $labels.site }}
+          description: The opt-in PHP runtime posture metric reports a missing Secure or HttpOnly session cookie flag.
+
+      - alert: WordPressPHPOpcachePostureMissing
+        expr: absent(wordpress_wordfence_php_opcache_enabled)
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: PHP OPcache posture metric missing
+          description: The opt-in PHP runtime posture metric is absent, which may mean the group is disabled or OPcache status is unavailable. Tune or remove this alert if OPcache is intentionally absent.
+
   - name: simula-wordfence-firewall-summary
     rules:
       - record: site:wordpress_wordfence_firewall_blocks:sum

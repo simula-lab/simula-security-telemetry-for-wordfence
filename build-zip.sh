@@ -4,8 +4,11 @@ set -euo pipefail
 ZIP_EXCLUDES=(-x "*/.*" ".*")
 
 # Usage: ./build-zip.sh [--no-assets] [plugin-slug]
-# If you omit [plugin-slug], it will use the name of the current directory.
+# The default slug is stable even if the checkout directory is renamed.
 # Pass --no-assets to skip including the assets/ folder.
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
 
 # 0) Parse flags
 NO_ASSETS=0
@@ -26,8 +29,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 # 1) Determine plugin slug & target ZIP name
-PLUGIN_SLUG="${1:-$(basename "$(pwd)")}"
-ZIP_FILE="${PLUGIN_SLUG}.zip"
+PLUGIN_SLUG="${1:-simula-security-telemetry-for-wordfence}"
+if [[ ! "$PLUGIN_SLUG" =~ ^[a-z0-9][a-z0-9-]*$ ]] || [ "$#" -gt 1 ]; then
+  echo "Usage: $0 [--no-assets] [plugin-slug] (lowercase letters, digits, and hyphens)" >&2
+  exit 1
+fi
+ZIP_FILE="$ROOT_DIR/${PLUGIN_SLUG}.zip"
 
 # 2) Compile .po → .mo
 if [ -d "languages" ]; then
@@ -42,25 +49,26 @@ else
   echo "Warning: no 'languages/' directory found; skipping .mo generation."
 fi
 
-# 3) Remove any existing ZIP
-if [ -f "$ZIP_FILE" ]; then
-  echo "Removing old $ZIP_FILE"
-  rm -f "$ZIP_FILE"
-fi
+# 3) Stage a single, stable top-level plugin directory. Without this wrapper,
+# WordPress uses the temporary upload filename as the installed directory name.
+BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sstfw-build.XXXXXX")"
+trap 'rm -rf "$BUILD_DIR"' EXIT
+PLUGIN_DIR="$BUILD_DIR/$PLUGIN_SLUG"
+mkdir "$PLUGIN_DIR"
 
 # 4) Build the ZIP
 echo "Creating $ZIP_FILE …"
 # 4a) add root PHP files
-zip -q "$ZIP_FILE" ./*.php
+cp ./*.php "$PLUGIN_DIR/"
 
 # 4b) add include files
-[ -d "includes" ] && zip -qr "$ZIP_FILE" "includes" "${ZIP_EXCLUDES[@]}"
+[ ! -d "includes" ] || cp -R includes "$PLUGIN_DIR/"
 
 # 4c) add readme
-[ -f "readme.txt" ] && zip -q "$ZIP_FILE" "readme.txt"
+[ ! -f "readme.txt" ] || cp readme.txt "$PLUGIN_DIR/"
 
 # 4d) add languages (pot, po, mo)
-[ -d "languages" ] && zip -qr "$ZIP_FILE" "languages" "${ZIP_EXCLUDES[@]}"
+[ ! -d "languages" ] || cp -R languages "$PLUGIN_DIR/"
 
 # 4e) keep repository-only Grafana and Prometheus examples out of the WordPress.org plugin zip
 
@@ -68,7 +76,14 @@ zip -q "$ZIP_FILE" ./*.php
 if [ "$NO_ASSETS" -eq 1 ]; then
   echo "Skipping assets directory as requested."
 else
-  [ -d "assets" ] && zip -qr "$ZIP_FILE" "assets" "${ZIP_EXCLUDES[@]}"
+  [ ! -d "assets" ] || cp -R assets "$PLUGIN_DIR/"
 fi
+
+(
+  cd "$BUILD_DIR"
+  zip -qr package.zip "$PLUGIN_SLUG" "${ZIP_EXCLUDES[@]}"
+)
+# Replace the previous artifact only after the new archive has been built.
+mv "$BUILD_DIR/package.zip" "$ZIP_FILE"
 
 echo "✅ $ZIP_FILE created successfully."
