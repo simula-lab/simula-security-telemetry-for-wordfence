@@ -90,6 +90,7 @@ final class Simula_Security_Telemetry_Settings {
         $output['prom_file']            = self::sanitize_prom_file($input['prom_file'] ?? $defaults['prom_file']);
         $output['metric_prefix']        = self::sanitize_metric_prefix($input['metric_prefix'] ?? $defaults['metric_prefix']);
         $output['site_label']           = sanitize_text_field(wp_unslash((string) ($input['site_label'] ?? $defaults['site_label'])));
+        $output['grafana_dashboard_url'] = self::sanitize_grafana_dashboard_url($input['grafana_dashboard_url'] ?? $defaults['grafana_dashboard_url']);
         $output['incident_log_enabled'] = empty($input['incident_log_enabled']) ? 0 : 1;
         $output['incident_log_file']    = self::sanitize_incident_log_file($input['incident_log_file'] ?? $defaults['incident_log_file']);
         $output['incident_log_format']  = self::sanitize_incident_log_format($input['incident_log_format'] ?? $defaults['incident_log_format']);
@@ -330,6 +331,21 @@ final class Simula_Security_Telemetry_Settings {
         }
 
         return $value;
+    }
+
+    /** Allows only absolute HTTPS Grafana handoff URLs. */
+    private static function sanitize_grafana_dashboard_url($value) {
+        $value = trim(wp_unslash((string) $value));
+        if ($value === '') {
+            return '';
+        }
+
+        $parts = wp_parse_url($value);
+        if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host'])) {
+            return '';
+        }
+
+        return esc_url_raw($value, ['https']);
     }
 
     /** Validates the configured WP-Cron interval. */

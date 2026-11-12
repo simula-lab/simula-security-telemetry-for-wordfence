@@ -42,6 +42,7 @@ return [
         sstfw_assert_same('hashed', $options['admin_identity_mode']);
         sstfw_assert_same(0, $options['enabled_metrics']['plugin_inventory_info']);
         sstfw_assert_same(0, $options['enabled_metrics']['admin_user_info']);
+        sstfw_assert_same(0, $options['enabled_metrics']['php_runtime_posture']);
         sstfw_assert_same(1, $options['enabled_metrics']['wordpress_version_info']);
         sstfw_assert_same(0, $options['enabled_metrics']['admin_users_total']);
 

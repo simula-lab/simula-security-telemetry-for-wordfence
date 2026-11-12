@@ -10,7 +10,9 @@ PLUGIN_SLUG="simula-security-telemetry-for-wordfence"
 mkdir -p tests/runtime/output tests/runtime/zip
 
 ./build-zip.sh "$PLUGIN_SLUG"
+bash tests/bin/check-zip.sh
 cp "$PLUGIN_SLUG.zip" "tests/runtime/zip/$PLUGIN_SLUG.zip"
+cp "$PLUGIN_SLUG.zip" "tests/runtime/zip/$PLUGIN_SLUG-SU3UE1iSGhhsLLyR.zip"
 
 compose() {
   if docker compose version >/dev/null 2>&1; then
@@ -79,6 +81,12 @@ else
   wp plugin install wordfence --activate --force
 fi
 wp plugin install "/tests/zip/$PLUGIN_SLUG.zip" --force --activate
+wp eval-file /tests/wp-cli/assert-plugin-install.php
+# A stale file must disappear on replacement, even when the upload name changes.
+wp eval 'file_put_contents(SSTFW_PLUGIN_DIR . "sstfw-stale-release.txt", "old release");'
+wp plugin install "/tests/zip/$PLUGIN_SLUG-SU3UE1iSGhhsLLyR.zip" --force --activate
+wp eval-file /tests/wp-cli/assert-plugin-install.php
+wp eval 'if (file_exists(SSTFW_PLUGIN_DIR . "sstfw-stale-release.txt")) { WP_CLI::error("Replacement left stale plugin files behind."); }'
 wp eval-file /tests/wp-cli/configure-test-options.php
 wp eval-file /tests/wp-cli/seed-wordfence-fixtures.php
 wp simula-security-telemetry export
