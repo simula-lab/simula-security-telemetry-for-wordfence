@@ -28,7 +28,7 @@ Load order is explicit and dependency-oriented:
 - `includes/class-wordfence.php` preserves the existing compatibility facade for Wordfence helper calls.
 - `includes/class-incident-exporter.php` exports blocked-hit incident logs.
 - `includes/class-metrics-service.php` coordinates metrics and incident export flows.
-- `includes/class-admin.php` renders and handles the settings screen.
+- `includes/class-admin.php` registers the Telemetry submenus and legacy Settings shortcut, renders shared Dashboard/Settings tabs, and handles the dashboard widget and settings screen.
 - `includes/class-cli.php` registers WP-CLI command behavior.
 - `includes/class-metrics.php` wires WordPress hooks, cron schedules, lifecycle hooks, and WP-CLI registration.
 
