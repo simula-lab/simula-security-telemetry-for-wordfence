@@ -45,6 +45,53 @@ return [
         sstfw_assert_same(76, $menu['position'] ?? null);
         sstfw_assert_true(isset($GLOBALS['sstfw_options_menu'][Simula_Security_Telemetry_Config::SLUG]));
     },
+    'Telemetry submenus and the legacy Settings entry use the intended views' => function () {
+        Simula_Security_Telemetry_Admin::admin_menu();
+        $menus = $GLOBALS['sstfw_submenus'][Simula_Security_Telemetry_Config::DASHBOARD_SLUG];
+        sstfw_assert_same(2, count($menus));
+        foreach ([Simula_Security_Telemetry_Config::DASHBOARD_SLUG => ['Dashboard', 'dashboard_page'], Simula_Security_Telemetry_Config::SLUG => ['Settings', 'settings_page']] as $slug => $expected) {
+            sstfw_assert_same($expected[0], $menus[$slug]['menu_title']);
+            sstfw_assert_same(Simula_Security_Telemetry_Config::CAPABILITY, $menus[$slug]['capability']);
+            sstfw_assert_same(['Simula_Security_Telemetry_Admin', $expected[1]], $menus[$slug]['callback']);
+        }
+        sstfw_assert_same($menus[Simula_Security_Telemetry_Config::SLUG]['callback'], $GLOBALS['sstfw_options_menu'][Simula_Security_Telemetry_Config::SLUG]['callback']);
+    },
+    'shared tabs preserve the selected view and use canonical admin URLs' => function () {
+        foreach (['dashboard' => 'Dashboard', 'settings' => 'Settings'] as $active => $label) {
+            ob_start();
+            sstfw_invoke_private_static('Simula_Security_Telemetry_Admin', 'render_page_header', [$active]);
+            $html = ob_get_clean();
+            sstfw_assert_same(1, substr_count($html, 'nav-tab-active'));
+            sstfw_assert_true(strpos($html, 'aria-current="page">' . $label . '</a>') !== false);
+            foreach ([Simula_Security_Telemetry_Config::DASHBOARD_SLUG, Simula_Security_Telemetry_Config::SLUG] as $slug) {
+                sstfw_assert_true(strpos($html, admin_url('admin.php?page=' . $slug)) !== false);
+            }
+        }
+    },
+    'widget shows exporter details including failed attempts and UTC times' => function () {
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::OPTION] = Simula_Security_Telemetry_Config::defaults();
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::STATE] = [
+            'last_export' => 1000,
+            'slow_metric_cache_at' => 900,
+            'last_error' => 'DO_NOT_DISPLAY_RAW_ERROR',
+        ];
+        $GLOBALS['sstfw_scheduled'][Simula_Security_Telemetry_Config::CRON_HOOK] = 1100;
+        ob_start();
+        Simula_Security_Telemetry_Admin::dashboard_widget();
+        $html = ob_get_clean();
+        foreach (['Exporter version', Simula_Security_Telemetry_Config::VERSION, 'Last export (UTC)', 'Most recent exporter result', 'Last slow refresh (UTC)', 'Next export (UTC)', 'Failed; review exporter settings and status.', '1970-01-01 00:16:40 UTC', '1970-01-01 00:15:00 UTC', '1970-01-01 00:18:20 UTC'] as $expected) {
+            sstfw_assert_true(strpos($html, $expected) !== false, 'Missing widget detail: ' . $expected);
+        }
+        sstfw_assert_true(strpos($html, 'DO_NOT_DISPLAY_RAW_ERROR') === false);
+        unset($GLOBALS['sstfw_scheduled'][Simula_Security_Telemetry_Config::CRON_HOOK]);
+        $GLOBALS['sstfw_options'][Simula_Security_Telemetry_Config::STATE] = [];
+        ob_start();
+        Simula_Security_Telemetry_Admin::dashboard_widget();
+        $html = ob_get_clean();
+        foreach (['Never', 'No exports yet.', 'Not scheduled'] as $expected) {
+            sstfw_assert_true(strpos($html, $expected) !== false);
+        }
+    },
     'admin dashboard denies rendering to users without the configured capability' => function () {
         $GLOBALS['sstfw_test_current_user_can'] = false;
         ob_start();

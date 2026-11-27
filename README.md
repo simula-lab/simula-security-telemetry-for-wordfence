@@ -93,8 +93,10 @@ If an older ZIP created a directory with a random suffix, deactivate that duplic
 After activation, go to:
 
 ```text
-Settings > Security Telemetry
+Telemetry > Settings
 ```
+
+The **Settings > Security Telemetry** shortcut opens the same settings view.
 
 ### Prometheus metrics settings
 
@@ -417,8 +419,27 @@ These metrics avoid raw usernames, emails, option names, cron hook names, sessio
 
 ## Security Telemetry Dashboard
 
-The top-level **Security Telemetry** wp-admin page is a read-only, current-state
-overview of exporter health and version, WordPress posture, and change signals.
+The **Telemetry** menu opens the **Dashboard** view. Its **Dashboard** and
+**Settings** submenus match the tabs shown on both views. Each tab has a stable
+URL, so bookmarks and page refreshes keep the selected view. **Settings > Security
+Telemetry** continues to open the same Settings view, including its existing URL.
+
+The Dashboard tab is a read-only, current-state overview of exporter health and
+version, WordPress posture, and change signals. The main WordPress Dashboard's
+**Security Telemetry** widget shows the overall status, the three card statuses,
+and these exporter details:
+
+- **Exporter version**: installed plugin version.
+- **Last export (UTC)**: most recent metrics export attempt, including failures;
+  this is not the last successful export time.
+- **Most recent exporter result**: successful, failed, or no exports yet. Failure
+  details remain available in Settings.
+- **Last slow refresh (UTC)**: last completed slow collector refresh.
+- **Next export (UTC)**: next scheduled fast export, or **Not scheduled**.
+
+Times use `YYYY-MM-DD HH:mm:ss UTC`; missing past timestamps show **Never**.
+The Dashboard's Exporter health card shows these same details.
+
 Platform information and PHP runtime details are available under **Tools > Site
 Health > Info**. The telemetry page and WordPress dashboard widget omit those
 sections, and their overall status reflects only the displayed telemetry cards.
@@ -585,3 +606,12 @@ See [tests/README.md](/Users/ouss/Documents/workspace/simula/wordpress/plugins_r
 ## License
 
 GPL-2.0-or-later. See the plugin header for licensing details.
+
+
+## Changelog
+
+### 4.2.1
+
+- Added exporter version, latest attempt and result, slow refresh time, and next scheduled export to the WordPress Dashboard Widget, with UTC timestamps.
+- Added Dashboard and Settings submenus under Telemetry and shared WordPress admin tabs. The existing Settings shortcut and URL remain supported.
+- Corrected stored attempt timestamps for exports that fail during source collection.

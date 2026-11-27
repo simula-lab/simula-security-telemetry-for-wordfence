@@ -11,6 +11,8 @@ tests/bin/check-local.sh
 ```
 
 This runs PHP syntax checks, shell syntax checks, and `tests/bootstrap-smoke.php`.
+The admin unit checks cover submenu routing, active tabs, widget exporter details and UTC timestamps, missing schedules, and failed export attempt tracking.
+
 It also runs dependency-free unit tests with `tests/bin/run-unit.php`, validates README/readme metric coverage, parses the Grafana dashboard JSON, and checks the Prometheus alert examples.
 
 ## Coverage

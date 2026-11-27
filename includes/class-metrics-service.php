@@ -1684,6 +1684,7 @@ final class Simula_Security_Telemetry_Service {
     /** Writes failure metrics for an unsuccessful metrics export attempt. */
     private static function write_metric_failure($options, $state, $now, $message, $persist_state = true) {
         $message = (string) $message;
+        $state['last_export'] = $now;
 
         return Simula_Security_Telemetry_Output::write_metrics(
             $options['prom_file'],

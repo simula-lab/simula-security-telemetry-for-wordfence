@@ -83,6 +83,19 @@ if (!function_exists('add_menu_page')) {
     }
 }
 
+if (!function_exists('add_submenu_page')) {
+    function add_submenu_page($parent_slug, $page_title, $menu_title, $capability, $menu_slug, $callback = '') {
+        $GLOBALS['sstfw_submenus'][$parent_slug][$menu_slug] = compact('page_title', 'menu_title', 'capability', 'callback');
+        return $menu_slug;
+    }
+}
+
+if (!function_exists('esc_attr__')) {
+    function esc_attr__($text, $domain = 'default') {
+        return htmlspecialchars(__($text, $domain), ENT_QUOTES, 'UTF-8');
+    }
+}
+
 if (!function_exists('wp_add_dashboard_widget')) {
     function wp_add_dashboard_widget($widget_id, $widget_name, $callback) {
         $GLOBALS['sstfw_dashboard_widgets'][$widget_id] = compact('widget_name', 'callback');

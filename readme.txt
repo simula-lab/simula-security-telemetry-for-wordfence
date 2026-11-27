@@ -4,7 +4,7 @@ Tags: wordfence, monitoring, security, grafana, metrics
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 4.1.1
+Stable tag: 4.2.1
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Donate link: https://simulalab.org
@@ -52,7 +52,7 @@ Blocked hit rows are currently identified from the Wordfence hits table where:
 * action matches blocked:*
 * or the HTTP status code is 403 or 503
 
-The plugin includes an admin settings screen under Settings > Security Telemetry, where you can:
+The plugin includes an admin settings screen under Telemetry > Settings, also available through Settings > Security Telemetry, where you can:
 
 * Enable or disable the exporter master switch
 * Choose the export cron interval
@@ -80,7 +80,7 @@ Wordfence and related names and marks are the property of their respective owner
 
 1. Upload the plugin folder to the /wp-content/plugins/ directory, or install it using your preferred deployment process.
 2. Activate the plugin through the Plugins screen in WordPress.
-3. Go to Settings > Security Telemetry.
+3. Go to Telemetry > Settings (or Settings > Security Telemetry).
 4. Set the Prometheus output file path. The default is /var/lib/node_exporter/textfile_collector/wordfence.prom.
 5. Ensure the target directory already exists and is writable by the PHP process.
 6. If incident export is enabled, set the incident log path. The default is /var/log/wordpress-wordfence-incidents.log.
@@ -250,7 +250,11 @@ The two_factor_* and admin_users_without_2fa_total metrics remain strict Wordfen
 
 = What does the Security Telemetry dashboard show? =
 
-The top-level Security Telemetry wp-admin page is a read-only, current-state overview of exporter health and version, WordPress posture, and change signals. Platform information and PHP runtime details are available under Tools > Site Health > Info. The telemetry page and WordPress dashboard widget omit those sections, and their overall status reflects only the displayed telemetry cards. The page does not display Wordfence firewall activity, scan data, incidents, login activity, configuration, or other Wordfence-derived data. It does not run collectors, query Wordfence tables, store time-series data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS Grafana dashboard URL in Settings to show a handoff link for historical telemetry.
+The Telemetry menu opens Dashboard. Dashboard and Settings submenus match the tabs on both views, each with its own bookmarkable URL. Settings > Security Telemetry opens the same Settings view, and its existing URL remains supported.
+
+The Dashboard tab is a read-only, current-state overview of exporter health and version, WordPress posture, and change signals. Platform information and PHP runtime details are available under Tools > Site Health > Info. The telemetry page and WordPress dashboard widget omit those sections, and their overall status reflects only the displayed telemetry cards. The page does not display Wordfence firewall activity, scan data, incidents, login activity, configuration, or other Wordfence-derived data. It does not run collectors, query Wordfence tables, store time-series data, embed charts, or query Prometheus or Grafana. Configure an optional HTTPS Grafana dashboard URL in Settings to show a handoff link for historical telemetry.
+
+The main WordPress Dashboard's Security Telemetry widget also shows Exporter version, Last export (UTC), Most recent exporter result, Last slow refresh (UTC), and Next export (UTC). Last export means the most recent metrics export attempt, including failures, rather than the last successful export. Results show Successful, Failed, or No exports yet; failure details are available in Settings. Times use YYYY-MM-DD HH:mm:ss UTC. Missing past timestamps show Never; a missing next export shows Not scheduled. The Dashboard's Exporter health card shows the same details.
 
 failed_login_attempts_window remains the aggregate failed-login metric and counts Wordfence wfLogins rows where fail is greater than 0, including passkey-related failures in Wordfence 9.0.0. authentication_failures_window adds bounded method labels for password, passkey, passkey_required, two_factor, and other failures. brute_force_events_window username values use password-classified login failures when wfLogins is available, so passkey-required policy blocks are not counted as password brute force.
 
@@ -298,6 +302,12 @@ wordpress_wordfence_platform_info controls best-effort platform version collecti
 These info metrics have value 1 and use unknown labels for unavailable values. They refresh on the slow collector schedule (hourly by default) and are reused by fast exports. No shell commands or new network connections are used, and no hostnames or full banners are exported. Container OS metadata describes the container, which may differ from the host; CLI exports may lack web server information. Redis is not collected.
 
 == Changelog ==
+
+= 4.2.1 =
+
+* Added exporter version, latest export attempt and result, slow refresh time, and next scheduled export to the WordPress Dashboard Widget, with UTC timestamps.
+* Added Dashboard and Settings submenus under Telemetry and shared WordPress admin tabs. The existing Settings shortcut and URL remain supported.
+* Corrected stored attempt timestamps for exports that fail during source collection.
 
 = 4.1.1 =
 
@@ -385,6 +395,10 @@ These info metrics have value 1 and use unknown labels for unavailable values. T
 * Added expanded Wordfence telemetry including failed logins, rate limiting, brute force activity, lockouts, two-factor coverage, scan findings, and top attack sources.
 
 == Upgrade Notice ==
+
+= 4.2.1 =
+
+Adds shared Dashboard and Settings navigation under Telemetry and exporter details in the WordPress Dashboard Widget. Last export includes failed attempts. Existing settings and the Settings > Security Telemetry shortcut remain available.
 
 = 4.1.1 =
 

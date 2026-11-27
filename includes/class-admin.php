@@ -22,6 +22,24 @@ final class Simula_Security_Telemetry_Admin {
             76
         );
 
+        add_submenu_page(
+            Simula_Security_Telemetry_Config::DASHBOARD_SLUG,
+            __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
+            __('Dashboard', 'simula-security-telemetry-for-wordfence'),
+            Simula_Security_Telemetry_Config::CAPABILITY,
+            Simula_Security_Telemetry_Config::DASHBOARD_SLUG,
+            [__CLASS__, 'dashboard_page']
+        );
+
+        add_submenu_page(
+            Simula_Security_Telemetry_Config::DASHBOARD_SLUG,
+            __('Security Telemetry Settings', 'simula-security-telemetry-for-wordfence'),
+            __('Settings', 'simula-security-telemetry-for-wordfence'),
+            Simula_Security_Telemetry_Config::CAPABILITY,
+            Simula_Security_Telemetry_Config::SLUG,
+            [__CLASS__, 'settings_page']
+        );
+
         add_options_page(
             __('Simula Security Telemetry for Wordfence', 'simula-security-telemetry-for-wordfence'),
             __('Security Telemetry', 'simula-security-telemetry-for-wordfence'),
@@ -67,6 +85,9 @@ final class Simula_Security_Telemetry_Admin {
                     <td><strong><?php echo esc_html(self::dashboard_status_label($status)); ?></strong></td>
                 </tr>
             <?php endforeach; ?>
+            <?php foreach (self::dashboard_exporter_rows($model['exporter']) as $label => $value) : ?>
+                <?php self::render_state_row($label, $value); ?>
+            <?php endforeach; ?>
         </tbody></table>
         <p>
             <a href="<?php echo esc_url(admin_url('admin.php?page=' . Simula_Security_Telemetry_Config::DASHBOARD_SLUG)); ?>"><?php echo esc_html__('View Security Telemetry dashboard', 'simula-security-telemetry-for-wordfence'); ?></a>
@@ -88,7 +109,7 @@ final class Simula_Security_Telemetry_Admin {
         $model   = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $state);
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Security Telemetry', 'simula-security-telemetry-for-wordfence'); ?></h1>
+            <?php self::render_page_header('dashboard'); ?>
             <p><?php echo esc_html__('Current exporter health, WordPress posture, and change signals collected by this plugin.', 'simula-security-telemetry-for-wordfence'); ?></p>
             <p><strong><?php echo esc_html__('Overall status:', 'simula-security-telemetry-for-wordfence'); ?></strong> <?php echo esc_html(self::dashboard_status_label($model['overall_status'])); ?></p>
 
@@ -101,14 +122,14 @@ final class Simula_Security_Telemetry_Admin {
             <?php if ($model['grafana_url'] !== '') : ?>
                 <p style="margin-top:20px;"><a class="button button-secondary" href="<?php echo esc_url($model['grafana_url']); ?>"><?php echo esc_html__('View historical telemetry in Grafana', 'simula-security-telemetry-for-wordfence'); ?></a></p>
             <?php endif; ?>
-            <p><a href="<?php echo esc_url(admin_url('options-general.php?page=' . Simula_Security_Telemetry_Config::SLUG)); ?>"><?php echo esc_html__('Configure Security Telemetry', 'simula-security-telemetry-for-wordfence'); ?></a></p>
+            <p><a href="<?php echo esc_url(admin_url('admin.php?page=' . Simula_Security_Telemetry_Config::SLUG)); ?>"><?php echo esc_html__('Configure Security Telemetry', 'simula-security-telemetry-for-wordfence'); ?></a></p>
         </div>
         <?php
     }
 
     /** Adds a Settings shortcut link on the plugins screen. */
     public static function plugin_action_links($links) {
-        $url = admin_url('options-general.php?page=' . Simula_Security_Telemetry_Config::SLUG);
+        $url = admin_url('admin.php?page=' . Simula_Security_Telemetry_Config::SLUG);
 
         array_unshift(
             $links,
@@ -134,10 +155,7 @@ final class Simula_Security_Telemetry_Admin {
         $state   = Simula_Security_Telemetry_Settings::get_state();
         ?>
         <div class="wrap">
-            <h1>
-                <?php echo esc_html__('Simula Security Telemetry for Wordfence', 'simula-security-telemetry-for-wordfence'); ?>
-                <span style="font-size:14px; font-weight:400; color:#50575e; margin-left:8px;">v<?php echo esc_html(Simula_Security_Telemetry_Config::VERSION); ?></span>
-            </h1>
+            <?php self::render_page_header('settings'); ?>
             <p><?php echo esc_html__('Exports Wordfence block telemetry into a Prometheus .prom file for node_exporter textfile collection and blocked-request events into a plain-text incident log.', 'simula-security-telemetry-for-wordfence'); ?></p>
 
             <?php settings_errors('sstfw_metrics'); ?>
@@ -155,6 +173,25 @@ final class Simula_Security_Telemetry_Admin {
             <?php self::render_current_state_section($options, $state); ?>
             <?php self::render_sample_incident_section($options); ?>
         </div>
+        <?php
+    }
+
+    /** Renders shared navigation with stable URLs for both admin views. */
+    private static function render_page_header($active) {
+        $tabs = [
+            'dashboard' => [__('Dashboard', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Config::DASHBOARD_SLUG],
+            'settings' => [__('Settings', 'simula-security-telemetry-for-wordfence'), Simula_Security_Telemetry_Config::SLUG],
+        ];
+        ?>
+        <h1>
+            <?php echo esc_html__('Security Telemetry', 'simula-security-telemetry-for-wordfence'); ?>
+            <span style="font-size:14px; font-weight:400; color:#50575e; margin-left:8px;">v<?php echo esc_html(Simula_Security_Telemetry_Config::VERSION); ?></span>
+        </h1>
+        <nav class="nav-tab-wrapper" aria-label="<?php echo esc_attr__('Security Telemetry navigation', 'simula-security-telemetry-for-wordfence'); ?>">
+            <?php foreach ($tabs as $key => $tab) : ?>
+                <a class="nav-tab<?php echo $active === $key ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url(admin_url('admin.php?page=' . $tab[1])); ?>"<?php if ($active === $key) : ?> aria-current="page"<?php endif; ?>><?php echo esc_html($tab[0]); ?></a>
+            <?php endforeach; ?>
+        </nav>
         <?php
     }
 
@@ -500,10 +537,10 @@ final class Simula_Security_Telemetry_Admin {
     private static function dashboard_exporter_rows($card) {
         return [
             __('Exporter version', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Config::VERSION,
-            __('Last export', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['last_export'] ?? 0),
+            __('Last export (UTC)', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['last_export'] ?? 0),
             __('Most recent exporter result', 'simula-security-telemetry-for-wordfence') => self::dashboard_exporter_result_label($card['last_result'] ?? 'not_run'),
-            __('Last slow refresh', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['slow_refresh'] ?? 0),
-            __('Next export', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['next_export'] ?? 0),
+            __('Last slow refresh (UTC)', 'simula-security-telemetry-for-wordfence') => Simula_Security_Telemetry_Settings::format_state_time($card['slow_refresh'] ?? 0),
+            __('Next export (UTC)', 'simula-security-telemetry-for-wordfence') => !empty($card['next_export']) ? Simula_Security_Telemetry_Settings::format_state_time($card['next_export']) : __('Not scheduled', 'simula-security-telemetry-for-wordfence'),
         ];
     }
 
