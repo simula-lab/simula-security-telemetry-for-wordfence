@@ -24,6 +24,8 @@ foreach ([
     'Security Telemetry',
     'WordPress posture',
     'Change signals',
+    'aria-current="page">Dashboard</a>',
+    admin_url('admin.php?page=' . Simula_Security_Telemetry_Config::SLUG),
     'https://grafana.example.test/d/sstfw-security',
 ] as $expected) {
     if (strpos($html, $expected) === false) {
@@ -37,4 +39,28 @@ foreach (['Platform information', 'PHP runtime posture', 'DO_NOT_DISPLAY_WORDFEN
     }
 }
 
-WP_CLI::success('Admin dashboard smoke test passed.');
+ob_start();
+Simula_Security_Telemetry_Admin::dashboard_widget();
+$widget = ob_get_clean();
+foreach (['Exporter version', Simula_Security_Telemetry_Config::VERSION, 'Last export (UTC)', 'Most recent exporter result', 'Last slow refresh (UTC)', 'Next export (UTC)'] as $expected) {
+    if (strpos($widget, $expected) === false) {
+        WP_CLI::error('Dashboard widget is missing: ' . $expected);
+    }
+}
+foreach (['DO_NOT_DISPLAY_WORDFENCE_ERROR', 'DO_NOT_DISPLAY_WORDFENCE_DATA'] as $forbidden) {
+    if (strpos($widget, $forbidden) !== false) {
+        WP_CLI::error('Dashboard widget rendered excluded content: ' . $forbidden);
+    }
+}
+
+require_once ABSPATH . 'wp-admin/includes/template.php';
+ob_start();
+Simula_Security_Telemetry_Admin::settings_page();
+$settings = ob_get_clean();
+foreach (['aria-current="page">Settings</a>', admin_url('admin.php?page=' . Simula_Security_Telemetry_Config::DASHBOARD_SLUG), 'action="options.php"', 'sstfw_export_now', 'sstfw_reset_incident_cursor'] as $expected) {
+    if (strpos($settings, $expected) === false) {
+        WP_CLI::error('Settings view is missing: ' . $expected);
+    }
+}
+
+WP_CLI::success('Admin dashboard, widget, and settings smoke tests passed.');

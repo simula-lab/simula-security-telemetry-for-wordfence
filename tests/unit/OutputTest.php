@@ -6,6 +6,21 @@
  */
 
 return [
+    'early collection failures record the latest attempt even if output cannot be written' => function () {
+        if (!function_exists('WP_Filesystem')) {
+            function WP_Filesystem() {
+                return false;
+            }
+        }
+        $options = Simula_Security_Telemetry_Config::defaults();
+        $result = sstfw_invoke_private_static('Simula_Security_Telemetry_Service', 'write_metric_failure', [$options, ['last_export' => 100], 200, 'Unsupported source.', false]);
+        sstfw_assert_same(false, $result['ok']);
+        sstfw_assert_same(200, $result['state']['last_export']);
+        sstfw_assert_same(0, $result['state']['last_result_ok']);
+        $model = Simula_Security_Telemetry_Admin_Dashboard::view_model($options, $result['state'], 200);
+        sstfw_assert_same('failed', $model['exporter']['last_result']);
+    },
+
     'php runtime posture rendering is opt-in and exports only bounded values' => function () {
         $data = [
             'flags' => ['php_runtime_posture' => true],
